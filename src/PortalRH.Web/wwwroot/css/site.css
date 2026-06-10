@@ -1,0 +1,395 @@
+html {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  margin-bottom: 60px;
+}
+
+.showcase-shell {
+  padding: 1rem 0 2rem;
+}
+
+.showcase-header {
+  margin-bottom: 1.5rem;
+}
+
+.showcase-eyebrow {
+  margin: 0 0 0.35rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #5f6f92;
+}
+
+.showcase-header h1 {
+  margin-bottom: 0.4rem;
+  font-weight: 800;
+  color: #142b4d;
+}
+
+.showcase-lead {
+  margin: 0;
+  max-width: 58rem;
+  color: #5b6880;
+}
+
+.career-timeline {
+  position: relative;
+  padding: 1.5rem;
+  border-radius: 2rem;
+  background:
+    radial-gradient(circle at top left, rgba(64, 112, 244, 0.08), transparent 32%),
+    linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
+  border: 1px solid rgba(20, 43, 77, 0.08);
+  box-shadow: 0 18px 48px rgba(21, 34, 62, 0.08);
+  overflow: hidden;
+}
+
+.career-timeline__header {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: nowrap;
+  position: relative;
+  z-index: 1;
+}
+
+.career-timeline__title-block {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.career-timeline__badge {
+  width: 3rem;
+  height: 3rem;
+  display: grid;
+  place-items: center;
+  border-radius: 0.75rem;
+  background: linear-gradient(180deg, #1f66cc, #0d47a1);
+  color: #fff;
+  font-weight: 800;
+  font-size: 1.5rem;
+  box-shadow: 0 10px 20px rgba(13, 71, 161, 0.28);
+  flex: 0 0 auto;
+}
+
+.career-timeline__title-block h2 {
+  margin: 0;
+  font-size: clamp(1.35rem, 1.5vw, 1.9rem);
+  line-height: 1.1;
+  font-weight: 800;
+  color: #11284a;
+}
+
+.career-timeline__title-block p {
+  margin: 0.35rem 0 0;
+  font-size: 0.96rem;
+  color: #5b6880;
+}
+
+.career-timeline__summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(10.5rem, 1fr));
+  gap: 1rem;
+  width: min(100%, 39rem);
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+.timeline-summary-card {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.9rem 1rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(74, 112, 175, 0.18);
+  box-shadow: 0 6px 16px rgba(32, 55, 90, 0.1);
+  backdrop-filter: blur(8px);
+}
+
+.timeline-summary-card__icon,
+.legend-item__icon,
+.milestone-card__icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  flex: 0 0 auto;
+}
+
+.timeline-summary-card__icon .timeline-icon,
+.legend-item__icon .timeline-icon,
+.milestone-card__icon .timeline-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+  color: currentColor;
+}
+
+.timeline-summary-card span {
+  display: block;
+  font-size: 0.88rem;
+  color: #516079;
+  white-space: nowrap;
+}
+
+.timeline-summary-card strong {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 1.05rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.timeline-accent-blue {
+  color: #1f5cb6;
+}
+
+.timeline-accent-green {
+  color: #2d7b28;
+}
+
+.timeline-accent-purple {
+  color: #6f35c9;
+}
+
+.timeline-accent-teal {
+  color: #1a8ea7;
+}
+
+.timeline-accent-slate {
+  color: #3f5878;
+}
+
+.timeline-accent-blue .timeline-summary-card__icon,
+.timeline-accent-blue .legend-item__icon,
+.timeline-accent-blue .milestone-card__icon {
+  background: linear-gradient(180deg, #ebf2ff, #d9e7ff);
+  color: #1f5cb6;
+}
+
+.timeline-accent-green .timeline-summary-card__icon,
+.timeline-accent-green .legend-item__icon,
+.timeline-accent-green .milestone-card__icon {
+  background: linear-gradient(180deg, #ecf7ea, #d7efcf);
+  color: #2d7b28;
+}
+
+.timeline-accent-purple .timeline-summary-card__icon,
+.timeline-accent-purple .legend-item__icon,
+.timeline-accent-purple .milestone-card__icon {
+  background: linear-gradient(180deg, #f1ebff, #e4d8ff);
+  color: #6f35c9;
+}
+
+.timeline-accent-teal .timeline-summary-card__icon,
+.timeline-accent-teal .legend-item__icon,
+.timeline-accent-teal .milestone-card__icon {
+  background: linear-gradient(180deg, #e5fbff, #d0f1f7);
+  color: #1a8ea7;
+}
+
+.timeline-accent-slate .timeline-summary-card__icon,
+.timeline-accent-slate .legend-item__icon,
+.timeline-accent-slate .milestone-card__icon {
+  background: linear-gradient(180deg, #eef3f9, #dae2ed);
+  color: #3f5878;
+}
+
+.career-timeline__tracks {
+  position: relative;
+  z-index: 1;
+  margin-top: 1.4rem;
+  display: grid;
+  gap: 0.9rem;
+}
+
+.career-timeline__pipe {
+  position: absolute;
+  left: 0.35rem;
+  right: 0.35rem;
+  pointer-events: none;
+  top: 0px;
+  height: 4px;
+  z-index: 2;
+}
+
+.career-timeline__pipe::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #3c74c9 0%, #3c74c9 50%, #1f7ea5 50%, #1f7ea5 100%);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.65);
+}
+
+.career-timeline__track-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top:40px;
+}
+
+.timeline-gap-chip {
+  position: absolute;
+  top: 0;
+  transform: translate(-50%, -50%);
+  z-index: 4;
+  padding: 0.32rem 0.7rem;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 1px solid rgba(61, 88, 125, 0.18);
+  box-shadow: 0 6px 14px rgba(22, 32, 58, 0.12);
+  color: #3f5878;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.milestone-card {
+  position: relative;
+  margin-top: 25px;
+  z-index: auto;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(61, 88, 125, 0.12);
+  border-radius: 1.5rem;
+  box-shadow: 0 10px 20px rgba(22, 32, 58, 0.08);
+  padding: 0.85rem 0.9rem 0.95rem;
+}
+
+.milestone-card__step {
+  position: absolute;
+  top: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: #fff;
+  border: 3px solid currentColor;
+  color: currentColor;
+  font-weight: 800;
+  box-shadow: 0 8px 14px rgba(28, 36, 53, 0.18);
+  z-index: 3;
+}
+
+.milestone-card__body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8rem;
+  min-height: 14rem;
+  padding-top: 1rem;
+  text-align: center;
+}
+
+.milestone-card__top-icon {
+  display: grid;
+  place-items: center;
+}
+
+.milestone-card__date {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #24344e;
+  text-align: center;
+}
+
+.milestone-card__event {
+  min-height: 3.4rem;
+  font-weight: 700;
+  font-size: 0.92rem;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.milestone-card__salary {
+  margin-top: auto;
+  padding: 0.7rem 0.9rem;
+  border-radius: 0.9rem;
+  background: linear-gradient(180deg, #edf4ff, #dae7ff);
+  color: inherit;
+  font-weight: 800;
+  font-size: 1rem;
+  text-align: center;
+  border: 1px solid rgba(31, 92, 182, 0.18);
+}
+
+.career-timeline__legend {
+  position: relative;
+  z-index: 1;
+  margin-top: 2rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
+  justify-content: center;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  font-weight: 600;
+  color: #32445f;
+}
+
+@media (max-width: 1400px) {
+  .career-timeline__header {
+    flex-wrap: wrap;
+  }
+
+  .career-timeline__summary {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .career-timeline__summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .career-timeline__track-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 992px) {
+  .career-timeline {
+    padding: 1rem;
+  }
+
+  .career-timeline__pipe {
+    display: none;
+  }
+
+  .career-timeline__summary,
+  .career-timeline__track-row {
+    grid-template-columns: 1fr;
+  }
+}

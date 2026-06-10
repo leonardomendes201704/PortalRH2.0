@@ -1,0 +1,75 @@
+@model PortalRH.Web.Models.CareerTimeline.CareerTimelineShowcaseViewModel
+
+<section class="career-timeline">
+    <div class="career-timeline__header">
+        <div class="career-timeline__title-block">
+            <div class="career-timeline__badge">6</div>
+            <div>
+                <h2>@Model.Title</h2>
+                <p>@Model.Subtitle</p>
+            </div>
+        </div>
+
+        <div class="career-timeline__summary">
+            @foreach (var card in Model.SummaryCards)
+            {
+                <article class="timeline-summary-card @card.AccentClass">
+                    <div class="timeline-summary-card__icon">
+                        @await Html.PartialAsync("~/Views/Shared/Components/CareerTimeline/_TimelineIcon.cshtml", card.Icon)
+                    </div>
+                    <div>
+                        <span>@card.Title</span>
+                        <strong>@card.Value</strong>
+                    </div>
+                </article>
+            }
+        </div>
+    </div>
+
+    <div class="career-timeline__tracks">
+        @foreach (var row in Model.TrackRows)
+        {
+            <div class="career-timeline__track-row">
+                <div class="career-timeline__pipe" aria-hidden="true"></div>
+
+                @for (var i = 0; i < row.Gaps.Count; i++)
+                {
+                    <span class="timeline-gap-chip" style="left: calc((100% / 6) * @(i + 1));">@row.Gaps[i].Label</span>
+                }
+
+                @foreach (var item in row.Milestones)
+                {
+                    <article class="milestone-card @item.AccentClass">
+                        <div class="milestone-card__step">@item.Step</div>
+                        <div class="milestone-card__body">
+                            <div class="milestone-card__top-icon">
+                                <span class="milestone-card__icon">
+                                    @await Html.PartialAsync("~/Views/Shared/Components/CareerTimeline/_TimelineIcon.cshtml", item.Icon)
+                                </span>
+                            </div>
+                            <div class="milestone-card__date">@item.DateText</div>
+                            <div class="milestone-card__event">
+                                @item.EventText
+                            </div>
+                            <div class="milestone-card__salary">
+                                @item.SalaryText
+                            </div>
+                        </div>
+                    </article>
+                }
+            </div>
+        }
+    </div>
+
+    <div class="career-timeline__legend">
+        @foreach (var legend in Model.LegendItems)
+        {
+            <span class="legend-item @legend.AccentClass">
+                <span class="legend-item__icon">
+                    @await Html.PartialAsync("~/Views/Shared/Components/CareerTimeline/_TimelineIcon.cshtml", legend.Icon)
+                </span>
+                <span>@legend.Text</span>
+            </span>
+        }
+    </div>
+</section>
