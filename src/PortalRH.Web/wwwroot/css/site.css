@@ -388,6 +388,35 @@ body {
   color: #32445f;
 }
 
+.career-timeline__tests {
+  position: relative;
+  z-index: 1;
+  margin-top: 1.75rem;
+}
+
+.career-timeline__tests h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #11284a;
+}
+
+.career-timeline__test-grid {
+  display: grid;
+  grid-template-columns: repeat(24, minmax(0, 1fr));
+  gap: 0;
+}
+
+.career-timeline__test-cell {
+  height: 15px;
+  border: 1px dashed #9ca3af;
+  border-right-width: 0;
+}
+
+.career-timeline__test-cell:last-child {
+  border-right-width: 1px;
+}
+
 @media (max-width: 1400px) {
   .career-timeline__header {
     flex-wrap: wrap;

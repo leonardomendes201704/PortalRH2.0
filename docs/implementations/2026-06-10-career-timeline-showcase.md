@@ -31,3 +31,7 @@
 - Conector recalibrado para sair do fim direito da primeira linha e entrar no inicio esquerdo da segunda
 - Conector ajustado para usar trechos retos com curvas de 90 graus entre as linhas
 - Badges numericas mantidas acima do tracado para preservar a leitura da sequencia
+
+## Ajuste visual em 2026-06-10
+- Secao `Testes` adicionada ao showcase com 24 divisoes iguais em linha unica
+- Divisoes renderizadas sem texto, sem gaps, com 15px de altura e borda tracejada cinza
