@@ -250,6 +250,7 @@ body {
   stroke-width: 4;
   stroke-linecap: round;
   stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
   opacity: 0.95;
 }
 
@@ -301,7 +302,7 @@ body {
 .milestone-card {
   position: relative;
   margin-top: 25px;
-  z-index: auto;
+  z-index: 3;
   background: rgba(255, 255, 255, 0.92);
   border: 1px solid rgba(61, 88, 125, 0.12);
   border-radius: 1.5rem;
