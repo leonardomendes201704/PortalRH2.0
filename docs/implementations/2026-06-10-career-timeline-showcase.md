@@ -41,3 +41,4 @@
 - Badges numericas adicionadas na oitava e decima terceira divisoes da primeira linha da secao `Testes`
 - Badges numericas adicionadas na decima oitava, vigesima terceira e vigesima oitava divisoes da primeira linha da secao `Testes`
 - Duas novas linhas com 30 divisoes cada adicionadas abaixo da linha com 6 divisoes
+- Cada um dos 6 cards da segunda linha recebeu um icone `$` dentro de um circulo, centralizado no topo
