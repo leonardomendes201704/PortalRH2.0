@@ -1,27 +1,31 @@
 # Career timeline showcase - 2026-06-10
 
 ## O que foi criado
-- `CareerTimelineViewComponent` como componente mocado e reaproveitável
+- `CareerTimelineViewComponent` como componente mocado e reaproveitavel
 - View de showcase em `Home/CareerTimelineShowcase`
 - Layout visual inspirado na timeline enviada pelo time
 
 ## Estrutura adicionada
 - Modelos de apoio em `src/PortalRH.Web/Models/CareerTimeline`
-- Partial de ícones SVG para manter o componente independente de bibliotecas extras
-- Estilos específicos em `wwwroot/css/site.css`
+- Partial de icones SVG para manter o componente independente de bibliotecas extras
+- Estilos especificos em `wwwroot/css/site.css`
 
 ## Cobertura de teste
-- Smoke test da página de showcase em `tests/PortalRH.Web.Tests/CareerTimelineShowcaseTests.cs`
+- Smoke test da pagina de showcase em `tests/PortalRH.Web.Tests/CareerTimelineShowcaseTests.cs`
 
-## Observação
-- Os dados estão mockados de propósito para servir como base visual e de integração futura com o TOTVS RM.
+## Observacao
+- Os dados estao mockados de proposito para servir como base visual e de integracao futura com o TOTVS RM.
 
 ## Ajuste visual em 2026-06-10
-- KPIs posicionados na mesma linha do título, alinhados à direita em telas largas
-- Título reduzido para ficar mais próximo da referência
-- Altura dos cards do histórico diminuída para melhorar a densidade visual
+- KPIs posicionados na mesma linha do titulo, alinhados a direita em telas largas
+- Titulo reduzido para ficar mais proximo da referencia
+- Altura dos cards do historico diminuida para melhorar a densidade visual
 
 ## Ajuste funcional em 2026-06-10
-- Adicionados chips com a quantidade de dias entre uma movimentação e outra
-- Datas passaram a ser tratadas como valores reais para cálculo automático dos intervalos
-- O chip é renderizado no pipe entre os cards da mesma linha
+- Adicionados chips com a quantidade de dias entre uma movimentacao e outra
+- Datas passaram a ser tratadas como valores reais para calculo automatico dos intervalos
+- O chip e renderizado no pipe entre os cards da mesma linha
+
+## Ajuste visual em 2026-06-10
+- Conector curvo adicionado entre as linhas da timeline para dar continuidade visual ao pipe
+- Badges numericas mantidas acima do tracado para preservar a leitura da sequencia

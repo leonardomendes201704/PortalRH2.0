@@ -27,6 +27,12 @@
     </div>
 
     <div class="career-timeline__tracks">
+        <div class="career-timeline__row-connector" aria-hidden="true">
+            <svg viewBox="0 0 80 260" preserveAspectRatio="none" focusable="false" aria-hidden="true">
+                <path d="M 40 0 C 80 35, 80 225, 40 260" />
+            </svg>
+        </div>
+
         @foreach (var row in Model.TrackRows)
         {
             <div class="career-timeline__track-row">
