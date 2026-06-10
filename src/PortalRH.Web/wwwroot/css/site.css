@@ -407,14 +407,23 @@ body {
   gap: 0;
 }
 
+.career-timeline__test-grid--six {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
 .career-timeline__test-cell {
   height: 15px;
   border: 1px dashed #9ca3af;
   border-right-width: 0;
+  border-bottom-width: 0;
 }
 
 .career-timeline__test-cell:last-child {
   border-right-width: 1px;
+}
+
+.career-timeline__test-grid:last-child .career-timeline__test-cell {
+  border-bottom-width: 1px;
 }
 
 @media (max-width: 1400px) {

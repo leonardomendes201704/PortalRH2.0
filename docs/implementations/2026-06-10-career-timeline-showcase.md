@@ -35,3 +35,4 @@
 ## Ajuste visual em 2026-06-10
 - Secao `Testes` adicionada ao showcase com 24 divisoes iguais em linha unica
 - Divisoes renderizadas sem texto, sem gaps, com 15px de altura e borda tracejada cinza
+- Segunda linha adicionada a secao `Testes` com 6 divisoes iguais, colada a primeira linha
