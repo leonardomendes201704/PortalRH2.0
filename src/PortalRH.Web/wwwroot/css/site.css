@@ -224,14 +224,15 @@ body {
   margin-top: 1.4rem;
   display: grid;
   gap: 0.9rem;
+  padding: 0 3rem 0 0;
 }
 
 .career-timeline__row-connector {
   position: absolute;
-  top: 0;
-  right: 0.25rem;
-  bottom: 0;
-  width: 5rem;
+  top: 40px;
+  right: 0.35rem;
+  width: 3rem;
+  height: calc(50% + 0.45rem);
   pointer-events: none;
   z-index: 2;
 }
@@ -276,7 +277,7 @@ body {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 1rem;
-  margin-top:40px;
+  margin-top: 40px;
 }
 
 .timeline-gap-chip {
@@ -411,6 +412,10 @@ body {
   }
 
   .career-timeline__pipe {
+    display: none;
+  }
+
+  .career-timeline__row-connector {
     display: none;
   }
 
