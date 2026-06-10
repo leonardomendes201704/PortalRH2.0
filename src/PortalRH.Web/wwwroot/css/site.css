@@ -423,7 +423,7 @@ body {
   border-right-width: 1px;
 }
 
-.career-timeline__test-grid:last-child .career-timeline__test-cell {
+.career-timeline__tests .career-timeline__test-grid:last-child .career-timeline__test-cell {
   border-bottom-width: 1px;
 }
 

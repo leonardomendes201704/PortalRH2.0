@@ -96,6 +96,15 @@
                         case 12:
                             <span class="career-timeline__test-badge">3</span>
                             break;
+                        case 17:
+                            <span class="career-timeline__test-badge">4</span>
+                            break;
+                        case 22:
+                            <span class="career-timeline__test-badge">5</span>
+                            break;
+                        case 27:
+                            <span class="career-timeline__test-badge">6</span>
+                            break;
                     }
                 </div>
             }
@@ -108,5 +117,14 @@
                 </div>
             }
         </div>
+        @for (var row = 0; row < 2; row++)
+        {
+            <div class="career-timeline__test-grid" aria-hidden="true">
+                @for (var i = 0; i < 30; i++)
+                {
+                    <div class="career-timeline__test-cell"></div>
+                }
+            </div>
+        }
     </section>
 </section>

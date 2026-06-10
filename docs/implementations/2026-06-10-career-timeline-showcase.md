@@ -39,3 +39,5 @@
 - Cards vazios adicionados dentro das divisoes da segunda linha, com 200px de altura, 90% de largura e cantos arredondados
 - Badge numerica adicionada na terceira divisao da primeira linha da secao `Testes`
 - Badges numericas adicionadas na oitava e decima terceira divisoes da primeira linha da secao `Testes`
+- Badges numericas adicionadas na decima oitava, vigesima terceira e vigesima oitava divisoes da primeira linha da secao `Testes`
+- Duas novas linhas com 30 divisoes cada adicionadas abaixo da linha com 6 divisoes
