@@ -85,9 +85,17 @@
             @for (var i = 0; i < 30; i++)
             {
                 <div class="career-timeline__test-cell">
-                    @if (i == 2)
+                    @switch (i)
                     {
-                        <span class="career-timeline__test-badge">1</span>
+                        case 2:
+                            <span class="career-timeline__test-badge">1</span>
+                            break;
+                        case 7:
+                            <span class="career-timeline__test-badge">2</span>
+                            break;
+                        case 12:
+                            <span class="career-timeline__test-badge">3</span>
+                            break;
                     }
                 </div>
             }
