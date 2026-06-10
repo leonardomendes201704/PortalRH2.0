@@ -29,4 +29,5 @@
 ## Ajuste visual em 2026-06-10
 - Conector curvo adicionado entre as linhas da timeline para dar continuidade visual ao pipe
 - Conector recalibrado para sair do fim direito da primeira linha e entrar no inicio esquerdo da segunda
+- Conector ajustado para usar trechos retos com curvas de 90 graus entre as linhas
 - Badges numericas mantidas acima do tracado para preservar a leitura da sequencia
