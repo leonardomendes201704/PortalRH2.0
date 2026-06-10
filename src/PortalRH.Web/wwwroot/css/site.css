@@ -412,6 +412,7 @@ body {
 }
 
 .career-timeline__test-cell {
+  position: relative;
   height: 15px;
   border: 1px dashed #9ca3af;
   border-right-width: 0;
@@ -424,6 +425,25 @@ body {
 
 .career-timeline__test-grid:last-child .career-timeline__test-cell {
   border-bottom-width: 1px;
+}
+
+.career-timeline__test-badge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 1.55rem;
+  height: 1.55rem;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #fff;
+  border: 2px solid #1f66cc;
+  color: #1f66cc;
+  font-size: 0.85rem;
+  font-weight: 800;
+  line-height: 1;
+  z-index: 1;
 }
 
 .career-timeline__test-grid--six .career-timeline__test-cell {

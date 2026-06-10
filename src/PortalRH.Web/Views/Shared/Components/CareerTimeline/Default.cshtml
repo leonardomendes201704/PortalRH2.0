@@ -84,7 +84,12 @@
         <div class="career-timeline__test-grid" aria-hidden="true">
             @for (var i = 0; i < 30; i++)
             {
-                <div class="career-timeline__test-cell"></div>
+                <div class="career-timeline__test-cell">
+                    @if (i == 2)
+                    {
+                        <span class="career-timeline__test-badge">1</span>
+                    }
+                </div>
             }
         </div>
         <div class="career-timeline__test-grid career-timeline__test-grid--six" aria-hidden="true">
