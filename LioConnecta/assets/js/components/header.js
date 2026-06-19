@@ -21,7 +21,7 @@ export function renderHeaderShell(data) {
         </div>
         <button class="topbar-link" data-analytics="topbar.profile">Meu Perfil ▼</button>
         <button class="topbar-link notif" data-analytics="topbar.notifications" data-count="${escapeHtml(String(data.user.notificationCount ?? 0))}">Notificações</button>
-        <button class="topbar-link" data-analytics="topbar.logout">Sair</button>
+        <button class="topbar-link" data-analytics="topbar.logout" data-action="portal-logout">Sair</button>
       </div>
     </header>
 

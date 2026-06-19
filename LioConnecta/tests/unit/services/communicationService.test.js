@@ -56,9 +56,10 @@ test("communicationService retorna central de comunicados normalizada", async ()
 
     assert.equal(result.title, "CENTRAL DE COMUNICACAO OFICIAL");
     assert.equal(result.intro.title, "Todos os comunicados oficiais em um unico lugar");
-    assert.equal(result.featured.title, "Destaque da semana");
-    assert.equal(result.items.length, 1);
-    assert.equal(result.items[0].title, "Comunicado 1");
+    assert.equal(result.featured, null);
+    assert.equal(result.items.length, 2);
+    assert.equal(result.items[0].title, "Destaque da semana");
+    assert.equal(result.items[1].title, "Comunicado 1");
     assert.equal(result.kpis[0].value, "2");
     assert.equal(result.filters[0].count, 2);
     assert.equal(result.loadError, "");

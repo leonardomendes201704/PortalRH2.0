@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#173f70">
+  <meta name="description" content="Login publico da intranet LIOCONNECTA com autenticacao LDAP corporativa.">
+  <meta name="app-version" content="v0.11.3">
+  <title>LIOCONNECTA Login</title>
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="stylesheet" href="../assets/css/tokens.css?v=0.11.3">
+  <link rel="stylesheet" href="../assets/css/base.css?v=0.11.3">
+  <link rel="stylesheet" href="../assets/css/components.css?v=0.11.3">
+</head>
+<body>
+  <div class="page page--login">
+    <a class="skip-link" href="#portal-login-main">Pular para o conteudo principal</a>
+
+    <main class="portal-login-shell" id="portal-login-main">
+      <section class="portal-login-hero">
+        <div class="brand portal-login-brand">
+          <div class="brand-mark" aria-hidden="true"></div>
+          <div class="brand-copy">
+            <strong>LIOCONNECTA</strong>
+            <span>Capacidade e Transformacao Digital</span>
+          </div>
+        </div>
+
+        <span class="communications-eyebrow">INTRANET CORPORATIVA</span>
+        <h1>Entre com seu acesso de rede para abrir a LIOCONNECTA</h1>
+        <p>
+          Acesse mural, comunicados oficiais, agenda, servicos de RH e interacoes internas
+          usando seu e-mail corporativo e a mesma senha do Active Directory.
+        </p>
+
+        <div class="portal-login-highlights">
+          <div>
+            <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+            <span>Autenticacao centralizada no LDAP corporativo</span>
+          </div>
+          <div>
+            <i class="fa-solid fa-comments" aria-hidden="true"></i>
+            <span>Feed interno, comunicacao e servicos em um unico ambiente</span>
+          </div>
+          <div>
+            <i class="fa-solid fa-user-check" aria-hidden="true"></i>
+            <span>Acesso exclusivo para colaboradores autorizados</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="card portal-login-card">
+        <div class="card-header">Acesso do colaborador</div>
+        <div class="portal-login-card-body">
+          <div class="portal-login-copy">
+            <strong>Login com e-mail corporativo</strong>
+            <p>Use seu e-mail ou identificador de rede. A autenticacao sera validada no diretorio da empresa.</p>
+          </div>
+
+          <form id="portal-login-form" class="portal-login-form">
+            <label class="communication-form-field">
+              <span>E-mail corporativo ou usuario</span>
+              <input
+                id="portal-login"
+                name="login"
+                type="text"
+                autocomplete="username"
+                placeholder="nome.sobrenome@empresa.com.br"
+              >
+            </label>
+
+            <label class="communication-form-field">
+              <span>Senha</span>
+              <input
+                id="portal-password"
+                name="password"
+                type="password"
+                autocomplete="current-password"
+                placeholder="Digite sua senha de rede"
+              >
+            </label>
+
+            <div class="portal-login-actions">
+              <button type="submit" class="feed-composer-submit">Entrar na intranet</button>
+            </div>
+          </form>
+
+          <div class="portal-login-note">
+            <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+            <span>Se o acesso LDAP ainda nao estiver configurado, a autenticacao sera recusada ate a publicacao dos parametros no painel administrativo.</span>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="app-version-badge" aria-label="Versao da aplicacao">v0.11.3</div>
+
+  <script type="module" src="../assets/js/login/app.js?v=0.11.3"></script>
+</body>
+</html>

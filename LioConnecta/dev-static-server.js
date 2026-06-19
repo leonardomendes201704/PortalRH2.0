@@ -1,9 +1,10 @@
-const http = require("http");
-const fs = require("fs");
-const path = require("path");
-const { URL } = require("url");
+import http from "node:http";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-const rootDir = __dirname;
+const __filename = fileURLToPath(import.meta.url);
+const rootDir = path.dirname(__filename);
 const port = Number(process.env.PORT || 4173);
 
 const contentTypes = {

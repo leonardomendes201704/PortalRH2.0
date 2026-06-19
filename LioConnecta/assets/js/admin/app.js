@@ -1,6 +1,6 @@
-import { showToast } from "../core/feedback.js?v=0.11.2";
-import { loginAdmin, fetchAdminSession, getStoredAdminSession, resolvePostLoginTarget } from "../services/adminAuthService.js?v=0.11.2";
-import { getRuntimeConfig } from "../core/runtimeConfig.js?v=0.11.2";
+import { showToast } from "../core/feedback.js?v=0.11.3";
+import { loginAdmin, fetchAdminSession, getStoredAdminSession, resolvePostLoginTarget } from "../services/adminAuthService.js?v=0.11.3";
+import { getRuntimeConfig } from "../core/runtimeConfig.js?v=0.11.3";
 
 function renderVersionBadge() {
   const badge = document.querySelector(".app-version-badge");

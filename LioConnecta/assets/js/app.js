@@ -1,5 +1,5 @@
-import { bindAnalytics, trackInteraction } from "./analytics.js?v=0.11.2";
-import { renderHeaderShell, renderSidebarPanels } from "./layout/index.js?v=0.11.2";
+import { bindAnalytics, trackInteraction } from "./analytics.js?v=0.11.3";
+import { renderHeaderShell, renderSidebarPanels } from "./layout/index.js?v=0.11.3";
 import {
   renderHero,
   renderMoodCard,
@@ -12,7 +12,7 @@ import {
   renderLoadingCarousel,
   renderLoadingFeed,
   getHomePageData
-} from "./home/index.js?v=0.11.2";
+} from "./home/index.js?v=0.11.3";
 import {
   renderCarouselSection,
   initCarousel,
@@ -20,14 +20,15 @@ import {
   renderCommunicationDetailPage,
   renderCommunicationAdminPage,
   getCommunicationCenterData
-} from "./communications/index.js?v=0.11.2";
-import { renderFeed } from "./feed/index.js?v=0.11.2";
-import { bindInteractionFeedback } from "./core/feedback.js?v=0.11.2";
-import { getRuntimeConfig } from "./core/runtimeConfig.js?v=0.11.2";
-import { getPanelData } from "./services/panelService.js?v=0.11.2";
-import { getUserHomeContext } from "./services/userService.js?v=0.11.2";
-import { fetchAdminSession, getAdminAuthHeaders, getStoredAdminSession, redirectToAdminLogin } from "./services/adminAuthService.js?v=0.11.2";
-import { getLdapSettingsData } from "./services/ldapSettingsService.js?v=0.11.2";
+} from "./communications/index.js?v=0.11.3";
+import { renderFeed } from "./feed/index.js?v=0.11.3";
+import { bindInteractionFeedback, showToast } from "./core/feedback.js?v=0.11.3";
+import { getRuntimeConfig } from "./core/runtimeConfig.js?v=0.11.3";
+import { getPanelData } from "./services/panelService.js?v=0.11.3";
+import { getUserHomeContext } from "./services/userService.js?v=0.11.3";
+import { fetchAdminSession, getAdminAuthHeaders, getStoredAdminSession, redirectToAdminLogin } from "./services/adminAuthService.js?v=0.11.3";
+import { clearPortalSession, getStoredPortalSession, redirectToPortalLogin } from "./services/portalAuthService.js?v=0.11.3";
+import { getLdapSettingsData } from "./services/ldapSettingsService.js?v=0.11.3";
 
 const ROUTES = Object.freeze({
   HOME: "inicio",
@@ -50,6 +51,23 @@ const NAV_ROUTES = [
 ];
 
 let shellInitialized = false;
+
+function bindPortalTopbarActions() {
+  const logoutButton = document.querySelector("[data-action='portal-logout']");
+  if (!logoutButton || logoutButton.dataset.bound === "true") {
+    return;
+  }
+
+  logoutButton.dataset.bound = "true";
+  logoutButton.addEventListener("click", () => {
+    clearPortalSession();
+    showToast("Sessao encerrada com sucesso.", "info");
+
+    window.setTimeout(() => {
+      redirectToPortalLogin(window.location.hash || "#inicio");
+    }, 250);
+  });
+}
 
 function applyLayoutMode(route) {
   const content = document.getElementById("main-content");
@@ -132,6 +150,7 @@ function renderShell(data, route) {
   });
   leftSidebar.innerHTML = isRestrictedCommunication ? "" : renderSidebarPanels(data.leftPanels);
   rightSidebar.innerHTML = isRestrictedCommunication ? "" : renderSidebarPanels(data.rightPanels);
+  bindPortalTopbarActions();
 }
 
 function renderHomePage(data, route) {
@@ -190,6 +209,16 @@ async function ensureRestrictedAdminAccess() {
     redirectToAdminLogin("#comunicacao/restrita");
     return false;
   }
+}
+
+function ensurePortalAccess() {
+  const session = getStoredPortalSession();
+  if (session) {
+    return true;
+  }
+
+  redirectToPortalLogin(window.location.hash || "#inicio");
+  return false;
 }
 
 function renderPlaceholderPage(data, route) {
@@ -326,6 +355,11 @@ async function renderCurrentRoute() {
 
 async function bootstrap() {
   bindInteractionFeedback(document);
+
+  const hasPortalAccess = ensurePortalAccess();
+  if (!hasPortalAccess) {
+    return;
+  }
 
   if (!shellInitialized) {
     window.addEventListener("hashchange", () => {
