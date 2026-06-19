@@ -9,9 +9,13 @@ taskkill /FI "WINDOWTITLE eq LIOCONNECTA API" /T /F >nul 2>nul
 taskkill /FI "WINDOWTITLE eq LIOCONNECTA Frontend" /T /F >nul 2>nul
 
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-  "$targets = Get-CimInstance Win32_Process | Where-Object { " ^
-  "($_.Name -match 'dotnet|python|py') -and ($_.CommandLine -match 'PortalRH\.Api\.csproj|http\.server 4173') }; " ^
-  "if ($targets) { $targets | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue } }"
+  "$ErrorActionPreference = 'SilentlyContinue'; " ^
+  "try { " ^
+  "  $targets = Get-CimInstance Win32_Process | Where-Object { " ^
+  "    ($_.Name -match 'dotnet|python|py|node') -and ($_.CommandLine -match 'PortalRH\.Api\.csproj|http\.server 4173|dev-static-server\.js') " ^
+  "  }; " ^
+  "  if ($targets) { $targets | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue } } " ^
+  "} catch { }"
 
 echo Processos da LIOCONNECTA finalizados.
 echo.

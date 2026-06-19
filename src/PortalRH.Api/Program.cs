@@ -1,7 +1,9 @@
 using MediatR;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using PortalRH.Api.Data;
 using PortalRH.Api.Interfaces;
+using PortalRH.Api.Models;
 using PortalRH.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,6 +17,9 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
 builder.Services.AddScoped<ICommunicationService, CommunicationService>();
+builder.Services.AddScoped<IAdminAuthService, AdminAuthService>();
+builder.Services.AddScoped<ILdapConfigurationService, LdapConfigurationService>();
+builder.Services.AddScoped<IPasswordHasher<AdminUser>, PasswordHasher<AdminUser>>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("LioConnectaLocal", policy =>
@@ -34,6 +39,7 @@ if (!string.IsNullOrWhiteSpace(connectionString))
 }
 
 var app = builder.Build();
+await PortalRhDbInitializer.InitializeAsync(app.Services);
 
 if (app.Environment.IsDevelopment())
 {

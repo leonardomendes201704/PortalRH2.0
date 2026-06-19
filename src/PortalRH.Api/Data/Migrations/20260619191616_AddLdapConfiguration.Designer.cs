@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PortalRH.Api.Data;
@@ -11,9 +12,11 @@ using PortalRH.Api.Data;
 namespace PortalRH.Api.Data.Migrations
 {
     [DbContext(typeof(PortalRhDbContext))]
-    partial class PortalRhDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260619191616_AddLdapConfiguration")]
+    partial class AddLdapConfiguration
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

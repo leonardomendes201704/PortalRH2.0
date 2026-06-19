@@ -6,6 +6,7 @@ set "FRONT_DIR=%ROOT_DIR%LioConnecta"
 set "API_PROJECT=%ROOT_DIR%src\PortalRH.Api\PortalRH.Api.csproj"
 set "FRONT_PORT=4173"
 set "FRONT_URL=http://127.0.0.1:%FRONT_PORT%/"
+set "NODE_STATIC_SERVER=%FRONT_DIR%\dev-static-server.js"
 set "API_URL=http://localhost:5001"
 
 if not exist "%FRONT_DIR%\index.html" (
@@ -36,31 +37,49 @@ if errorlevel 1 (
   exit /b 1
 )
 
+set "FRONT_COMMAND="
+set "FRONT_MODE="
+
 where py >nul 2>nul
 if %errorlevel%==0 (
-  set "PY_CMD=py -3"
-) else (
+  set "FRONT_COMMAND=py -3 -m http.server %FRONT_PORT%"
+  set "FRONT_MODE=python-launcher"
+)
+
+if not defined FRONT_COMMAND (
   where python >nul 2>nul
   if %errorlevel%==0 (
-    set "PY_CMD=python"
-  ) else (
-    echo.
-    echo Python nao foi encontrado.
-    echo Instale o Python 3 e tente novamente.
-    echo.
-    pause
-    exit /b 1
+    set "FRONT_COMMAND=python -m http.server %FRONT_PORT%"
+    set "FRONT_MODE=python"
   )
+)
+
+if not defined FRONT_COMMAND (
+  where node >nul 2>nul
+  if %errorlevel%==0 (
+    set "FRONT_COMMAND=node \"%NODE_STATIC_SERVER%\""
+    set "FRONT_MODE=node"
+  )
+)
+
+if not defined FRONT_COMMAND (
+  echo.
+  echo Nenhum runtime compativel foi encontrado para o frontend.
+  echo Instale Python 3 ou Node.js e tente novamente.
+  echo.
+  pause
+  exit /b 1
 )
 
 echo.
 echo Subindo LIOCONNECTA completa...
 echo Frontend: %FRONT_URL%
 echo API:      %API_URL%
+echo Runtime frontend: %FRONT_MODE%
 echo.
 
 start "LIOCONNECTA API" cmd /k "cd /d ""%ROOT_DIR%"" && set ASPNETCORE_ENVIRONMENT=Development && set DOTNET_ENVIRONMENT=Development && dotnet build ""%API_PROJECT%"" && dotnet run --no-build --no-restore --no-launch-profile --project ""%API_PROJECT%"" --urls %API_URL%"
-start "LIOCONNECTA Frontend" cmd /k "cd /d ""%FRONT_DIR%"" && %PY_CMD% -m http.server %FRONT_PORT%"
+start "LIOCONNECTA Frontend" cmd /k "cd /d ""%FRONT_DIR%"" && %FRONT_COMMAND%"
 
 timeout /t 4 /nobreak >nul
 start "" "%FRONT_URL%"

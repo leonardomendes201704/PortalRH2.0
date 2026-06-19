@@ -1,5 +1,5 @@
-import { bindAnalytics, trackInteraction } from "./analytics.js?v=0.10.9";
-import { renderHeaderShell, renderSidebarPanels } from "./layout/index.js?v=0.10.9";
+import { bindAnalytics, trackInteraction } from "./analytics.js?v=0.11.2";
+import { renderHeaderShell, renderSidebarPanels } from "./layout/index.js?v=0.11.2";
 import {
   renderHero,
   renderMoodCard,
@@ -12,7 +12,7 @@ import {
   renderLoadingCarousel,
   renderLoadingFeed,
   getHomePageData
-} from "./home/index.js?v=0.10.9";
+} from "./home/index.js?v=0.11.2";
 import {
   renderCarouselSection,
   initCarousel,
@@ -20,12 +20,14 @@ import {
   renderCommunicationDetailPage,
   renderCommunicationAdminPage,
   getCommunicationCenterData
-} from "./communications/index.js?v=0.10.9";
-import { renderFeed } from "./feed/index.js?v=0.10.9";
-import { bindInteractionFeedback } from "./core/feedback.js?v=0.10.9";
-import { getRuntimeConfig } from "./core/runtimeConfig.js?v=0.10.9";
-import { getPanelData } from "./services/panelService.js?v=0.10.9";
-import { getUserHomeContext } from "./services/userService.js?v=0.10.9";
+} from "./communications/index.js?v=0.11.2";
+import { renderFeed } from "./feed/index.js?v=0.11.2";
+import { bindInteractionFeedback } from "./core/feedback.js?v=0.11.2";
+import { getRuntimeConfig } from "./core/runtimeConfig.js?v=0.11.2";
+import { getPanelData } from "./services/panelService.js?v=0.11.2";
+import { getUserHomeContext } from "./services/userService.js?v=0.11.2";
+import { fetchAdminSession, getAdminAuthHeaders, getStoredAdminSession, redirectToAdminLogin } from "./services/adminAuthService.js?v=0.11.2";
+import { getLdapSettingsData } from "./services/ldapSettingsService.js?v=0.11.2";
 
 const ROUTES = Object.freeze({
   HOME: "inicio",
@@ -165,7 +167,29 @@ function renderCommunicationReadPage(data, route, slug) {
 function renderCommunicationAdminRoute(data, route) {
   const centerContent = document.getElementById("center-content");
   renderShell(data, route);
-  centerContent.innerHTML = renderCommunicationAdminPage(data.communications);
+  centerContent.innerHTML = renderCommunicationAdminPage(data.communications, data.ldapSettings);
+}
+
+async function ensureRestrictedAdminAccess() {
+  const session = getStoredAdminSession();
+  if (!session) {
+    redirectToAdminLogin("#comunicacao/restrita");
+    return false;
+  }
+
+  try {
+    const validatedSession = await fetchAdminSession();
+    if (!validatedSession) {
+      redirectToAdminLogin("#comunicacao/restrita");
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Falha ao validar sessao administrativa.", error);
+    redirectToAdminLogin("#comunicacao/restrita");
+    return false;
+  }
 }
 
 function renderPlaceholderPage(data, route) {
@@ -238,14 +262,29 @@ async function loadPageData(route) {
 
   if (
     route === ROUTES.COMMUNICATIONS ||
-    route === ROUTES.COMMUNICATION_READ ||
-    route === ROUTES.COMMUNICATION_ADMIN
+    route === ROUTES.COMMUNICATION_READ
   ) {
     const communications = await getCommunicationCenterData();
     return {
       ...userContext,
       ...panels,
       communications
+    };
+  }
+
+  if (route === ROUTES.COMMUNICATION_ADMIN) {
+    const [communications, ldapSettings] = await Promise.all([
+      getCommunicationCenterData(),
+      getLdapSettingsData({
+        headers: getAdminAuthHeaders()
+      })
+    ]);
+
+    return {
+      ...userContext,
+      ...panels,
+      communications,
+      ldapSettings
     };
   }
 
@@ -259,6 +298,13 @@ async function renderCurrentRoute() {
   const { route, slug } = parseRoute();
   renderRuntimeBadge();
   renderLoadingApp();
+
+  if (route === ROUTES.COMMUNICATION_ADMIN) {
+    const authorized = await ensureRestrictedAdminAccess();
+    if (!authorized) {
+      return;
+    }
+  }
 
   const data = await loadPageData(route);
 

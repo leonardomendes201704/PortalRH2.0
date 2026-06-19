@@ -1,5 +1,8 @@
-export async function getJson(url) {
-  const response = await fetch(url, { cache: "no-store" });
+export async function getJson(url, options = {}) {
+  const response = await fetch(url, {
+    cache: "no-store",
+    ...options
+  });
   if (!response.ok) {
     throw new Error(`Falha ao carregar ${url}: HTTP ${response.status}`);
   }
@@ -7,17 +10,66 @@ export async function getJson(url) {
   return response.json();
 }
 
-export async function postJson(url, payload) {
+export async function postJson(url, payload, options = {}) {
+  const headers = {
+    "Content-Type": "application/json",
+    ...(options.headers ?? {})
+  };
+
   const response = await fetch(url, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
+    ...options,
+    headers,
     body: JSON.stringify(payload)
   });
 
   if (!response.ok) {
     throw new Error(`Falha ao publicar em ${url}: HTTP ${response.status}`);
+  }
+
+  if (response.status === 204) {
+    return null;
+  }
+
+  return response.json();
+}
+
+export async function postWithoutBody(url, options = {}) {
+  const response = await fetch(url, {
+    method: "POST",
+    ...options
+  });
+
+  if (!response.ok) {
+    throw new Error(`Falha ao executar POST em ${url}: HTTP ${response.status}`);
+  }
+
+  if (response.status === 204) {
+    return null;
+  }
+
+  return response.json();
+}
+
+export async function putJson(url, payload, options = {}) {
+  const headers = {
+    "Content-Type": "application/json",
+    ...(options.headers ?? {})
+  };
+
+  const response = await fetch(url, {
+    method: "PUT",
+    ...options,
+    headers,
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    throw new Error(`Falha ao atualizar em ${url}: HTTP ${response.status}`);
+  }
+
+  if (response.status === 204) {
+    return null;
   }
 
   return response.json();

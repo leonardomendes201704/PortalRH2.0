@@ -11,6 +11,9 @@ public class PortalRhDbContext : DbContext
     }
 
     public DbSet<Communication> Communications => Set<Communication>();
+    public DbSet<AdminUser> AdminUsers => Set<AdminUser>();
+    public DbSet<AdminSession> AdminSessions => Set<AdminSession>();
+    public DbSet<LdapConfiguration> LdapConfigurations => Set<LdapConfiguration>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

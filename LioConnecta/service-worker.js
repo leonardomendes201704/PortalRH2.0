@@ -1,12 +1,15 @@
-const CACHE_NAME = "lioconnecta-static-v16";
+const CACHE_NAME = "lioconnecta-static-v17";
 const ASSETS = [
   "./",
   "./index.html",
+  "./admin/",
+  "./admin/index.html",
   "./manifest.webmanifest",
   "./assets/css/tokens.css",
   "./assets/css/base.css",
   "./assets/css/components.css",
   "./assets/js/analytics.js",
+  "./assets/js/admin/app.js",
   "./assets/js/app.js",
   "./assets/js/communications/index.js",
   "./assets/js/communications/mapper.js",
@@ -43,6 +46,7 @@ const ASSETS = [
   "./assets/js/profile/service.js",
   "./assets/js/profile/validator.js",
   "./assets/js/services/apiClient.js",
+  "./assets/js/services/adminAuthService.js",
   "./assets/js/services/carouselService.js",
   "./assets/js/services/communicationService.js",
   "./assets/js/services/feedService.js",

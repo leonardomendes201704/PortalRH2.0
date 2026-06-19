@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#173f70">
+  <meta name="description" content="Area administrativa da LIOCONNECTA para acesso editorial restrito.">
+  <meta name="app-version" content="v0.11.2">
+  <title>LIOCONNECTA Admin</title>
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="stylesheet" href="../assets/css/tokens.css?v=0.11.2">
+  <link rel="stylesheet" href="../assets/css/base.css?v=0.11.2">
+  <link rel="stylesheet" href="../assets/css/components.css?v=0.11.2">
+</head>
+<body>
+  <div class="page page--admin">
+    <a class="skip-link" href="#admin-main">Pular para o conteudo principal</a>
+
+    <header class="page-header">
+      <div class="topbar topbar--admin">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true"></div>
+          <div class="brand-copy">
+            <strong>LIOCONNECTA</strong>
+            <span>Capacidade e Transformacao Digital</span>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <a class="comm-secondary-button" href="../#inicio">Voltar ao portal</a>
+        </div>
+      </div>
+    </header>
+
+    <main class="admin-shell" id="admin-main">
+      <section class="admin-login-hero">
+        <span class="communications-eyebrow">AREA RESTRITA</span>
+        <h1>Administracao editorial da central de comunicados</h1>
+        <p>Login protegido para publicacao oficial, manutencao do mural institucional e acesso a fluxos sensiveis da comunicacao corporativa.</p>
+      </section>
+
+      <section class="admin-login-layout">
+        <article class="card admin-login-card">
+          <div class="card-header">Login administrativo</div>
+          <div class="admin-login-card-body">
+            <div class="admin-login-copy">
+              <strong>Acesso restrito</strong>
+              <p>Entre com usuario e senha para abrir a rota protegida de publicacao em <code>#comunicacao/restrita</code>.</p>
+            </div>
+
+            <form id="admin-login-form" class="admin-login-form">
+              <label class="communication-form-field">
+                <span>Usuario</span>
+                <input id="admin-username" name="username" type="text" autocomplete="username" placeholder="super-admin">
+              </label>
+
+              <label class="communication-form-field">
+                <span>Senha</span>
+                <input id="admin-password" name="password" type="password" autocomplete="current-password" placeholder="Digite sua senha">
+              </label>
+
+              <div class="admin-login-actions">
+                <button type="submit" class="feed-composer-submit">Entrar na area admin</button>
+              </div>
+            </form>
+          </div>
+        </article>
+
+        <aside class="stack">
+          <article class="card admin-side-card">
+            <div class="card-header">Permissoes previstas</div>
+            <div class="communication-admin-list">
+              <div><i class="fa-solid fa-circle-check"></i><span>Publicar comunicados oficiais</span></div>
+              <div><i class="fa-solid fa-circle-check"></i><span>Editar e revisar conteudo institucional</span></div>
+              <div><i class="fa-solid fa-circle-check"></i><span>Remover comunicados publicados</span></div>
+              <div><i class="fa-solid fa-circle-check"></i><span>Evoluir para perfis e auditoria futura</span></div>
+            </div>
+          </article>
+
+          <article class="card admin-side-card">
+            <div class="card-header">Fluxo apos login</div>
+            <div class="admin-login-flow">
+              <div><span>1</span><strong>Autenticacao</strong><small>Validacao do usuario super-admin no PostgreSQL</small></div>
+              <div><span>2</span><strong>Sessao</strong><small>Token temporario salvo localmente para operacoes editoriais</small></div>
+              <div><span>3</span><strong>Redirecionamento</strong><small>Abertura automatica da area <code>#comunicacao/restrita</code></small></div>
+            </div>
+          </article>
+        </aside>
+      </section>
+    </main>
+  </div>
+
+  <div class="app-version-badge" aria-label="Versao da aplicacao">v0.11.2</div>
+
+  <script type="module" src="../assets/js/admin/app.js?v=0.11.2"></script>
+</body>
+</html>

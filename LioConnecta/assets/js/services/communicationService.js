@@ -183,8 +183,8 @@ export async function listCommunications() {
   return Array.isArray(payload) ? payload : [];
 }
 
-export async function createCommunication(payload = {}) {
-  return postJson(resolveApiEndpoint("communications"), mapCreatePayload(payload));
+export async function createCommunication(payload = {}, options = {}) {
+  return postJson(resolveApiEndpoint("communications"), mapCreatePayload(payload), options);
 }
 
 export async function getCommunicationCenterData() {

@@ -7,6 +7,7 @@ using PortalRH.Api.Features.Communications.Commands.UpdateCommunication;
 using PortalRH.Api.Features.Communications.Queries.GetCommunicationById;
 using PortalRH.Api.Features.Communications.Queries.GetCommunicationBySlug;
 using PortalRH.Api.Features.Communications.Queries.GetCommunications;
+using PortalRH.Api.Security;
 
 namespace PortalRH.Api.Controllers;
 
@@ -48,8 +49,10 @@ public class CommunicationsController : ControllerBase
     }
 
     [HttpPost]
+    [RequireAdminSession]
     [ProducesResponseType(typeof(CommunicationDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Create([FromBody] UpsertCommunicationRequest request, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new CreateCommunicationCommand(request), cancellationToken);
@@ -57,9 +60,11 @@ public class CommunicationsController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
+    [RequireAdminSession]
     [ProducesResponseType(typeof(CommunicationDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpsertCommunicationRequest request, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new UpdateCommunicationCommand(id, request), cancellationToken);
@@ -67,8 +72,10 @@ public class CommunicationsController : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
+    [RequireAdminSession]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
         var deleted = await _mediator.Send(new DeleteCommunicationCommand(id), cancellationToken);

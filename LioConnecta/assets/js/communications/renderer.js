@@ -75,6 +75,14 @@ function renderBodyParagraphs(body = []) {
   return body.map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join("");
 }
 
+function renderSelected(value, expected) {
+  return value === expected ? "selected" : "";
+}
+
+function renderChecked(value) {
+  return value ? "checked" : "";
+}
+
 export function renderCommunicationsHub(communications) {
   const hasItems = Array.isArray(communications.items) && communications.items.length > 0;
 
@@ -185,10 +193,15 @@ export function renderCommunicationDetailPage(communication) {
   `;
 }
 
-export function renderCommunicationAdminPage(communications) {
+export function renderCommunicationAdminPage(communications, ldapSettings = {}) {
   const categoryOptions = (communications.availableCategories || [])
     .map((item) => `<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`)
     .join("");
+
+  const loginFormat = ldapSettings.loginFormat || "email-or-upn-or-samaccountname";
+  const ldapLoadNotice = ldapSettings.loadError
+    ? `<div class="communication-inline-notice communication-inline-notice--danger">${escapeHtml(ldapSettings.loadError)}</div>`
+    : "";
 
   return `
     <section class="card communication-admin-hero-card">
@@ -196,11 +209,10 @@ export function renderCommunicationAdminPage(communications) {
         <div class="communication-admin-copy">
           <span class="communications-eyebrow">AREA RESTRITA</span>
           <h1>Publicacao de comunicados oficiais</h1>
-          <p>Ambiente editorial reservado para criacao, revisao e publicacao de comunicados institucionais. No futuro, este fluxo sera protegido por privilegios de acesso.</p>
+          <p>Ambiente editorial reservado para criacao, revisao e publicacao de comunicados institucionais.</p>
         </div>
         <div class="communication-admin-meta">
-          <span><i class="fa-solid fa-user-shield"></i>Rota oculta em preparacao para controle de acesso</span>
-          <span><i class="fa-regular fa-file-lines"></i>Fluxo mockado para validacao do MVP</span>
+          <button type="button" class="comm-secondary-button" data-action="admin-logout">Sair da area admin</button>
         </div>
       </div>
     </section>
@@ -307,6 +319,25 @@ export function renderCommunicationAdminPage(communications) {
             <label><input type="checkbox" name="allowAttachment" checked /> Permitir download de anexo</label>
           </div>
 
+          <section class="card communication-admin-card communication-admin-card--embedded">
+            <div class="card-header">Preview resumido</div>
+            <div class="communication-admin-preview">
+              <div class="communication-admin-preview-media" id="admin-image-preview">
+                <span><i class="fa-regular fa-image"></i> Sem imagem selecionada</span>
+              </div>
+              <div class="comm-meta-row">
+                <span class="comm-tag comm-tag--solid">Corporativo</span>
+                <span class="comm-tag">Alta prioridade</span>
+              </div>
+              <h3>Comunicado oficial sobre atualizacao de processo interno</h3>
+              <p>Este cartao antecipa como o item aparecera na central publica de comunicados apos a publicacao.</p>
+              <div class="comm-item-facts">
+                <span><i class="fa-regular fa-calendar"></i>19/06/2026</span>
+                <span><i class="fa-solid fa-users"></i>Toda a companhia</span>
+              </div>
+            </div>
+          </section>
+
           <div class="communication-form-actions">
             <button
               type="button"
@@ -325,37 +356,100 @@ export function renderCommunicationAdminPage(communications) {
           </div>
           </form>
         </section>
-      </div>
 
-      <div class="communication-admin-side">
-        <section class="card communication-admin-card">
-          <div class="card-header">Checklist editorial</div>
-          <div class="communication-admin-list">
-            <div><i class="fa-solid fa-circle-check"></i><span>Titulo claro e institucional</span></div>
-            <div><i class="fa-solid fa-circle-check"></i><span>Publico alvo definido</span></div>
-            <div><i class="fa-solid fa-circle-check"></i><span>Canal e status selecionados</span></div>
-            <div><i class="fa-solid fa-circle-check"></i><span>Resumo executivo preenchido</span></div>
-            <div><i class="fa-solid fa-circle-check"></i><span>Corpo do comunicado revisado</span></div>
+        <section class="card communication-form-card">
+          <div class="card-header">Active Directory / LDAP</div>
+          <div class="communication-section-intro">
+            <strong>Configure autenticacao corporativa</strong>
+            <p>Defina os parametros do diretorio para o futuro login por e-mail e senha dos colaboradores, mantendo o acesso da intranet restrito ao AD da empresa.</p>
           </div>
-        </section>
+          ${ldapLoadNotice}
+          <form id="ldap-settings-form">
+            <div class="communication-form-grid">
+              <label class="communication-form-field communication-form-field--full communication-checkbox-row">
+                <span class="communication-checkbox-wrap">
+                  <input name="isEnabled" type="checkbox" ${renderChecked(ldapSettings.isEnabled)} />
+                  <strong>Habilitar login LDAP</strong>
+                </span>
+              </label>
 
-        <section class="card communication-admin-card">
-          <div class="card-header">Preview resumido</div>
-          <div class="communication-admin-preview">
-            <div class="communication-admin-preview-media" id="admin-image-preview">
-              <span><i class="fa-regular fa-image"></i> Sem imagem selecionada</span>
+              <label class="communication-form-field communication-form-field--full">
+                <span>Servidor LDAP</span>
+                <input name="server" type="text" value="${escapeHtml(ldapSettings.server || "")}" placeholder="dc-virtual-02.liotecnica.com.br" />
+              </label>
+
+              <label class="communication-form-field">
+                <span>Porta</span>
+                <input name="port" type="number" min="1" max="65535" value="${escapeHtml(String(ldapSettings.port || 389))}" />
+              </label>
+
+              <div class="communication-form-field communication-form-field--full communication-checkbox-group">
+                <label><input name="useLdaps" type="checkbox" ${renderChecked(ldapSettings.useLdaps)} /> Usar LDAPS (SSL) - recomendado na porta 636</label>
+                <label><input name="useStartTls" type="checkbox" ${renderChecked(ldapSettings.useStartTls)} /> Usar StartTLS na porta 389 (nao marque junto com LDAPS)</label>
+                <label><input name="ignoreCertificateValidation" type="checkbox" ${renderChecked(ldapSettings.ignoreCertificateValidation)} /> Ignorar validacao do certificado (somente ambientes internos/HMG)</label>
+              </div>
+
+              <label class="communication-form-field communication-form-field--full">
+                <span>Base DN</span>
+                <input name="baseDn" type="text" value="${escapeHtml(ldapSettings.baseDn || "")}" placeholder="DC=liotecnica,DC=com,DC=br" />
+              </label>
+
+              <label class="communication-form-field communication-form-field--full">
+                <span>Base de busca de usuarios (opcional)</span>
+                <input name="userSearchBase" type="text" value="${escapeHtml(ldapSettings.userSearchBase || "")}" placeholder="OU=Usuarios,DC=liotecnica,DC=com,DC=br" />
+              </label>
+
+              <label class="communication-form-field communication-form-field--full">
+                <span>Dominio Windows (NETBIOS)</span>
+                <input name="netbiosDomain" type="text" value="${escapeHtml(ldapSettings.netbiosDomain || "")}" placeholder="LIOTECNICA" />
+                <small class="communication-field-help">Obrigatorio quando o formato de login for DOMINIO\\usuario.</small>
+              </label>
+
+              <label class="communication-form-field communication-form-field--full">
+                <span>Formato de login</span>
+                <select name="loginFormat">
+                  <option value="domain-backslash-samaccountname" ${renderSelected(loginFormat, "domain-backslash-samaccountname")}>Dominio\\usuario (sAMAccountName)</option>
+                  <option value="email-or-upn-or-samaccountname" ${renderSelected(loginFormat, "email-or-upn-or-samaccountname")}>E-mail, UPN ou sAMAccountName</option>
+                  <option value="userprincipalname" ${renderSelected(loginFormat, "userprincipalname")}>userPrincipalName (UPN)</option>
+                  <option value="mail" ${renderSelected(loginFormat, "mail")}>E-mail (mail)</option>
+                </select>
+              </label>
+
+              <label class="communication-form-field communication-form-field--full">
+                <span>Conta de servico (Bind DN)</span>
+                <input name="bindDn" type="text" value="${escapeHtml(ldapSettings.bindDn || "")}" placeholder="CN=servico-hub,OU=ServiceAccounts,DC=..." />
+                <small class="communication-field-help">Obrigatorio no modo de busca no diretorio. Opcional no teste inicial de conexao.</small>
+              </label>
+
+              <label class="communication-form-field communication-form-field--full">
+                <span>Senha da conta de servico (deixe em branco para manter)</span>
+                <input name="serviceAccountPassword" type="password" value="" placeholder="${ldapSettings.hasServiceAccountPassword ? "Senha ja cadastrada" : "Digite a senha da conta de servico"}" />
+                <small class="communication-field-help">${ldapSettings.hasServiceAccountPassword ? "Ja existe uma senha persistida no banco para esta conta." : "A senha sera persistida com protecao no backend."}</small>
+              </label>
+
+              <label class="communication-form-field communication-form-field--full">
+                <span>Filtro LDAP de busca</span>
+                <input name="searchFilter" type="text" value="${escapeHtml(ldapSettings.searchFilter || "(|(mail={0})(userPrincipalName={0})(sAMAccountName={0}))")}" placeholder="(|(mail={0})(userPrincipalName={0})(sAMAccountName={0}))" />
+                <small class="communication-field-help">Use {0} para o login informado pelo colaborador.</small>
+              </label>
+
+              <label class="communication-form-field communication-form-field--full">
+                <span>Atributo de nome exibido</span>
+                <input name="displayNameAttribute" type="text" value="${escapeHtml(ldapSettings.displayNameAttribute || "displayName")}" placeholder="displayName" />
+              </label>
             </div>
-            <div class="comm-meta-row">
-              <span class="comm-tag comm-tag--solid">Corporativo</span>
-              <span class="comm-tag">Alta prioridade</span>
+
+            <div class="communication-form-actions communication-form-actions--spread">
+              <div class="communication-form-footnote">
+                Salvar grava no banco. "Salvar e testar" tambem persiste antes do teste.
+              </div>
+              <div class="communication-form-action-group">
+                <button type="submit" name="submitMode" value="save" class="feed-composer-submit">Salvar</button>
+                <button type="submit" name="submitMode" value="save-test" class="comm-secondary-button">Salvar e testar conexao</button>
+                <button type="reset" class="comm-tertiary-button">Cancelar</button>
+              </div>
             </div>
-            <h3>Comunicado oficial sobre atualizacao de processo interno</h3>
-            <p>Este cartao antecipa como o item aparecera na central publica de comunicados apos a publicacao.</p>
-            <div class="comm-item-facts">
-              <span><i class="fa-regular fa-calendar"></i>19/06/2026</span>
-              <span><i class="fa-solid fa-users"></i>Toda a companhia</span>
-            </div>
-          </div>
+          </form>
         </section>
       </div>
     </section>

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PortalRH.Api.Data;
@@ -11,9 +12,11 @@ using PortalRH.Api.Data;
 namespace PortalRH.Api.Data.Migrations
 {
     [DbContext(typeof(PortalRhDbContext))]
-    partial class PortalRhDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260619180759_AddAdminAccess")]
+    partial class AddAdminAccess
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -184,78 +187,6 @@ namespace PortalRH.Api.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("communications", (string)null);
-                });
-
-            modelBuilder.Entity("PortalRH.Api.Models.LdapConfiguration", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("BaseDn")
-                        .IsRequired()
-                        .HasMaxLength(240)
-                        .HasColumnType("character varying(240)");
-
-                    b.Property<string>("BindDn")
-                        .HasMaxLength(240)
-                        .HasColumnType("character varying(240)");
-
-                    b.Property<string>("BindPasswordProtected")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("DisplayNameAttribute")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)");
-
-                    b.Property<bool>("IgnoreCertificateValidation")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("IsEnabled")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("LoginFormat")
-                        .IsRequired()
-                        .HasMaxLength(80)
-                        .HasColumnType("character varying(80)");
-
-                    b.Property<string>("NetbiosDomain")
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)");
-
-                    b.Property<int>("Port")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("SearchFilter")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<string>("Server")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<DateTime>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("UseLdaps")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("UseStartTls")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("UserSearchBase")
-                        .HasMaxLength(240)
-                        .HasColumnType("character varying(240)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ldap_configurations", (string)null);
                 });
 
             modelBuilder.Entity("PortalRH.Api.Models.AdminSession", b =>
