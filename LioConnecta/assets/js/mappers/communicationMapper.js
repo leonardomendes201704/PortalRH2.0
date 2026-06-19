@@ -42,6 +42,7 @@ function mapCommunicationItem(item, index) {
 
 export function mapCommunicationCenterViewModel(raw = {}) {
   const fallback = DEFAULT_COMMUNICATIONS_CENTER;
+  const rawItems = asArray(raw.items);
 
   return {
     title: asString(raw.title, fallback.title),
@@ -55,24 +56,24 @@ export function mapCommunicationCenterViewModel(raw = {}) {
     filters: asArray(raw.filters).length
       ? asArray(raw.filters).map(mapFilter)
       : DEFAULT_COMMUNICATION_FILTERS.map((item) => ({ ...item })),
-    featured: {
-      slug: asString(raw.featured?.slug, fallback.featured.slug),
-      category: asString(raw.featured?.category, fallback.featured.category),
-      priority: asString(raw.featured?.priority, fallback.featured.priority),
-      title: asString(raw.featured?.title, fallback.featured.title),
-      summary: asString(raw.featured?.summary, fallback.featured.summary),
-      publishedAt: asString(raw.featured?.publishedAt, fallback.featured.publishedAt),
-      audience: asString(raw.featured?.audience, fallback.featured.audience),
-      owner: asString(raw.featured?.owner, fallback.featured.owner),
-      channel: asString(raw.featured?.channel, fallback.featured.channel),
-      status: asString(raw.featured?.status, fallback.featured.status),
-      attachmentLabel: asString(raw.featured?.attachmentLabel, fallback.featured.attachmentLabel),
-      image: asString(raw.featured?.image, fallback.featured.image),
-      imageAlt: asString(raw.featured?.imageAlt, fallback.featured.imageAlt),
-      body: asArray(raw.featured?.body).map((paragraph) => asString(paragraph)).filter(Boolean)
-    },
-    items: asArray(raw.items).length
-      ? asArray(raw.items).map(mapCommunicationItem)
-      : DEFAULT_COMMUNICATION_ITEMS.map((item) => ({ ...item }))
+    featured: raw.featured
+      ? {
+        slug: asString(raw.featured?.slug, fallback.featured.slug),
+        category: asString(raw.featured?.category, fallback.featured.category),
+        priority: asString(raw.featured?.priority, fallback.featured.priority),
+        title: asString(raw.featured?.title, fallback.featured.title),
+        summary: asString(raw.featured?.summary, fallback.featured.summary),
+        publishedAt: asString(raw.featured?.publishedAt, fallback.featured.publishedAt),
+        audience: asString(raw.featured?.audience, fallback.featured.audience),
+        owner: asString(raw.featured?.owner, fallback.featured.owner),
+        channel: asString(raw.featured?.channel, fallback.featured.channel),
+        status: asString(raw.featured?.status, fallback.featured.status),
+        attachmentLabel: asString(raw.featured?.attachmentLabel, fallback.featured.attachmentLabel),
+        image: asString(raw.featured?.image, fallback.featured.image),
+        imageAlt: asString(raw.featured?.imageAlt, fallback.featured.imageAlt),
+        body: asArray(raw.featured?.body).map((paragraph) => asString(paragraph)).filter(Boolean)
+      }
+      : null,
+    items: rawItems.length ? rawItems.map(mapCommunicationItem) : []
   };
 }

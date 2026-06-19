@@ -139,8 +139,6 @@ function buildKpis(items = []) {
 }
 
 function buildCommunicationCenter(items = [], loadError = "") {
-  const featured = items.find((item) => item.isFeatured) || items[0] || null;
-  const listItems = featured ? items.filter((item) => item.slug !== featured.slug) : items;
   const latestUpdated = items[0]?.updatedAtUtc || items[0]?.publishedAtRaw || "";
 
   return {
@@ -155,8 +153,8 @@ function buildCommunicationCenter(items = [], loadError = "") {
     },
     kpis: buildKpis(items),
     filters: buildFilters(items),
-    featured,
-    items: listItems,
+    featured: null,
+    items,
     availableCategories: [...AVAILABLE_CATEGORIES],
     loadError
   };

@@ -39,49 +39,6 @@ function renderReadLink(slug, label = "Ler comunicado", toneClass = "feed-compos
   `;
 }
 
-function renderFeaturedCommunication(featured) {
-  if (!featured?.slug) {
-    return "";
-  }
-
-  return `
-    <section class="card comm-featured-card">
-      <div class="card-header">Destaque oficial</div>
-      <div class="comm-featured-body">
-        <div class="comm-featured-copy">
-          <div class="comm-meta-row">
-            <span class="comm-tag comm-tag--solid">${escapeHtml(featured.category)}</span>
-            <span class="comm-tag">${escapeHtml(featured.priority)}</span>
-          </div>
-          <h3>${escapeHtml(featured.title)}</h3>
-          <p>${escapeHtml(featured.summary)}</p>
-          <div class="comm-featured-facts">
-            <span><i class="fa-regular fa-calendar"></i>${escapeHtml(featured.publishedAt)}</span>
-            <span><i class="fa-regular fa-user"></i>${escapeHtml(featured.owner)}</span>
-            <span><i class="fa-solid fa-users"></i>${escapeHtml(featured.audience)}</span>
-          </div>
-          <div class="comm-featured-actions">
-            ${renderReadLink(featured.slug, "Ler comunicado")}
-            <button
-              type="button"
-              class="comm-secondary-button"
-              data-feedback-message="Anexo do comunicado preparado para download demonstrativo."
-              data-feedback-tone="info"
-            >
-              ${escapeHtml(featured.attachmentLabel || "Baixar anexo")}
-            </button>
-          </div>
-        </div>
-        ${featured.image ? `
-          <div class="comm-featured-media">
-            <img src="${escapeHtml(featured.image)}" alt="${escapeHtml(featured.imageAlt || featured.title)}">
-          </div>
-        ` : ""}
-      </div>
-    </section>
-  `;
-}
-
 function renderCommunicationItem(item) {
   return `
     <article class="comm-item-card">
@@ -119,7 +76,6 @@ function renderBodyParagraphs(body = []) {
 }
 
 export function renderCommunicationsHub(communications) {
-  const hasFeatured = Boolean(communications.featured?.slug);
   const hasItems = Array.isArray(communications.items) && communications.items.length > 0;
 
   return `
@@ -143,8 +99,6 @@ export function renderCommunicationsHub(communications) {
         ${(communications.filters || []).map(renderFilterChip).join("")}
       </div>
     </section>
-
-    ${hasFeatured ? renderFeaturedCommunication(communications.featured) : ""}
 
     <section class="card comm-list-card">
       <div class="card-header">Todos os comunicados</div>

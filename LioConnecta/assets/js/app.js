@@ -156,7 +156,7 @@ function renderCommunicationReadPage(data, route, slug) {
   const centerContent = document.getElementById("center-content");
   renderShell(data, route);
 
-  const allCommunications = [data.communications.featured, ...(data.communications.items || [])];
+  const allCommunications = [...(data.communications.items || [])];
   const currentCommunication = allCommunications.find((item) => item?.slug === slug);
 
   centerContent.innerHTML = renderCommunicationDetailPage(currentCommunication);
