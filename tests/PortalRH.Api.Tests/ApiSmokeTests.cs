@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using PortalRH.Api.Contracts.Admin.Auth;
 using PortalRH.Api.Contracts.Admin.Ldap;
+using PortalRH.Api.Contracts.Auth;
 using PortalRH.Api.Contracts.Communications;
 
 namespace PortalRH.Api.Tests;
@@ -136,5 +137,52 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
         Assert.Equal("LIOTECNICA", getResponse.NetbiosDomain);
         Assert.Equal("displayName", getResponse.DisplayNameAttribute);
         Assert.True(getResponse.HasServiceAccountPassword);
+    }
+
+    [Fact]
+    public async Task AuthEndpoint_AuthenticatesViaLdap_WhenConfigurationIsEnabled()
+    {
+        var adminLoginResponse = await _client.PostAsJsonAsync("/api/admin/auth/login", new AdminLoginRequest("super-admin", "Liotec@2026"));
+        var adminSession = await adminLoginResponse.Content.ReadFromJsonAsync<AdminLoginResponse>();
+        Assert.NotNull(adminSession);
+
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminSession.Token);
+
+        var ldapConfig = new UpsertLdapConfigurationRequest
+        {
+            IsEnabled = true,
+            Server = "dc-virtual-02.liotecnica.com.br",
+            Port = 389,
+            UseLdaps = false,
+            UseStartTls = true,
+            IgnoreCertificateValidation = true,
+            BaseDn = "DC=liotecnica,DC=com,DC=br",
+            UserSearchBase = "OU=Usuarios,DC=liotecnica,DC=com,DC=br",
+            NetbiosDomain = "LIOTECNICA",
+            LoginFormat = "email-or-upn-or-samaccountname",
+            BindDn = "CN=servico-hub,OU=ServiceAccounts,DC=liotecnica,DC=com,DC=br",
+            ServiceAccountPassword = "Senha@123",
+            SearchFilter = "(|(mail={0})(userPrincipalName={0})(sAMAccountName={0}))",
+            DisplayNameAttribute = "displayName"
+        };
+
+        var saveResponse = await _client.PutAsJsonAsync("/api/admin/ldap", ldapConfig);
+        Assert.Equal(HttpStatusCode.OK, saveResponse.StatusCode);
+
+        _client.DefaultRequestHeaders.Authorization = null;
+
+        var loginResponse = await _client.PostAsJsonAsync("/api/auth/ldap/login", new LdapLoginRequest
+        {
+            Login = "roberto.almeida@liotecnica.com.br",
+            Password = "Liotec@2026"
+        });
+
+        Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
+
+        var portalLogin = await loginResponse.Content.ReadFromJsonAsync<PortalLoginResponse>();
+        Assert.NotNull(portalLogin);
+        Assert.False(string.IsNullOrWhiteSpace(portalLogin.Token));
+        Assert.Equal("Roberto Almeida", portalLogin.User.DisplayName);
+        Assert.Equal("Recursos Humanos", portalLogin.User.Department);
     }
 }

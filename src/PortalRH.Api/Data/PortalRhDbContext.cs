@@ -14,6 +14,8 @@ public class PortalRhDbContext : DbContext
     public DbSet<AdminUser> AdminUsers => Set<AdminUser>();
     public DbSet<AdminSession> AdminSessions => Set<AdminSession>();
     public DbSet<LdapConfiguration> LdapConfigurations => Set<LdapConfiguration>();
+    public DbSet<PortalUser> PortalUsers => Set<PortalUser>();
+    public DbSet<PortalSession> PortalSessions => Set<PortalSession>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

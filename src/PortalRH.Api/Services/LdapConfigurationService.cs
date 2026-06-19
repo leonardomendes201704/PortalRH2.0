@@ -54,6 +54,26 @@ public class LdapConfigurationService : ILdapConfigurationService
         return MapToDto(entity);
     }
 
+    public async Task<LdapRuntimeConfiguration> GetRuntimeConfigurationAsync(CancellationToken cancellationToken)
+    {
+        var entity = await EnsureAndGetEntityAsync(cancellationToken);
+        return new LdapRuntimeConfiguration(
+            entity.IsEnabled,
+            entity.Server,
+            entity.Port,
+            entity.UseLdaps,
+            entity.UseStartTls,
+            entity.IgnoreCertificateValidation,
+            entity.BaseDn,
+            entity.UserSearchBase,
+            entity.NetbiosDomain,
+            entity.LoginFormat,
+            entity.BindDn,
+            string.IsNullOrWhiteSpace(entity.BindPasswordProtected) ? null : UnprotectSecret(entity.BindPasswordProtected),
+            entity.SearchFilter,
+            entity.DisplayNameAttribute);
+    }
+
     public async Task EnsureDefaultConfigurationAsync(CancellationToken cancellationToken)
     {
         await EnsureAndGetEntityAsync(cancellationToken);
@@ -143,5 +163,28 @@ public class LdapConfigurationService : ILdapConfigurationService
         }
 
         return Convert.ToBase64String(output.ToArray());
+    }
+
+    private static string? UnprotectSecret(string? protectedValue)
+    {
+        if (string.IsNullOrWhiteSpace(protectedValue))
+        {
+            return null;
+        }
+
+        var protectedBytes = Convert.FromBase64String(protectedValue);
+        using var aes = Aes.Create();
+        aes.Key = SHA256.HashData(Encoding.UTF8.GetBytes("PortalRH.Api::LdapConfiguration::Secret::v1"));
+
+        var ivLength = aes.BlockSize / 8;
+        var iv = protectedBytes.Take(ivLength).ToArray();
+        var cipherBytes = protectedBytes.Skip(ivLength).ToArray();
+        aes.IV = iv;
+
+        using var decryptor = aes.CreateDecryptor(aes.Key, aes.IV);
+        using var input = new MemoryStream(cipherBytes);
+        using var cryptoStream = new CryptoStream(input, decryptor, CryptoStreamMode.Read);
+        using var reader = new StreamReader(cryptoStream, Encoding.UTF8);
+        return reader.ReadToEnd();
     }
 }
