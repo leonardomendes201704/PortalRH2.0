@@ -40,10 +40,10 @@ if errorlevel 1 (
 set "FRONT_COMMAND="
 set "FRONT_MODE="
 
-where py >nul 2>nul
+where node >nul 2>nul
 if %errorlevel%==0 (
-  set "FRONT_COMMAND=py -3 -m http.server %FRONT_PORT%"
-  set "FRONT_MODE=python-launcher"
+  set "FRONT_COMMAND=node \"%NODE_STATIC_SERVER%\""
+  set "FRONT_MODE=node"
 )
 
 if not defined FRONT_COMMAND (
@@ -55,10 +55,10 @@ if not defined FRONT_COMMAND (
 )
 
 if not defined FRONT_COMMAND (
-  where node >nul 2>nul
+  where py >nul 2>nul
   if %errorlevel%==0 (
-    set "FRONT_COMMAND=node \"%NODE_STATIC_SERVER%\""
-    set "FRONT_MODE=node"
+    set "FRONT_COMMAND=py -3 -m http.server %FRONT_PORT%"
+    set "FRONT_MODE=python-launcher"
   )
 )
 
