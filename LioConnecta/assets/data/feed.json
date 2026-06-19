@@ -1,0 +1,197 @@
+{
+  "title": "FEED LIOCONNECTA",
+  "posts": [
+    {
+      "author": "Carla Mendes",
+      "area": "Gestão de Pessoas",
+      "timeAgo": "há 35 min",
+      "text": "Hoje iniciamos uma nova rodada de integração para colaboradores da área de RH. O objetivo é acelerar acesso aos sistemas corporativos, comunicação interna e trilhas de desenvolvimento na LIOCONNECTA.",
+      "highlightTitle": "Onboarding RH - Junho",
+      "highlightText": "Checklist digital, acessos liberados e trilha de aprendizagem inicial.",
+      "image": "./assets/images/feed-post-1.png",
+      "imageAlt": "Onboarding RH com visão de transformação digital",
+      "reactions": 48,
+      "commentsCount": 12,
+      "sharesCount": 4,
+      "comments": [
+        {
+          "author": "Fernanda Lima",
+          "text": "Excelente iniciativa. Isso deve facilitar bastante o onboarding das novas pessoas."
+        },
+        {
+          "author": "João Ribeiro",
+          "text": "Gostei da proposta da trilha digital. Podemos conectar isso com os acessos de TI também."
+        }
+      ]
+    },
+    {
+      "author": "Equipe de Inovação",
+      "area": "Comunicação Corporativa",
+      "timeAgo": "há 2 h",
+      "text": "As inscrições para o Evento de Inovação em São Paulo seguem abertas. Teremos painéis com parceiros estratégicos, showcase de projetos internos e networking com lideranças.",
+      "image": "./assets/images/feed-post-2.png",
+      "imageAlt": "Evento de inovação da companhia",
+      "reactions": 73,
+      "commentsCount": 18,
+      "sharesCount": 11,
+      "comments": [
+        {
+          "author": "Patrícia Gomes",
+          "text": "Já me inscrevi. Tema super aderente ao momento da companhia."
+        },
+        {
+          "author": "Rafael Costa",
+          "text": "Seria ótimo termos uma trilha resumida do evento para quem não puder viajar."
+        }
+      ]
+    },
+    {
+      "author": "Luciana Prado",
+      "area": "Comunicação Interna",
+      "timeAgo": "há 4 h",
+      "text": "Publicamos hoje a nova agenda de encontros da comunidade Connecta para o próximo ciclo. Teremos sessões com RH, tecnologia, liderança e melhoria contínua, com espaço para perguntas e troca de experiências.",
+      "highlightTitle": "Agenda da Comunidade",
+      "highlightText": "Encontros quinzenais com foco em pessoas, cultura e transformação digital.",
+      "image": "./assets/images/feed-post-3.png",
+      "imageAlt": "Agenda da comunidade com comunicação visual interna",
+      "reactions": 31,
+      "commentsCount": 8,
+      "sharesCount": 2,
+      "comments": [
+        {
+          "author": "Mariana Costa",
+          "text": "Ótimo calendário. Vai ajudar bastante a dar previsibilidade para os times."
+        },
+        {
+          "author": "Lucas Martins",
+          "text": "Podemos incluir uma sessão dedicada a boas práticas de colaboração entre áreas."
+        }
+      ]
+    },
+    {
+      "author": "PMO Corporativo",
+      "area": "Projetos Estratégicos",
+      "timeAgo": "há 1 dia",
+      "text": "Encerramos a última revisão do portfólio trimestral com destaque para os projetos de automação, experiência do colaborador e integração entre sistemas corporativos.",
+      "highlightTitle": "Portfólio Q3",
+      "highlightText": "17 iniciativas acompanhadas, 5 entregas concluídas e 3 frentes avançando para implantação.",
+      "image": "./assets/images/feed-post-4.png",
+      "imageAlt": "Portfólio corporativo em revisão estratégica",
+      "reactions": 64,
+      "commentsCount": 15,
+      "sharesCount": 6,
+      "comments": [
+        {
+          "author": "Camila Nogueira",
+          "text": "Esse consolidado ficou bem claro. Seria legal replicar esse formato em outras áreas."
+        },
+        {
+          "author": "Bruno Farias",
+          "text": "Boa evolução do portfólio. As entregas de automação devem gerar impacto rápido."
+        }
+      ]
+    },
+    {
+      "author": "Juliana Torres",
+      "area": "Comunicação Corporativa",
+      "timeAgo": "há 1 dia",
+      "text": "A campanha de voluntariado corporativo do próximo trimestre já está com inscrições abertas. As equipes poderão escolher entre frentes de educação, empregabilidade e apoio comunitário.",
+      "highlightTitle": "Voluntariado 2026",
+      "highlightText": "Inscrições abertas até sexta-feira com vagas por unidade.",
+      "reactions": 42,
+      "commentsCount": 9,
+      "sharesCount": 3,
+      "comments": [
+        {
+          "author": "Vanessa Moura",
+          "text": "Excelente iniciativa para fortalecer o engajamento social da companhia."
+        }
+      ]
+    },
+    {
+      "author": "Carlos Henrique",
+      "area": "Recursos Humanos",
+      "timeAgo": "há 1 dia",
+      "text": "Concluímos a revisão do calendário de avaliações e já temos as janelas oficiais de feedback e autoavaliação para o segundo semestre.",
+      "highlightTitle": "Ciclo de Avaliação",
+      "highlightText": "Gestores e colaboradores já podem se preparar para os marcos do semestre.",
+      "reactions": 27,
+      "commentsCount": 5,
+      "sharesCount": 1,
+      "comments": [
+        {
+          "author": "Felipe Braga",
+          "text": "Muito bom ter previsibilidade do calendário com antecedência."
+        }
+      ]
+    },
+    {
+      "author": "Patrícia Salles",
+      "area": "Tecnologia",
+      "timeAgo": "há 2 dias",
+      "text": "A janela de atualização dos sistemas corporativos será realizada neste fim de semana. O objetivo é melhorar estabilidade e segurança das plataformas internas.",
+      "highlightTitle": "Atualização Programada",
+      "highlightText": "Indisponibilidade parcial prevista entre sábado 22h e domingo 6h.",
+      "reactions": 19,
+      "commentsCount": 7,
+      "sharesCount": 4,
+      "comments": [
+        {
+          "author": "Marcos Vinicius",
+          "text": "Importante comunicar também por e-mail para os times de operação."
+        }
+      ]
+    },
+    {
+      "author": "Luciana Ferraz",
+      "area": "Universidade Corporativa",
+      "timeAgo": "há 2 dias",
+      "text": "Nova trilha de aprendizagem para liderança inclusiva já está disponível no portal com módulos curtos e certificados ao final da jornada.",
+      "image": "./assets/images/feed-post-3.png",
+      "imageAlt": "Trilha de liderança inclusiva",
+      "reactions": 36,
+      "commentsCount": 10,
+      "sharesCount": 2,
+      "comments": [
+        {
+          "author": "Sabrina Nunes",
+          "text": "Tema super importante, vou compartilhar com os gestores da minha área."
+        }
+      ]
+    },
+    {
+      "author": "Renata Prado",
+      "area": "Benefícios",
+      "timeAgo": "há 3 dias",
+      "text": "Publicamos o guia atualizado de benefícios com regras de elegibilidade, coparticipação e perguntas frequentes para apoiar os colaboradores.",
+      "highlightTitle": "Guia de Benefícios",
+      "highlightText": "Versão 2026 disponível para consulta e download.",
+      "reactions": 33,
+      "commentsCount": 8,
+      "sharesCount": 5,
+      "comments": [
+        {
+          "author": "Eduardo Leme",
+          "text": "Esse material vai ajudar bastante nas dúvidas recorrentes do time."
+        }
+      ]
+    },
+    {
+      "author": "Fernando Alves",
+      "area": "Diretoria de Pessoas",
+      "timeAgo": "há 4 dias",
+      "text": "Estamos consolidando o plano de ações para experiência do colaborador em 2026, com foco em comunicação, jornada digital e simplificação de serviços internos.",
+      "image": "./assets/images/feed-post-1.png",
+      "imageAlt": "Plano de experiência do colaborador",
+      "reactions": 51,
+      "commentsCount": 14,
+      "sharesCount": 6,
+      "comments": [
+        {
+          "author": "Roberta Campos",
+          "text": "Gostei do direcionamento. Vai ser importante conectar isso com as dores reais das áreas."
+        }
+      ]
+    }
+  ]
+}

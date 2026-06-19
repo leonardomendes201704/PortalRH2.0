@@ -1,0 +1,183 @@
+{
+  "data": {
+    "title": "CENTRAL DE COMUNICACAO OFICIAL",
+    "intro": {
+      "eyebrow": "COMUNICACAO INSTITUCIONAL",
+      "title": "Todos os comunicados oficiais em um unico lugar",
+      "subtitle": "Acompanhe avisos corporativos, politicas, comunicados de RH, atualizacoes de tecnologia e campanhas internas com governanca e historico centralizado.",
+      "lastUpdated": "Atualizado em 19/06/2026 as 09:30"
+    },
+    "kpis": [
+      { "label": "Comunicados publicados", "value": "28", "detail": "Ultimos 30 dias", "tone": "brand" },
+      { "label": "Alta prioridade", "value": "6", "detail": "Acompanhamento diario", "tone": "danger" },
+      { "label": "Politicas ativas", "value": "12", "detail": "Versoes vigentes", "tone": "info" },
+      { "label": "Campanhas em andamento", "value": "4", "detail": "Com engajamento aberto", "tone": "success" }
+    ],
+    "filters": [
+      { "label": "Todos", "count": 28, "active": true },
+      { "label": "RH", "count": 8 },
+      { "label": "Corporativo", "count": 7 },
+      { "label": "Tecnologia", "count": 5 },
+      { "label": "Politicas", "count": 4 },
+      { "label": "Eventos", "count": 4 }
+    ],
+    "featured": {
+      "slug": "estrategia-digital-2026",
+      "category": "Corporativo",
+      "priority": "Alta prioridade",
+      "title": "Nova estrategia digital 2026 entra em vigencia com frentes integradas entre RH, TI e comunicacao",
+      "summary": "A diretoria executiva publicou o direcionamento oficial do novo ciclo de transformacao, com foco em experiencia do colaborador, integracoes entre plataformas e simplificacao da jornada interna.",
+      "publishedAt": "19/06/2026",
+      "audience": "Toda a companhia",
+      "owner": "Comunicacao Corporativa",
+      "channel": "Portal + email executivo",
+      "status": "Publicado",
+      "attachmentLabel": "Baixar diretrizes",
+      "image": "./assets/images/feed-post-2.png",
+      "imageAlt": "Estrategia digital institucional",
+      "body": [
+        "A partir desta publicacao, a companhia passa a operar com um direcionamento unico para evolucao da experiencia digital do colaborador ao longo de 2026.",
+        "As frentes priorizadas foram organizadas entre pessoas, tecnologia, comunicacao interna e servicos corporativos, com governanca compartilhada entre RH, TI e comunicacao corporativa.",
+        "Cada diretoria recebera um plano tatico complementar com marcos de implantacao, indicadores de adocao e checkpoints executivos trimestrais."
+      ]
+    },
+    "items": [
+      {
+        "slug": "calendario-avaliacao-segundo-semestre",
+        "category": "RH",
+        "priority": "Alta prioridade",
+        "title": "Calendario oficial do ciclo de avaliacao do segundo semestre",
+        "summary": "Foram publicadas as datas de autoavaliacao, calibragem gerencial e devolutivas para todas as liderancas e colaboradores.",
+        "publishedAt": "18/06/2026",
+        "audience": "Gestores e colaboradores",
+        "channel": "Portal + email",
+        "status": "Publicado",
+        "attachmentLabel": "Baixar cronograma",
+        "body": [
+          "O calendario oficial do segundo semestre consolida as janelas de autoavaliacao, feedback estruturado e calibragem gerencial por area.",
+          "Gestores devem observar os marcos de aprovacao para evitar atrasos no fechamento do ciclo e garantir aderencia aos criterios corporativos.",
+          "O cronograma detalhado e os materiais de apoio permanecerao disponiveis no portal de RH durante todo o periodo."
+        ]
+      },
+      {
+        "slug": "janela-manutencao-sistemas",
+        "category": "Tecnologia",
+        "priority": "Programado",
+        "title": "Janela de manutencao dos sistemas corporativos neste fim de semana",
+        "summary": "Havera indisponibilidade parcial de acessos internos no sabado as 22h ate domingo as 6h para atualizacao de infraestrutura.",
+        "publishedAt": "18/06/2026",
+        "audience": "Toda a companhia",
+        "channel": "Portal + Teams",
+        "status": "Publicado",
+        "attachmentLabel": "Ver impacto",
+        "body": [
+          "A area de Tecnologia executara uma janela programada de manutencao com foco em estabilidade, seguranca e atualizacao de componentes criticos.",
+          "Durante o periodo informado, alguns acessos poderao apresentar indisponibilidade parcial ou intermitencia.",
+          "Caso sua area opere em regime de plantao, orientamos validar previamente as contingencias com o time de suporte."
+        ]
+      },
+      {
+        "slug": "politica-hibrida-atualizada",
+        "category": "Politicas",
+        "priority": "Vigente",
+        "title": "Politica hibrida atualizada com nova orientacao de presenca por area",
+        "summary": "A versao vigente detalha combinacoes de presenca, excecoes aprovadas e responsabilidades de lideranca no acompanhamento das jornadas.",
+        "publishedAt": "17/06/2026",
+        "audience": "Toda a companhia",
+        "channel": "Portal",
+        "status": "Em vigor",
+        "attachmentLabel": "Consultar politica",
+        "body": [
+          "A politica hibrida foi revisada para refletir a realidade operacional de cada area, preservando alinhamento corporativo e flexibilidade local.",
+          "As liderancas passam a ter responsabilidade explicita na organizacao das escalas e no acompanhamento da aderencia ao modelo definido.",
+          "As excecoes seguem condicionadas a validacao formal e registro em sistema."
+        ]
+      },
+      {
+        "slug": "evento-inovacao-sao-paulo",
+        "category": "Eventos",
+        "priority": "Inscricoes abertas",
+        "title": "Evento de inovacao em Sao Paulo abre nova rodada de participacao",
+        "summary": "A agenda oficial do encontro foi consolidada com paineis de tecnologia, cultura, RH e experiencia do colaborador.",
+        "publishedAt": "16/06/2026",
+        "audience": "Publico interno",
+        "channel": "Portal + feed",
+        "status": "Publicado",
+        "attachmentLabel": "Ver agenda",
+        "body": [
+          "A nova rodada de participacao amplia a capacidade de inscricoes e inclui trilhas tematicas voltadas a liderancas, RH e tecnologia.",
+          "O evento reunira showcases internos, paineis com parceiros estrategicos e mesas de troca de experiencias.",
+          "As inscricoes seguem abertas ate o limite de vagas por unidade."
+        ]
+      },
+      {
+        "slug": "direcionadores-portifolio-trimestral",
+        "category": "Corporativo",
+        "priority": "Comite executivo",
+        "title": "Direcionadores do portifolio trimestral sao compartilhados com liderancas",
+        "summary": "A comunicacao oficial consolida prioridades de entrega, capacidade disponivel e foco das frentes transversais para o proximo trimestre.",
+        "publishedAt": "15/06/2026",
+        "audience": "Liderancas",
+        "channel": "Portal + email",
+        "status": "Publicado",
+        "attachmentLabel": "Abrir consolidado",
+        "body": [
+          "O comite executivo validou as frentes que receberao prioridade de capacidade no proximo trimestre.",
+          "O material publicado apresenta o racional de priorizacao, os resultados esperados e os impactos de cronograma nas demais iniciativas.",
+          "As liderancas devem usar este consolidado como referencia para replanejamento das agendas locais."
+        ]
+      },
+      {
+        "slug": "guia-beneficios-2026",
+        "category": "RH",
+        "priority": "Campanha ativa",
+        "title": "Guia de beneficios 2026 esta disponivel para consulta",
+        "summary": "O material atualizado reune regras, coberturas, elegibilidade e perguntas frequentes dos principais beneficios da companhia.",
+        "publishedAt": "14/06/2026",
+        "audience": "Colaboradores",
+        "channel": "Portal",
+        "status": "Publicado",
+        "attachmentLabel": "Abrir guia",
+        "body": [
+          "A edicao 2026 do guia de beneficios foi atualizada com linguagem simplificada e perguntas frequentes organizadas por tema.",
+          "O conteudo contempla elegibilidade, operacao de coparticipacao, consultas de rotina e canais de atendimento.",
+          "Orientamos que todos os colaboradores revisem o material antes das proximas janelas de adesao e alteracao."
+        ]
+      },
+      {
+        "slug": "campanha-voluntariado-corporativo",
+        "category": "Corporativo",
+        "priority": "Comunicado interno",
+        "title": "Campanha de voluntariado corporativo inicia novo ciclo",
+        "summary": "As inscricoes para as frentes de educacao, empregabilidade e apoio comunitario seguem abertas por unidade.",
+        "publishedAt": "13/06/2026",
+        "audience": "Publico interno",
+        "channel": "Portal + mural",
+        "status": "Publicado",
+        "attachmentLabel": "Quero participar",
+        "body": [
+          "O novo ciclo de voluntariado amplia a participacao das unidades e cria novas frentes de colaboracao com a comunidade.",
+          "Os colaboradores poderao se inscrever nas trilhas disponiveis de acordo com disponibilidade e localidade.",
+          "As liderancas foram orientadas a apoiar a divulgacao e o planejamento das participacoes."
+        ]
+      },
+      {
+        "slug": "pacote-seguranca-acessos-internos",
+        "category": "Tecnologia",
+        "priority": "Monitorado",
+        "title": "Novo pacote de seguranca amplia protecao de acessos internos",
+        "summary": "A TI concluiu a primeira fase de reforco de seguranca e publicara as proximas orientacoes de autentificacao nos proximos dias.",
+        "publishedAt": "12/06/2026",
+        "audience": "Toda a companhia",
+        "channel": "Portal + Teams",
+        "status": "Publicado",
+        "attachmentLabel": "Ler orientacoes",
+        "body": [
+          "A primeira fase do pacote de seguranca reforca protecao de identidades, monitora acessos sensiveis e melhora capacidade de resposta a incidentes.",
+          "Novas orientacoes de autenticacao serao publicadas em ondas para evitar impacto operacional nas areas.",
+          "Em caso de duvidas, os times devem acionar o canal oficial de suporte antes de qualquer tentativa de excecao."
+        ]
+      }
+    ]
+  }
+}

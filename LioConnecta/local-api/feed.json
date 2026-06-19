@@ -1,0 +1,199 @@
+﻿{
+    "data":  {
+                 "title":  "FEED LIOCONNECTA",
+                 "posts":  [
+                               {
+                                   "author":  "Carla Mendes",
+                                   "area":  "GestÃ£o de Pessoas",
+                                   "timeAgo":  "hÃ¡ 35 min",
+                                   "text":  "Hoje iniciamos uma nova rodada de integraÃ§Ã£o para colaboradores da Ã¡rea de RH. O objetivo Ã© acelerar acesso aos sistemas corporativos, comunicaÃ§Ã£o interna e trilhas de desenvolvimento na LIOCONNECTA.",
+                                   "highlightTitle":  "Onboarding RH - Junho",
+                                   "highlightText":  "Checklist digital, acessos liberados e trilha de aprendizagem inicial.",
+                                   "image":  "./assets/images/feed-post-1.png",
+                                   "imageAlt":  "Onboarding RH com visÃ£o de transformaÃ§Ã£o digital",
+                                   "reactions":  48,
+                                   "commentsCount":  12,
+                                   "sharesCount":  4,
+                                   "comments":  [
+                                                    {
+                                                        "author":  "Fernanda Lima",
+                                                        "text":  "Excelente iniciativa. Isso deve facilitar bastante o onboarding das novas pessoas."
+                                                    },
+                                                    {
+                                                        "author":  "JoÃ£o Ribeiro",
+                                                        "text":  "Gostei da proposta da trilha digital. Podemos conectar isso com os acessos de TI tambÃ©m."
+                                                    }
+                                                ]
+                               },
+                               {
+                                   "author":  "Equipe de InovaÃ§Ã£o",
+                                   "area":  "ComunicaÃ§Ã£o Corporativa",
+                                   "timeAgo":  "hÃ¡ 2 h",
+                                   "text":  "As inscriÃ§Ãµes para o Evento de InovaÃ§Ã£o em SÃ£o Paulo seguem abertas. Teremos painÃ©is com parceiros estratÃ©gicos, showcase de projetos internos e networking com lideranÃ§as.",
+                                   "image":  "./assets/images/feed-post-2.png",
+                                   "imageAlt":  "Evento de inovaÃ§Ã£o da companhia",
+                                   "reactions":  73,
+                                   "commentsCount":  18,
+                                   "sharesCount":  11,
+                                   "comments":  [
+                                                    {
+                                                        "author":  "PatrÃ­cia Gomes",
+                                                        "text":  "JÃ¡ me inscrevi. Tema super aderente ao momento da companhia."
+                                                    },
+                                                    {
+                                                        "author":  "Rafael Costa",
+                                                        "text":  "Seria Ã³timo termos uma trilha resumida do evento para quem nÃ£o puder viajar."
+                                                    }
+                                                ]
+                               },
+                               {
+                                   "author":  "Luciana Prado",
+                                   "area":  "ComunicaÃ§Ã£o Interna",
+                                   "timeAgo":  "hÃ¡ 4 h",
+                                   "text":  "Publicamos hoje a nova agenda de encontros da comunidade Connecta para o prÃ³ximo ciclo. Teremos sessÃµes com RH, tecnologia, lideranÃ§a e melhoria contÃ­nua, com espaÃ§o para perguntas e troca de experiÃªncias.",
+                                   "highlightTitle":  "Agenda da Comunidade",
+                                   "highlightText":  "Encontros quinzenais com foco em pessoas, cultura e transformaÃ§Ã£o digital.",
+                                   "image":  "./assets/images/feed-post-3.png",
+                                   "imageAlt":  "Agenda da comunidade com comunicaÃ§Ã£o visual interna",
+                                   "reactions":  31,
+                                   "commentsCount":  8,
+                                   "sharesCount":  2,
+                                   "comments":  [
+                                                    {
+                                                        "author":  "Mariana Costa",
+                                                        "text":  "Ã“timo calendÃ¡rio. Vai ajudar bastante a dar previsibilidade para os times."
+                                                    },
+                                                    {
+                                                        "author":  "Lucas Martins",
+                                                        "text":  "Podemos incluir uma sessÃ£o dedicada a boas prÃ¡ticas de colaboraÃ§Ã£o entre Ã¡reas."
+                                                    }
+                                                ]
+                               },
+                               {
+                                   "author":  "PMO Corporativo",
+                                   "area":  "Projetos EstratÃ©gicos",
+                                   "timeAgo":  "hÃ¡ 1 dia",
+                                   "text":  "Encerramos a Ãºltima revisÃ£o do portfÃ³lio trimestral com destaque para os projetos de automaÃ§Ã£o, experiÃªncia do colaborador e integraÃ§Ã£o entre sistemas corporativos.",
+                                   "highlightTitle":  "PortfÃ³lio Q3",
+                                   "highlightText":  "17 iniciativas acompanhadas, 5 entregas concluÃ­das e 3 frentes avanÃ§ando para implantaÃ§Ã£o.",
+                                   "image":  "./assets/images/feed-post-4.png",
+                                   "imageAlt":  "PortfÃ³lio corporativo em revisÃ£o estratÃ©gica",
+                                   "reactions":  64,
+                                   "commentsCount":  15,
+                                   "sharesCount":  6,
+                                   "comments":  [
+                                                    {
+                                                        "author":  "Camila Nogueira",
+                                                        "text":  "Esse consolidado ficou bem claro. Seria legal replicar esse formato em outras Ã¡reas."
+                                                    },
+                                                    {
+                                                        "author":  "Bruno Farias",
+                                                        "text":  "Boa evoluÃ§Ã£o do portfÃ³lio. As entregas de automaÃ§Ã£o devem gerar impacto rÃ¡pido."
+                                                    }
+                                                ]
+                               },
+                               {
+                                   "author":  "Juliana Torres",
+                                   "area":  "ComunicaÃ§Ã£o Corporativa",
+                                   "timeAgo":  "hÃ¡ 1 dia",
+                                   "text":  "A campanha de voluntariado corporativo do prÃ³ximo trimestre jÃ¡ estÃ¡ com inscriÃ§Ãµes abertas. As equipes poderÃ£o escolher entre frentes de educaÃ§Ã£o, empregabilidade e apoio comunitÃ¡rio.",
+                                   "highlightTitle":  "Voluntariado 2026",
+                                   "highlightText":  "InscriÃ§Ãµes abertas atÃ© sexta-feira com vagas por unidade.",
+                                   "reactions":  42,
+                                   "commentsCount":  9,
+                                   "sharesCount":  3,
+                                   "comments":  [
+                                                    {
+                                                        "author":  "Vanessa Moura",
+                                                        "text":  "Excelente iniciativa para fortalecer o engajamento social da companhia."
+                                                    }
+                                                ]
+                               },
+                               {
+                                   "author":  "Carlos Henrique",
+                                   "area":  "Recursos Humanos",
+                                   "timeAgo":  "hÃ¡ 1 dia",
+                                   "text":  "ConcluÃ­mos a revisÃ£o do calendÃ¡rio de avaliaÃ§Ãµes e jÃ¡ temos as janelas oficiais de feedback e autoavaliaÃ§Ã£o para o segundo semestre.",
+                                   "highlightTitle":  "Ciclo de AvaliaÃ§Ã£o",
+                                   "highlightText":  "Gestores e colaboradores jÃ¡ podem se preparar para os marcos do semestre.",
+                                   "reactions":  27,
+                                   "commentsCount":  5,
+                                   "sharesCount":  1,
+                                   "comments":  [
+                                                    {
+                                                        "author":  "Felipe Braga",
+                                                        "text":  "Muito bom ter previsibilidade do calendÃ¡rio com antecedÃªncia."
+                                                    }
+                                                ]
+                               },
+                               {
+                                   "author":  "PatrÃ­cia Salles",
+                                   "area":  "Tecnologia",
+                                   "timeAgo":  "hÃ¡ 2 dias",
+                                   "text":  "A janela de atualizaÃ§Ã£o dos sistemas corporativos serÃ¡ realizada neste fim de semana. O objetivo Ã© melhorar estabilidade e seguranÃ§a das plataformas internas.",
+                                   "highlightTitle":  "AtualizaÃ§Ã£o Programada",
+                                   "highlightText":  "Indisponibilidade parcial prevista entre sÃ¡bado 22h e domingo 6h.",
+                                   "reactions":  19,
+                                   "commentsCount":  7,
+                                   "sharesCount":  4,
+                                   "comments":  [
+                                                    {
+                                                        "author":  "Marcos Vinicius",
+                                                        "text":  "Importante comunicar tambÃ©m por e-mail para os times de operaÃ§Ã£o."
+                                                    }
+                                                ]
+                               },
+                               {
+                                   "author":  "Luciana Ferraz",
+                                   "area":  "Universidade Corporativa",
+                                   "timeAgo":  "hÃ¡ 2 dias",
+                                   "text":  "Nova trilha de aprendizagem para lideranÃ§a inclusiva jÃ¡ estÃ¡ disponÃ­vel no portal com mÃ³dulos curtos e certificados ao final da jornada.",
+                                   "image":  "./assets/images/feed-post-3.png",
+                                   "imageAlt":  "Trilha de lideranÃ§a inclusiva",
+                                   "reactions":  36,
+                                   "commentsCount":  10,
+                                   "sharesCount":  2,
+                                   "comments":  [
+                                                    {
+                                                        "author":  "Sabrina Nunes",
+                                                        "text":  "Tema super importante, vou compartilhar com os gestores da minha Ã¡rea."
+                                                    }
+                                                ]
+                               },
+                               {
+                                   "author":  "Renata Prado",
+                                   "area":  "BenefÃ­cios",
+                                   "timeAgo":  "hÃ¡ 3 dias",
+                                   "text":  "Publicamos o guia atualizado de benefÃ­cios com regras de elegibilidade, coparticipaÃ§Ã£o e perguntas frequentes para apoiar os colaboradores.",
+                                   "highlightTitle":  "Guia de BenefÃ­cios",
+                                   "highlightText":  "VersÃ£o 2026 disponÃ­vel para consulta e download.",
+                                   "reactions":  33,
+                                   "commentsCount":  8,
+                                   "sharesCount":  5,
+                                   "comments":  [
+                                                    {
+                                                        "author":  "Eduardo Leme",
+                                                        "text":  "Esse material vai ajudar bastante nas dÃºvidas recorrentes do time."
+                                                    }
+                                                ]
+                               },
+                               {
+                                   "author":  "Fernando Alves",
+                                   "area":  "Diretoria de Pessoas",
+                                   "timeAgo":  "hÃ¡ 4 dias",
+                                   "text":  "Estamos consolidando o plano de aÃ§Ãµes para experiÃªncia do colaborador em 2026, com foco em comunicaÃ§Ã£o, jornada digital e simplificaÃ§Ã£o de serviÃ§os internos.",
+                                   "image":  "./assets/images/feed-post-1.png",
+                                   "imageAlt":  "Plano de experiÃªncia do colaborador",
+                                   "reactions":  51,
+                                   "commentsCount":  14,
+                                   "sharesCount":  6,
+                                   "comments":  [
+                                                    {
+                                                        "author":  "Roberta Campos",
+                                                        "text":  "Gostei do direcionamento. Vai ser importante conectar isso com as dores reais das Ã¡reas."
+                                                    }
+                                                ]
+                               }
+                           ]
+             }
+}

@@ -1,6 +1,10 @@
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
+builder.Services.AddRazorPages();
+builder.Services.AddServerSideBlazor();
+builder.Services.AddAntDesign();
+builder.Services.AddScoped<PortalRH.Web.Services.AntDesign.IAntDesignHrShowcaseService, PortalRH.Web.Services.AntDesign.AntDesignHrShowcaseService>();
 
 var app = builder.Build();
 
@@ -17,6 +21,8 @@ app.UseRouting();
 
 app.UseAuthorization();
 
+app.MapBlazorHub();
+app.MapRazorPages();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");

@@ -1,0 +1,1296 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LIOCONNECTA - Wireframe</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <style>
+    :root {
+      --bg: #edf4fa;
+      --panel: #ffffff;
+      --line: #d8e2ec;
+      --text: #1e293b;
+      --muted: #64748b;
+      --green: #4fd08a;
+      --shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+      --radius: 14px;
+      --brand: #173f70;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(180deg, #f8fbfe 0%, var(--bg) 100%);
+      color: var(--text);
+    }
+
+    .page {
+      width: 80vw;
+      min-width: 1200px;
+      max-width: 1600px;
+      margin: 0 auto;
+      min-height: 100vh;
+      background: #f3f8fd;
+      border-left: 1px solid #d9e4ef;
+      border-right: 1px solid #d9e4ef;
+    }
+
+    .page-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: #fff;
+    }
+
+    .topbar {
+      height: 58px;
+      background: #fff;
+      border-bottom: 1px solid var(--line);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      padding: 0 14px 0 10px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-mark {
+      width: 38px;
+      height: 38px;
+      border-radius: 50% 18% 50% 18%;
+      background: conic-gradient(from 220deg, #0c63b7, #51d58c, #8ad6ff, #0c63b7);
+      position: relative;
+    }
+
+    .brand-mark::after {
+      content: "";
+      position: absolute;
+      inset: 8px;
+      background: #fff;
+      border-radius: 50% 18% 50% 18%;
+    }
+
+    .brand-copy {
+      line-height: 1.05;
+    }
+
+    .brand-copy strong {
+      display: block;
+      font-size: 18px;
+      letter-spacing: 0.4px;
+      color: #11406f;
+    }
+
+    .brand-copy span {
+      font-size: 10px;
+      color: #5f7890;
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      font-size: 13px;
+    }
+
+    .user-chip {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: linear-gradient(180deg, #eef4fa, #dce8f5);
+      border: 2px solid #fff;
+      box-shadow: 0 0 0 1px #c6d4e3;
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+      color: #45617d;
+      font-size: 16px;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .user-info small {
+      color: var(--muted);
+      margin: 0;
+    }
+
+    .user-info strong {
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    .notif {
+      position: relative;
+      padding-right: 10px;
+    }
+
+    .notif::after {
+      content: "3";
+      position: absolute;
+      top: -8px;
+      right: -2px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #d62839;
+      color: #fff;
+      font-size: 10px;
+      display: grid;
+      place-items: center;
+    }
+
+    .nav {
+      height: 34px;
+      background: #fff;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: stretch;
+    }
+
+    .nav-tabs {
+      display: flex;
+      align-items: stretch;
+    }
+
+    .nav-tabs a {
+      text-decoration: none;
+      color: #111827;
+      font-size: 14px;
+      padding: 0 18px;
+      display: flex;
+      align-items: center;
+      border-right: 1px solid #eef3f7;
+    }
+
+    .nav-tabs a.active {
+      background: linear-gradient(180deg, #eaf3fb 0%, #dbeaf6 100%);
+      box-shadow: inset 0 -3px 0 #295f91;
+      font-weight: 600;
+    }
+
+    .content {
+      padding: 14px;
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(0, 6fr) minmax(0, 2fr);
+      gap: 14px;
+    }
+
+    .stack {
+      display: grid;
+      gap: 8px;
+      min-width: 0;
+      align-content: start;
+    }
+
+    .sidebar-sticky {
+      position: sticky;
+      top: 104px;
+      align-self: start;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      height: fit-content;
+      align-self: start;
+    }
+
+    .card-header {
+      background: linear-gradient(180deg, #edf5fc, #e5f0f9);
+      color: #1f2937;
+      font-weight: 700;
+      font-size: 13px;
+      padding: 10px 12px;
+      border-bottom: 1px solid #dde7f0;
+    }
+
+    .menu-list {
+      padding: 8px 10px 10px;
+      display: grid;
+      gap: 4px;
+    }
+
+    .menu-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      padding: 6px 4px;
+      color: #111827;
+    }
+
+    .menu-item span:first-child::before {
+      content: "◦";
+      color: #3f556c;
+      margin-right: 8px;
+    }
+
+    .menu-badge {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #de2c39;
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .hero {
+      height: 115px;
+      border-radius: 14px;
+      overflow: hidden;
+      position: relative;
+      background:
+        linear-gradient(90deg, rgba(23, 63, 112, 0.95) 0%, rgba(23, 63, 112, 0.8) 35%, rgba(23, 63, 112, 0.25) 60%, rgba(23, 63, 112, 0.1) 100%),
+        linear-gradient(135deg, #38567a, #93a9bb);
+      border: 1px solid #b7cadc;
+      box-shadow: var(--shadow);
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 78% 25%, rgba(255,255,255,0.55) 0 8%, transparent 9%),
+        radial-gradient(circle at 84% 30%, rgba(255,255,255,0.32) 0 6%, transparent 7%),
+        linear-gradient(90deg, transparent 58%, rgba(255,255,255,0.2) 58%, rgba(255,255,255,0.14) 100%);
+      opacity: 0.75;
+    }
+
+    .hero-copy {
+      position: absolute;
+      left: 20px;
+      top: 30px;
+      color: #fff;
+      z-index: 1;
+    }
+
+    .hero-copy h1 {
+      margin: 0 0 4px;
+      font-size: 19px;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+    }
+
+    .hero-copy p {
+      margin: 0;
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.92);
+    }
+
+    .hero-dots {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      padding: 12px 0 0;
+    }
+
+    .hero-dot {
+      width: 34px;
+      height: 6px;
+      border-radius: 999px;
+      background: #cdd9e5;
+    }
+
+    .hero-dot.active {
+      background: var(--green);
+    }
+
+    .news-card .card-header,
+    .feed-card .card-header {
+      background: #fff;
+      font-size: 15px;
+      padding-bottom: 8px;
+    }
+
+    .mood-card {
+      padding: 16px 18px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .mood-card h3,
+    .feed-composer-card h3 {
+      margin: 0;
+      font-size: 16px;
+      color: #173154;
+    }
+
+    .mood-options {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .mood-option {
+      border: 1px solid #d8e4ef;
+      border-radius: 12px;
+      background: linear-gradient(180deg, #ffffff, #f7fbff);
+      padding: 14px 10px;
+      display: grid;
+      justify-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+    }
+
+    .mood-option-emoji {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 22px;
+      background: #eef5fc;
+    }
+
+    .mood-option strong {
+      font-size: 13px;
+      color: #1f2f46;
+    }
+
+    .mood-rank {
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    .feed-composer-card {
+      padding: 14px 16px 16px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .feed-composer-box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .feed-composer-input {
+      flex: 1;
+      min-height: 48px;
+      border-radius: 16px;
+      border: 1px solid #d9e5f0;
+      background: #fff;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      color: #7a8a9c;
+      font-size: 14px;
+    }
+
+    .feed-composer-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .feed-action-chip {
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid #d9e5f0;
+      background: #f8fbff;
+      color: #325072;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .news-grid {
+      padding: 12px 12px 12px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .carousel {
+      position: relative;
+      width: 100%;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid #dbe6f0;
+      background: #fff;
+      box-shadow: 0 5px 14px rgba(15, 23, 42, 0.06);
+    }
+
+    .carousel-track {
+      display: flex;
+      width: 100%;
+      transition: transform 0.8s ease;
+    }
+
+    .carousel-slide {
+      min-width: 100%;
+      height: 360px;
+      background: #d7e3ee;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .carousel-slide img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .carousel-dots {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 0 18px;
+    }
+
+    .carousel-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      border: 0;
+      background: #c9d4df;
+      cursor: pointer;
+      transition: transform 0.2s ease, background-color 0.2s ease;
+    }
+
+    .carousel-dot.active {
+      background: #6ed693;
+      transform: scale(1.1);
+    }
+
+    .feed-list {
+      padding: 12px 12px 12px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .post {
+      border: 1px solid #dbe6f0;
+      border-radius: 12px;
+      background: #fff;
+      box-shadow: 0 5px 14px rgba(15, 23, 42, 0.06);
+      overflow: hidden;
+    }
+
+    .post-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px 10px;
+    }
+
+    .post-author {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .post-author-copy {
+      line-height: 1.2;
+    }
+
+    .post-author-copy strong {
+      display: block;
+      font-size: 14px;
+    }
+
+    .post-author-copy span {
+      display: block;
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    .post-more {
+      color: #64748b;
+      font-weight: 700;
+      letter-spacing: 2px;
+    }
+
+    .post-body {
+      padding: 0 14px 12px;
+    }
+
+    .post-body p {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.55;
+      color: #263445;
+    }
+
+    .post-highlight {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #eef5fb, #ddeaf6);
+      border: 1px solid #d2e0ec;
+      display: grid;
+      gap: 6px;
+    }
+
+    .post-highlight strong {
+      font-size: 14px;
+      color: #153a63;
+    }
+
+    .post-highlight span {
+      font-size: 12px;
+      color: #566b82;
+    }
+
+    .post-image {
+      margin-top: 12px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #7c92aa, #d3dde7);
+      border: 1px solid #c9d8e5;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .post-image img {
+      width: 100%;
+      height: auto;
+      object-fit: initial;
+      display: block;
+      background: #eef4fa;
+    }
+
+    .post-image::after {
+      content: "";
+      position: absolute;
+      inset: 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+    }
+
+    .post-stats {
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 12px;
+      color: #64748b;
+      border-top: 1px solid #edf2f7;
+    }
+
+    .post-reactions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .reaction-bubble {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 10px;
+      background: #fff;
+      font-weight: 700;
+      border: 2px solid currentColor;
+    }
+
+    .reaction-bubble i {
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .reaction-bubble.like { color: #1677ff; }
+    .reaction-bubble.clap { color: #1fb981; }
+    .reaction-bubble.love { color: #e64b5d; }
+
+    .post-actions {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border-top: 1px solid #edf2f7;
+    }
+
+    .post-actions button {
+      height: 40px;
+      border: 0;
+      background: #fff;
+      color: #334155;
+      font-size: 13px;
+      font-weight: 600;
+      border-right: 1px solid #edf2f7;
+      cursor: default;
+    }
+
+    .post-actions button:last-child {
+      border-right: 0;
+    }
+
+    .post-comment {
+      padding: 12px 14px 14px;
+      border-top: 1px solid #edf2f7;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: #fbfdff;
+    }
+
+    .post-comment-box {
+      flex: 1;
+      min-height: 42px;
+      border-radius: 12px;
+      border: 1px solid #d9e5f0;
+      background: #fff;
+      padding: 10px 12px;
+      font-size: 12px;
+      color: #7a8a9c;
+    }
+
+    .post-comments {
+      padding: 12px 14px 0;
+      border-top: 1px solid #edf2f7;
+      display: grid;
+      gap: 10px;
+      background: #fbfdff;
+    }
+
+    .post-comment-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .post-comment-bubble {
+      flex: 1;
+      padding: 10px 12px;
+      border: 1px solid #d9e5f0;
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .post-comment-bubble strong {
+      display: block;
+      font-size: 12px;
+      color: #183153;
+      margin-bottom: 2px;
+    }
+
+    .post-comment-bubble span {
+      font-size: 12px;
+      color: #334155;
+      line-height: 1.45;
+    }
+
+    .quick-grid {
+      padding: 10px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .quick-item {
+      height: 62px;
+      border: 1px solid #d7e3ee;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      font-size: 12px;
+      color: #1f2937;
+      background: #fff;
+    }
+
+    .quick-item strong {
+      display: block;
+      font-size: 15px;
+      margin-bottom: 4px;
+    }
+
+    .quick-item.sap strong { color: #1782c4; }
+    .quick-item.google strong { color: #db4437; }
+    .quick-item.service strong { color: #4f6f65; }
+    .quick-item.teams strong { color: #6264a7; }
+    .quick-item.learn strong { color: #3ca64b; }
+    .quick-item.jira strong { color: #1f6feb; }
+
+    .profile-box {
+      padding: 12px;
+    }
+
+    .profile-head {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .profile-name {
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .profile-links {
+      display: grid;
+      gap: 8px;
+      font-size: 13px;
+    }
+
+    .profile-links div::before {
+      content: "◦";
+      color: #3f556c;
+      margin-right: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="page-header">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-mark"></div>
+          <div class="brand-copy">
+            <strong>LIOCONNECTA</strong>
+            <span>Capacidade e Transformação Digital</span>
+          </div>
+        </div>
+
+        <div class="topbar-actions">
+          <div class="user-chip">
+            <div class="avatar"><i class="fa-solid fa-user"></i></div>
+            <div class="user-info">
+              <small>Olá,</small>
+              <strong>Roberto Almeida</strong>
+            </div>
+          </div>
+          <div>Meu Perfil ▼</div>
+          <div class="notif">Notificações</div>
+          <div>Sair</div>
+        </div>
+      </header>
+
+      <nav class="nav">
+        <div class="nav-tabs">
+          <a class="active" href="#">INÍCIO</a>
+          <a href="#">COMUNICAÇÃO</a>
+          <a href="#">PESSOAS (RH)</a>
+          <a href="#">SISTEMAS</a>
+          <a href="#">PROJETOS</a>
+          <a href="#">RECURSOS</a>
+        </div>
+      </nav>
+    </div>
+
+    <main class="content">
+      <aside class="stack sidebar-sticky">
+        <section class="card">
+          <div class="card-header">MINHA JORNADA</div>
+          <div class="menu-list">
+            <div class="menu-item"><span>Tarefas Pendentes</span><span class="menu-badge">2</span></div>
+            <div class="menu-item"><span>Solicitações em Andamento</span></div>
+            <div class="menu-item"><span>Trilhas de Aprendizagem</span></div>
+            <div class="menu-item"><span>Documentos Recentes</span></div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">MEU PAINEL</div>
+          <div class="menu-list">
+            <div class="menu-item"><span>Notificações</span><span class="menu-badge">3</span></div>
+            <div class="menu-item"><span>Próximos Eventos</span></div>
+            <div class="menu-item"><span>Aniversários do Mês</span></div>
+            <div class="menu-item"><span>Atalhos Favoritos</span></div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">SISTEMAS CORPORATIVOS</div>
+          <div class="menu-list">
+            <div class="menu-item"><span>Corporativos</span></div>
+            <div class="menu-item"><span>Google Workspace</span></div>
+            <div class="menu-item"><span>SISTEMAS</span></div>
+            <div class="menu-item"><span>PROJETOS</span></div>
+            <div class="menu-item"><span>RECURSOS</span></div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">INDICADORES RÁPIDOS</div>
+          <div class="menu-list">
+            <div class="menu-item"><span>Presença Hoje</span><strong>92%</strong></div>
+            <div class="menu-item"><span>Chamados Abertos</span><strong>14</strong></div>
+            <div class="menu-item"><span>Projetos Ativos</span><strong>7</strong></div>
+            <div class="menu-item"><span>Eventos da Semana</span><strong>5</strong></div>
+          </div>
+        </section>
+      </aside>
+
+      <section class="stack">
+        <section class="hero">
+          <div class="hero-copy">
+            <h1>Bem-vindo à LIOCONNECTA!</h1>
+            <p>O seu ponto central de acesso e colaboração.</p>
+          </div>
+        </section>
+
+        <section class="card mood-card">
+          <h3>Como você está se sentindo hoje?</h3>
+          <div class="mood-options">
+            <div class="mood-option">
+              <div class="mood-option-emoji">😄</div>
+              <strong>Motivado</strong>
+              <div class="mood-rank">1º mais votado</div>
+            </div>
+            <div class="mood-option">
+              <div class="mood-option-emoji">🙂</div>
+              <strong>Bem</strong>
+              <div class="mood-rank">2º mais votado</div>
+            </div>
+            <div class="mood-option">
+              <div class="mood-option-emoji">😴</div>
+              <strong>Cansado</strong>
+              <div class="mood-rank">3º mais votado</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card news-card">
+          <div class="card-header">COMUNICAÇÃO CENTRALIZADA</div>
+          <div class="news-grid">
+            <div class="carousel" id="connecta-carousel">
+              <div class="carousel-track">
+                <div class="carousel-slide">
+                  <img src="./8c434aca-cab7-4776-95bd-de844c968034.png" alt="Slide 1">
+                </div>
+                <div class="carousel-slide">
+                  <img src="./8c434aca-cab7-4776-95bd-de844c968034-2.png" alt="Slide 2">
+                </div>
+                <div class="carousel-slide">
+                  <img src="./8c434aca-cab7-4776-95bd-de844c968034.png" alt="Slide 3">
+                </div>
+                <div class="carousel-slide">
+                  <img src="./8c434aca-cab7-4776-95bd-de844c968034-2.png" alt="Slide 4">
+                </div>
+                <div class="carousel-slide">
+                  <img src="./8c434aca-cab7-4776-95bd-de844c968034.png" alt="Slide 5">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="carousel-dots" id="connecta-carousel-dots">
+            <button class="carousel-dot active" type="button" data-index="0" aria-label="Slide 1"></button>
+            <button class="carousel-dot" type="button" data-index="1" aria-label="Slide 2"></button>
+            <button class="carousel-dot" type="button" data-index="2" aria-label="Slide 3"></button>
+            <button class="carousel-dot" type="button" data-index="3" aria-label="Slide 4"></button>
+            <button class="carousel-dot" type="button" data-index="4" aria-label="Slide 5"></button>
+          </div>
+        </section>
+
+        <section class="card feed-card">
+          <div class="card-header">FEED LIOCONNECTA</div>
+          <div class="feed-composer-card">
+            <h3>No que você está pensando?</h3>
+            <div class="feed-composer-box">
+              <div class="avatar"><i class="fa-solid fa-user"></i></div>
+              <div class="feed-composer-input">Compartilhe uma atualização com a equipe...</div>
+            </div>
+            <div class="feed-composer-actions">
+              <div class="feed-action-chip">📷 Foto</div>
+              <div class="feed-action-chip">📅 Evento</div>
+              <div class="feed-action-chip">📌 Comunicado</div>
+              <div class="feed-action-chip">🎉 Conquista</div>
+            </div>
+          </div>
+          <div class="feed-list">
+            <article class="post">
+              <div class="post-head">
+                <div class="post-author">
+                  <div class="avatar"><i class="fa-solid fa-user"></i></div>
+                  <div class="post-author-copy">
+                    <strong>Carla Mendes</strong>
+                    <span>Gestão de Pessoas • há 35 min</span>
+                  </div>
+                </div>
+                <div class="post-more">•••</div>
+              </div>
+
+              <div class="post-body">
+                <p>
+                  Hoje iniciamos uma nova rodada de integração para colaboradores da área de RH.
+                  O objetivo é acelerar acesso aos sistemas corporativos, comunicação interna e trilhas
+                  de desenvolvimento na LIOCONNECTA.
+                </p>
+
+                <div class="post-highlight">
+                  <strong>Onboarding RH - Junho</strong>
+                  <span>Checklist digital, acessos liberados e trilha de aprendizagem inicial.</span>
+                </div>
+
+                <div class="post-image">
+                  <img src="./feed-post-1.png" alt="Primeiro post do feed LIOCONNECTA">
+                </div>
+              </div>
+
+              <div class="post-stats">
+                <div class="post-reactions">
+                  <span class="reaction-bubble like">👍</span>
+                  <span class="reaction-bubble clap">👏</span>
+                  <span class="reaction-bubble love">❤</span>
+                  <span>48 reações</span>
+                </div>
+                <div>12 comentários • 4 compartilhamentos</div>
+              </div>
+
+              <div class="post-actions">
+                <button>Curtir</button>
+                <button>Comentar</button>
+                <button>Compartilhar</button>
+                <button>Salvar</button>
+              </div>
+
+              <div class="post-comments">
+                <div class="post-comment-item">
+                  <div class="avatar" style="width:28px;height:28px;"><i class="fa-solid fa-user"></i></div>
+                  <div class="post-comment-bubble">
+                    <strong>Fernanda Lima</strong>
+                    <span>Excelente iniciativa. Isso deve facilitar bastante o onboarding das novas pessoas.</span>
+                  </div>
+                </div>
+                <div class="post-comment-item">
+                  <div class="avatar" style="width:28px;height:28px;"><i class="fa-solid fa-user"></i></div>
+                  <div class="post-comment-bubble">
+                    <strong>João Ribeiro</strong>
+                    <span>Gostei da proposta da trilha digital. Podemos conectar isso com os acessos de TI também.</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="post-comment">
+                <div class="avatar" style="width:30px;height:30px;"><i class="fa-solid fa-user"></i></div>
+                <div class="post-comment-box">Adicione um comentário...</div>
+              </div>
+            </article>
+
+            <article class="post">
+              <div class="post-head">
+                <div class="post-author">
+                  <div class="avatar"><i class="fa-solid fa-user"></i></div>
+                  <div class="post-author-copy">
+                    <strong>Equipe de Inovação</strong>
+                    <span>Comunicação Corporativa • há 2 h</span>
+                  </div>
+                </div>
+                <div class="post-more">•••</div>
+              </div>
+
+              <div class="post-body">
+                <p>
+                  As inscrições para o Evento de Inovação em São Paulo seguem abertas.
+                  Teremos painéis com parceiros estratégicos, showcase de projetos internos e networking com lideranças.
+                </p>
+                <div class="post-image">
+                  <img src="./feed-post-2.png" alt="Post do feed LIOCONNECTA">
+                </div>
+              </div>
+
+              <div class="post-stats">
+                <div class="post-reactions">
+                  <span class="reaction-bubble like">👍</span>
+                  <span class="reaction-bubble clap">👏</span>
+                  <span>73 reações</span>
+                </div>
+                <div>18 comentários • 11 compartilhamentos</div>
+              </div>
+
+              <div class="post-actions">
+                <button>Curtir</button>
+                <button>Comentar</button>
+                <button>Compartilhar</button>
+                <button>Salvar</button>
+              </div>
+
+              <div class="post-comments">
+                <div class="post-comment-item">
+                  <div class="avatar" style="width:28px;height:28px;"><i class="fa-solid fa-user"></i></div>
+                  <div class="post-comment-bubble">
+                    <strong>Patrícia Gomes</strong>
+                    <span>Já me inscrevi. Tema super aderente ao momento da companhia.</span>
+                  </div>
+                </div>
+                <div class="post-comment-item">
+                  <div class="avatar" style="width:28px;height:28px;"><i class="fa-solid fa-user"></i></div>
+                  <div class="post-comment-bubble">
+                    <strong>Rafael Costa</strong>
+                    <span>Seria ótimo termos uma trilha resumida do evento para quem não puder viajar.</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="post-comment">
+                <div class="avatar" style="width:30px;height:30px;"><i class="fa-solid fa-user"></i></div>
+                <div class="post-comment-box">Adicione um comentário...</div>
+              </div>
+            </article>
+
+            <article class="post">
+              <div class="post-head">
+                <div class="post-author">
+                  <div class="avatar"><i class="fa-solid fa-user"></i></div>
+                  <div class="post-author-copy">
+                    <strong>Luciana Prado</strong>
+                    <span>Comunicação Interna • há 4 h</span>
+                  </div>
+                </div>
+                <div class="post-more">•••</div>
+              </div>
+
+              <div class="post-body">
+                <p>
+                  Publicamos hoje a nova agenda de encontros da comunidade Connecta para o próximo ciclo.
+                  Teremos sessões com RH, tecnologia, liderança e melhoria contínua, com espaço para perguntas e troca de experiências.
+                </p>
+
+                <div class="post-highlight">
+                  <strong>Agenda da Comunidade</strong>
+                  <span>Encontros quinzenais com foco em pessoas, cultura e transformação digital.</span>
+                </div>
+
+                <div class="post-image">
+                  <img src="./feed-post-3.png" alt="Post da Luciana Prado">
+                </div>
+              </div>
+
+              <div class="post-stats">
+                <div class="post-reactions">
+                  <span class="reaction-bubble like">👍</span>
+                  <span class="reaction-bubble clap">👏</span>
+                  <span>31 reações</span>
+                </div>
+                <div>8 comentários • 2 compartilhamentos</div>
+              </div>
+
+              <div class="post-actions">
+                <button>Curtir</button>
+                <button>Comentar</button>
+                <button>Compartilhar</button>
+                <button>Salvar</button>
+              </div>
+
+              <div class="post-comments">
+                <div class="post-comment-item">
+                  <div class="avatar" style="width:28px;height:28px;"><i class="fa-solid fa-user"></i></div>
+                  <div class="post-comment-bubble">
+                    <strong>Mariana Costa</strong>
+                    <span>Ótimo calendário. Vai ajudar bastante a dar previsibilidade para os times.</span>
+                  </div>
+                </div>
+                <div class="post-comment-item">
+                  <div class="avatar" style="width:28px;height:28px;"><i class="fa-solid fa-user"></i></div>
+                  <div class="post-comment-bubble">
+                    <strong>Lucas Martins</strong>
+                    <span>Podemos incluir uma sessão dedicada a boas práticas de colaboração entre áreas.</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="post-comment">
+                <div class="avatar" style="width:30px;height:30px;"><i class="fa-solid fa-user"></i></div>
+                <div class="post-comment-box">Adicione um comentário...</div>
+              </div>
+            </article>
+
+            <article class="post">
+              <div class="post-head">
+                <div class="post-author">
+                  <div class="avatar"><i class="fa-solid fa-user"></i></div>
+                  <div class="post-author-copy">
+                    <strong>PMO Corporativo</strong>
+                    <span>Projetos Estratégicos • há 1 dia</span>
+                  </div>
+                </div>
+                <div class="post-more">•••</div>
+              </div>
+
+              <div class="post-body">
+                <p>
+                  Encerramos a última revisão do portfólio trimestral com destaque para os projetos de automação,
+                  experiência do colaborador e integração entre sistemas corporativos.
+                </p>
+
+                <div class="post-highlight">
+                  <strong>Portfólio Q3</strong>
+                  <span>17 iniciativas acompanhadas, 5 entregas concluídas e 3 frentes avançando para implantação.</span>
+                </div>
+
+                <div class="post-image">
+                  <img src="./feed-post-4.png" alt="Post do PMO Corporativo">
+                </div>
+              </div>
+
+              <div class="post-stats">
+                <div class="post-reactions">
+                  <span class="reaction-bubble like">👍</span>
+                  <span class="reaction-bubble clap">👏</span>
+                  <span class="reaction-bubble love">❤</span>
+                  <span>64 reações</span>
+                </div>
+                <div>15 comentários • 6 compartilhamentos</div>
+              </div>
+
+              <div class="post-actions">
+                <button>Curtir</button>
+                <button>Comentar</button>
+                <button>Compartilhar</button>
+                <button>Salvar</button>
+              </div>
+
+              <div class="post-comments">
+                <div class="post-comment-item">
+                  <div class="avatar" style="width:28px;height:28px;"><i class="fa-solid fa-user"></i></div>
+                  <div class="post-comment-bubble">
+                    <strong>Camila Nogueira</strong>
+                    <span>Esse consolidado ficou bem claro. Seria legal replicar esse formato em outras áreas.</span>
+                  </div>
+                </div>
+                <div class="post-comment-item">
+                  <div class="avatar" style="width:28px;height:28px;"><i class="fa-solid fa-user"></i></div>
+                  <div class="post-comment-bubble">
+                    <strong>Bruno Farias</strong>
+                    <span>Boa evolução do portfólio. As entregas de automação devem gerar impacto rápido.</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="post-comment">
+                <div class="avatar" style="width:30px;height:30px;"><i class="fa-solid fa-user"></i></div>
+                <div class="post-comment-box">Adicione um comentário...</div>
+              </div>
+            </article>
+          </div>
+        </section>
+      </section>
+
+      <aside class="stack sidebar-sticky">
+        <section class="card">
+          <div class="card-header">ACESSOS RÁPIDOS</div>
+          <div class="quick-grid">
+            <div class="quick-item sap"><div><strong>SAP</strong>Gestão Integrada</div></div>
+            <div class="quick-item google"><div><strong>G</strong>Google Workspace</div></div>
+            <div class="quick-item service"><div><strong>◉</strong>ServiceNow</div></div>
+            <div class="quick-item teams"><div><strong>T</strong>Microsoft Teams</div></div>
+            <div class="quick-item learn"><div><strong>▤</strong>e-Learning Treinamentos</div></div>
+            <div class="quick-item jira"><div><strong>◆</strong>Jira/Confluence</div></div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">MEU PERFIL RH</div>
+          <div class="profile-box">
+            <div class="profile-head">
+              <div class="avatar"><i class="fa-solid fa-user"></i></div>
+              <div class="profile-name">Roberto</div>
+            </div>
+
+            <div class="profile-links">
+              <div>Férias (Consultar/Solicitar)</div>
+              <div>Holerite (Maio 2024)</div>
+              <div>Benefícios (Seguro/VT)</div>
+              <div>Minha Avaliação</div>
+              <div>Dados Cadastrais</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">AGENDA DO DIA</div>
+          <div class="menu-list">
+            <div class="menu-item"><span>09:00 • Daily RH</span></div>
+            <div class="menu-item"><span>11:00 • Comitê de Pessoas</span></div>
+            <div class="menu-item"><span>14:00 • Alinhamento com TI</span></div>
+            <div class="menu-item"><span>16:30 • Revisão de Projetos</span></div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">COMUNICADOS</div>
+          <div class="menu-list">
+            <div class="menu-item"><span>Política híbrida atualizada</span></div>
+            <div class="menu-item"><span>Campanha interna de inovação</span></div>
+            <div class="menu-item"><span>Nova trilha de liderança</span></div>
+            <div class="menu-item"><span>Calendário corporativo 2026</span></div>
+          </div>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      const carousel = document.getElementById("connecta-carousel");
+      const track = carousel.querySelector(".carousel-track");
+      const dots = Array.from(document.querySelectorAll("#connecta-carousel-dots .carousel-dot"));
+      const total = dots.length;
+      let current = 0;
+      let timer = null;
+
+      function render(index) {
+        current = index;
+        track.style.transform = `translateX(-${index * 100}%)`;
+        dots.forEach((dot, dotIndex) => {
+          dot.classList.toggle("active", dotIndex === index);
+        });
+      }
+
+      function next() {
+        const nextIndex = (current + 1) % total;
+        render(nextIndex);
+      }
+
+      function start() {
+        stop();
+        timer = window.setInterval(next, 3500);
+      }
+
+      function stop() {
+        if (timer) {
+          window.clearInterval(timer);
+          timer = null;
+        }
+      }
+
+      dots.forEach((dot) => {
+        dot.addEventListener("click", () => {
+          render(Number(dot.dataset.index));
+          start();
+        });
+      });
+
+      carousel.addEventListener("mouseenter", stop);
+      carousel.addEventListener("mouseleave", start);
+
+      render(0);
+      start();
+    })();
+  </script>
+</body>
+</html>
+

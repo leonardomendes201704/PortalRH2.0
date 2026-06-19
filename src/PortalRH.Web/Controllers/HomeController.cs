@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using PortalRH.Web.Models;
+using PortalRH.Web.Services.AntDesign;
 
 namespace PortalRH.Web.Controllers;
 
@@ -26,6 +27,12 @@ public class HomeController : Controller
     public IActionResult CareerTimelineShowcase()
     {
         return View();
+    }
+
+    public IActionResult AntDesignShowcase([FromServices] IAntDesignHrShowcaseService showcaseService)
+    {
+        var model = showcaseService.GetShowcase();
+        return View(model);
     }
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

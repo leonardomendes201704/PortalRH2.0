@@ -1,0 +1,32 @@
+{
+  "data": {
+    "title": "COMUNICAÇÃO CENTRALIZADA",
+    "slides": [
+      {
+        "src": "./assets/images/8c434aca-cab7-4776-95bd-de844c968034.png",
+        "alt": "Campanha de transformação digital",
+        "href": "#comunicacao/leitura/estrategia-digital-2026"
+      },
+      {
+        "src": "./assets/images/8c434aca-cab7-4776-95bd-de844c968034-2.png",
+        "alt": "Alinhamento estratégico da capacidade",
+        "href": "#comunicacao/leitura/direcionadores-portifolio-trimestral"
+      },
+      {
+        "src": "./assets/images/8c434aca-cab7-4776-95bd-de844c968034.png",
+        "alt": "Campanha de transformação digital",
+        "href": "#comunicacao/leitura/calendario-avaliacao-segundo-semestre"
+      },
+      {
+        "src": "./assets/images/8c434aca-cab7-4776-95bd-de844c968034-2.png",
+        "alt": "Alinhamento estratégico da capacidade",
+        "href": "#comunicacao/leitura/evento-inovacao-sao-paulo"
+      },
+      {
+        "src": "./assets/images/8c434aca-cab7-4776-95bd-de844c968034.png",
+        "alt": "Campanha de transformação digital",
+        "href": "#comunicacao/leitura/politica-hibrida-atualizada"
+      }
+    ]
+  }
+}

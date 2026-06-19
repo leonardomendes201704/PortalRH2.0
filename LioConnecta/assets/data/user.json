@@ -1,0 +1,37 @@
+{
+  "brand": {
+    "name": "LIOCONNECTA",
+    "tagline": "Capacidade e Transformação Digital"
+  },
+  "user": {
+    "name": "Roberto Almeida",
+    "greeting": "Olá,",
+    "area": "Recursos Humanos",
+    "notificationCount": 20
+  },
+  "navItems": [
+    { "label": "INÍCIO", "active": true },
+    { "label": "COMUNICAÇÃO" },
+    { "label": "PESSOAS (RH)" },
+    { "label": "SISTEMAS" },
+    { "label": "PROJETOS" },
+    { "label": "RECURSOS" }
+  ],
+  "hero": {
+    "title": "Bem-vindo à LIOCONNECTA!",
+    "subtitle": "O seu ponto central de acesso e colaboração."
+  },
+  "mood": {
+    "title": "Como você está se sentindo hoje?",
+    "items": [
+      { "emoji": "😄", "label": "Motivado", "rank": "1º mais votado" },
+      { "emoji": "🙂", "label": "Bem", "rank": "2º mais votado" },
+      { "emoji": "😴", "label": "Cansado", "rank": "3º mais votado" }
+    ]
+  },
+  "composer": {
+    "title": "No que você está pensando?",
+    "placeholder": "Compartilhe uma atualização com a equipe...",
+    "actions": ["Foto", "Evento", "Comunicado", "Conquista"]
+  }
+}

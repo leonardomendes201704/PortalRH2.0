@@ -1,0 +1,69 @@
+﻿{
+    "data":  {
+                 "brand":  {
+                               "name":  "LIOCONNECTA",
+                               "tagline":  "Capacidade e TransformaÃ§Ã£o Digital"
+                           },
+                 "user":  {
+                              "name":  "Roberto Almeida",
+                              "greeting":  "OlÃ¡,",
+                              "area":  "Recursos Humanos",
+                              "notificationCount":  20
+                          },
+                 "navItems":  [
+                                  {
+                                      "label":  "INÃCIO",
+                                      "active":  true
+                                  },
+                                  {
+                                      "label":  "COMUNICAÃ‡ÃƒO"
+                                  },
+                                  {
+                                      "label":  "PESSOAS (RH)"
+                                  },
+                                  {
+                                      "label":  "SISTEMAS"
+                                  },
+                                  {
+                                      "label":  "PROJETOS"
+                                  },
+                                  {
+                                      "label":  "RECURSOS"
+                                  }
+                              ],
+                 "hero":  {
+                              "title":  "Bem-vindo Ã  LIOCONNECTA!",
+                              "subtitle":  "O seu ponto central de acesso e colaboraÃ§Ã£o."
+                          },
+                 "mood":  {
+                              "title":  "Como vocÃª estÃ¡ se sentindo hoje?",
+                              "items":  [
+                                            {
+                                                "emoji":  "ðŸ˜„",
+                                                "label":  "Motivado",
+                                                "rank":  "1Âº mais votado"
+                                            },
+                                            {
+                                                "emoji":  "ðŸ™‚",
+                                                "label":  "Bem",
+                                                "rank":  "2Âº mais votado"
+                                            },
+                                            {
+                                                "emoji":  "ðŸ˜´",
+                                                "label":  "Cansado",
+                                                "rank":  "3Âº mais votado"
+                                            }
+                                        ]
+                          },
+                 "composer":  {
+                                  "title":  "No que vocÃª estÃ¡ pensando?",
+                                  "placeholder":  "Compartilhe uma atualizaÃ§Ã£o com a equipe...",
+                                  "actions":  [
+                                                  "Foto",
+                                                  "Evento",
+                                                  "Comunicado",
+                                                  "Conquista"
+                                              ]
+                              }
+             }
+}
