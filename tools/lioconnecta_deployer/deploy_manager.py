@@ -398,13 +398,13 @@ class DeployManager:
     def _run_health_checks(self, env: EnvironmentConfig) -> None:
         if env.frontend_health_url:
             self._log(f"Validando frontend em {env.frontend_health_url}...")
-            self._http_check(env.frontend_health_url)
+            self._http_check(env.frontend_health_url, label="Frontend")
 
         if env.api_health_url:
             self._log(f"Validando API em {env.api_health_url}...")
-            self._http_check(env.api_health_url)
+            self._http_check(env.api_health_url, label="API")
 
-    def _http_check(self, url: str) -> None:
+    def _http_check(self, url: str, *, label: str = "Serviço") -> None:
         request = urllib.request.Request(
             url,
             headers={"User-Agent": "LioConnecta-Deploy-GUI"},
@@ -412,12 +412,13 @@ class DeployManager:
         last_error: Exception | None = None
 
         for attempt in range(1, 7):
+            self._log(f"Tentando {label} ({attempt}/6)...")
             try:
                 with urllib.request.urlopen(request, timeout=20) as response:
                     if response.status >= 400:
                         raise RuntimeError(f"Health check falhou em {url}: HTTP {response.status}")
 
-                    self._log(f"Health check OK: {url} ({response.status})")
+                    self._log(f"{label} pronta: {url} ({response.status})")
                     return
             except Exception as exc:  # noqa: BLE001 - surfaced after retries in GUI
                 last_error = exc
@@ -425,7 +426,7 @@ class DeployManager:
                     break
 
                 self._log(
-                    f"Tentativa {attempt}/6 falhou para {url}. Aguardando 5s antes de tentar novamente..."
+                    f"{label} ainda indisponível. Aguardando 5s antes da próxima tentativa..."
                 )
                 time.sleep(5)
 
