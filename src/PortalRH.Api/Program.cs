@@ -31,7 +31,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("LioConnectaLocal", policy =>
     {
         policy
-            .WithOrigins("http://127.0.0.1:4173", "http://localhost:4173")
+            .WithOrigins("http://127.0.0.1:3020", "http://localhost:3020")
             .AllowAnyHeader()
             .AllowAnyMethod();
     });

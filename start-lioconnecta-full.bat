@@ -4,10 +4,10 @@ setlocal
 set "ROOT_DIR=%~dp0"
 set "FRONT_DIR=%ROOT_DIR%LioConnecta"
 set "API_PROJECT=%ROOT_DIR%src\PortalRH.Api\PortalRH.Api.csproj"
-set "FRONT_PORT=4173"
+set "FRONT_PORT=3020"
 set "FRONT_URL=http://127.0.0.1:%FRONT_PORT%/"
 set "NODE_STATIC_SERVER=%FRONT_DIR%\dev-static-server.js"
-set "API_URL=http://localhost:5001"
+set "API_URL=http://localhost:3030"
 
 if not exist "%FRONT_DIR%\index.html" (
   echo.

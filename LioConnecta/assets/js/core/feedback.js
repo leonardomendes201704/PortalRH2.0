@@ -255,7 +255,7 @@ export function bindInteractionFeedback(root = document) {
 
         const message = error instanceof Error && error.message.includes("HTTP 401")
           ? "Sua sessao administrativa expirou. Faca login novamente para publicar."
-          : "Nao foi possivel publicar o comunicado agora. Verifique se a API esta ativa em localhost:5001.";
+          : "Nao foi possivel publicar o comunicado agora. Verifique se a API esta ativa em localhost:3030.";
 
         showToast(message, "danger");
 

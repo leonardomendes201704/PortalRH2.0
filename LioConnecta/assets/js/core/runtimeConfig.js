@@ -1,4 +1,4 @@
-export const APP_VERSION = "v0.12.8";
+export const APP_VERSION = "v0.12.9";
 
 export const DATA_MODES = Object.freeze({
   MOCK: "mock",
@@ -9,7 +9,7 @@ export const DATA_MODES = Object.freeze({
 const DEFAULT_RUNTIME_CONFIG = Object.freeze({
   dataMode: DATA_MODES.MOCK,
   localBasePath: "./local-api",
-  apiBaseUrl: "http://localhost:5001/api",
+  apiBaseUrl: "http://localhost:3030/api",
   endpoints: {
     user: "/me-ui",
     feed: "/feed",

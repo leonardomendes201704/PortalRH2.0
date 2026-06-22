@@ -1135,7 +1135,7 @@ async function loadPageData(route, slug = "") {
         ...userContext,
         ...panels,
         portalUsersPage: createEmptyPortalUsersPage(),
-        portalUsersLoadError: "Nao foi possivel consultar a API administrativa de usuarios. Verifique se a API local esta ativa em localhost:5001."
+        portalUsersLoadError: "Nao foi possivel consultar a API administrativa de usuarios. Verifique se a API local esta ativa em localhost:3030."
       };
     }
   }

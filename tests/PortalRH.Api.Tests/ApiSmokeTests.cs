@@ -294,7 +294,7 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
         _client.DefaultRequestHeaders.Remove("X-Forwarded-For");
         _client.DefaultRequestHeaders.Remove("Origin");
         _client.DefaultRequestHeaders.Add("X-Forwarded-For", "10.20.30.40");
-        _client.DefaultRequestHeaders.Add("Origin", "http://127.0.0.1:4173");
+        _client.DefaultRequestHeaders.Add("Origin", "http://127.0.0.1:3020");
 
         var failedLoginResponse = await _client.PostAsJsonAsync("/api/auth/ldap/login", new LdapLoginRequest
         {
@@ -326,7 +326,7 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
         var user = Assert.Single(payload.Items.Where(item => item.Login == "roberto.almeida@liotecnica.com.br"));
         Assert.Equal(0, user.FailedLoginCount);
         Assert.Equal("10.20.30.40", user.LastKnownIpAddress);
-        Assert.Equal("http://127.0.0.1:4173", user.LastOrigin);
+        Assert.Equal("http://127.0.0.1:3020", user.LastOrigin);
     }
 
     [Fact]

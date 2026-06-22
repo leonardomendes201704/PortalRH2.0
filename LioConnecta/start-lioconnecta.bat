@@ -2,7 +2,7 @@
 setlocal
 
 set "ROOT_DIR=%~dp0"
-set "PORT=4173"
+set "PORT=3020"
 set "URL=http://127.0.0.1:%PORT%/"
 set "FRONT_COMMAND="
 set "FRONT_MODE="
