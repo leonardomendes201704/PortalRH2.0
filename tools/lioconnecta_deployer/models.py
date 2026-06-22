@@ -9,6 +9,17 @@ def _repo_root() -> Path:
     return Path(__file__).resolve().parents[2]
 
 
+def _normalize_api_health_url(value: str) -> str:
+    if not value:
+        return value
+
+    normalized = value.strip()
+    if normalized.endswith(":3030/health"):
+        return normalized[:-len("/health")] + "/api/health"
+
+    return normalized
+
+
 @dataclass
 class GeneralConfig:
     repository_url: str = "https://github.com/leonardomendes201704/PortalRH2.0.git"
@@ -77,10 +88,16 @@ class AppConfig:
         for name, default_env in config.environments.items():
             env_raw = envs_raw.get(name) or {}
             merged[name] = EnvironmentConfig(**{**asdict(default_env), **env_raw})
+            merged[name].api_health_url = _normalize_api_health_url(
+                merged[name].api_health_url
+            )
 
         for name, env_raw in envs_raw.items():
             if name not in merged:
                 merged[name] = EnvironmentConfig(**env_raw)
+                merged[name].api_health_url = _normalize_api_health_url(
+                    merged[name].api_health_url
+                )
 
         config.environments = merged
         return config

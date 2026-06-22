@@ -38,9 +38,10 @@ class DeployManager:
         *,
         cwd: str | None = None,
         env: dict | None = None,
+        display_command: str | None = None,
     ) -> None:
         resolved_command = list(command)
-        self._log(f"$ {' '.join(resolved_command)}")
+        self._log(f"$ {display_command or ' '.join(resolved_command)}")
         process = subprocess.Popen(
             resolved_command,
             cwd=cwd,
@@ -58,7 +59,7 @@ class DeployManager:
         exit_code = process.wait()
         if exit_code != 0:
             raise RuntimeError(
-                f"Comando falhou com código {exit_code}: {' '.join(resolved_command)}"
+                f"Comando falhou com código {exit_code}: {display_command or ' '.join(resolved_command)}"
             )
 
     def validate_environment(self, config: AppConfig, environment_name: str) -> None:
@@ -122,6 +123,10 @@ class DeployManager:
         self._run([dotnet_executable, "restore", str(api_project_path)])
 
         if general.run_api_tests:
+            self._log("Restaurando dependências do projeto de testes da API...")
+            self._run([dotnet_executable, "restore", str(api_test_project_path)])
+
+        if general.run_api_tests:
             self._log("Executando testes da API...")
             self._run(
                 [
@@ -165,6 +170,7 @@ class DeployManager:
                 "Pacote não encontrado. Gere o pacote antes de fazer o deploy."
             )
 
+        self._log(f"Iniciando deploy do ambiente {environment_name}...")
         archive_path = (
             package_output.parent
             / f"lioconnecta-{environment_name.lower()}-{datetime.now().strftime('%Y%m%d%H%M%S')}.tar.gz"
@@ -176,10 +182,12 @@ class DeployManager:
         self._log("Deploy concluído com sucesso.")
 
     def full_deploy(self, config: AppConfig, environment_name: str) -> None:
+        self._log(f"Iniciando pipeline completo do ambiente {environment_name}...")
         self.validate_environment(config, environment_name)
         self.sync_repository(config, environment_name)
         self.build_and_package(config, environment_name)
         self.deploy_environment(config, environment_name)
+        self._log(f"Pipeline completo do ambiente {environment_name} finalizado.")
 
     def _validate_paths(self, general) -> None:
         expected_paths = [
@@ -232,6 +240,17 @@ class DeployManager:
             command.extend(["-hostkey", fingerprint])
         return command
 
+    @staticmethod
+    def _mask_secret(value: str) -> str:
+        return "********" if value else value
+
+    def _build_service_restart_command(self, env: EnvironmentConfig) -> str:
+        service_name = shlex.quote(env.api_service)
+        if env.auth_mode == "password":
+            password = shlex.quote(env.password)
+            return f"echo {password} | sudo -S -p '' systemctl restart {service_name}"
+        return f"sudo systemctl restart {service_name}"
+
     def _create_archive(self, source_dir: Path, archive_path: Path) -> None:
         if archive_path.exists():
             archive_path.unlink()
@@ -257,7 +276,20 @@ class DeployManager:
                 env,
             )
             command.extend([str(archive_path), f"{env.username}@{env.host}:{remote_archive}"])
-            self._run(command)
+            display_command = " ".join(
+                self._append_putty_hostkey(
+                    [
+                        pscp_executable,
+                        "-P",
+                        str(env.port),
+                        "-pw",
+                        self._mask_secret(env.password),
+                    ],
+                    env,
+                )
+                + [str(archive_path), f"{env.username}@{env.host}:{remote_archive}"]
+            )
+            self._run(command, display_command=display_command)
             return
 
         scp_executable = self._ensure_tool("scp")
@@ -301,7 +333,7 @@ class DeployManager:
 
         commands.extend(
             [
-                f"sudo systemctl restart {shlex.quote(env.api_service)}",
+                self._build_service_restart_command(env),
                 f"rm -f {shlex.quote(remote_archive)}",
             ]
         )
@@ -330,7 +362,23 @@ class DeployManager:
                 env,
             )
             command.extend([env.host, remote_command])
-            self._run(command)
+            display_command = " ".join(
+                self._append_putty_hostkey(
+                    [
+                        plink_executable,
+                        "-batch",
+                        "-P",
+                        str(env.port),
+                        "-l",
+                        env.username,
+                        "-pw",
+                        self._mask_secret(env.password),
+                    ],
+                    env,
+                )
+                + [env.host, remote_command.replace(env.password, self._mask_secret(env.password))]
+            )
+            self._run(command, display_command=display_command)
             return
 
         ssh_executable = self._ensure_tool("ssh")

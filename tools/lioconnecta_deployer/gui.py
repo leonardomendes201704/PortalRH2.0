@@ -23,6 +23,8 @@ class DeployGui(tk.Tk):
         self.config_model = load_config()
         self.general_vars: dict[str, tk.Variable] = {}
         self.environment_vars: dict[str, dict[str, tk.Variable]] = {}
+        self.last_result_message: str = ""
+        self.last_result_success: bool = False
 
         self._build_ui()
         self._hydrate_form()
@@ -310,7 +312,7 @@ class DeployGui(tk.Tk):
     @staticmethod
     def _default_api_health_url(host: str) -> str:
         normalized_host = (host or "").strip() or "localhost"
-        return f"http://{normalized_host}:3030/health"
+        return f"http://{normalized_host}:3030/api/health"
 
     def _hydrate_form(self) -> None:
         general = self.config_model.general
@@ -367,21 +369,25 @@ class DeployGui(tk.Tk):
             return
 
         self.save_current_config()
-        self.status_var.set("Executando...")
+        action_name = self._describe_callback(callback)
+        self.last_result_message = ""
+        self.last_result_success = False
+        self.status_var.set(f"Executando: {action_name}...")
+        self._append_log(f"--- {action_name} iniciado ---")
         self.worker_thread = threading.Thread(
             target=self._execute_callback,
-            args=(callback,),
+            args=(callback, action_name),
             daemon=True,
         )
         self.worker_thread.start()
 
-    def _execute_callback(self, callback) -> None:
+    def _execute_callback(self, callback, action_name: str) -> None:
         try:
             callback()
-            self.log_queue.put("__STATUS__::Operação concluída com sucesso.")
+            self.log_queue.put(f"__RESULT__::success::{action_name} concluído com sucesso.")
         except Exception as exc:
             self.log_queue.put(f"ERRO: {exc}")
-            self.log_queue.put("__STATUS__::Operação finalizada com erro.")
+            self.log_queue.put(f"__RESULT__::error::{action_name} finalizado com erro. Verifique o log.")
 
     def _validate_selected(self) -> None:
         DeployManager(self._append_log).validate_environment(
@@ -415,8 +421,15 @@ class DeployGui(tk.Tk):
     def _flush_logs(self) -> None:
         while not self.log_queue.empty():
             message = self.log_queue.get()
-            if message.startswith("__STATUS__::"):
-                self.status_var.set(message.split("::", 1)[1])
+            if message.startswith("__RESULT__::"):
+                _, status, text = message.split("::", 2)
+                self.last_result_message = text
+                self.last_result_success = status == "success"
+                self.status_var.set(text)
+                if self.last_result_success:
+                    messagebox.showinfo("LIOCONNECTA Deploy Manager", text)
+                else:
+                    messagebox.showerror("LIOCONNECTA Deploy Manager", text)
                 continue
             self.log_widget.configure(state="normal")
             self.log_widget.insert("end", f"{message}\n")
@@ -424,6 +437,16 @@ class DeployGui(tk.Tk):
             self.log_widget.configure(state="disabled")
 
         self.after(150, self._flush_logs)
+
+    @staticmethod
+    def _describe_callback(callback) -> str:
+        names = {
+            "_validate_selected": "Validação do ambiente",
+            "_sync_selected": "Sincronização do código",
+            "_package_selected": "Geração do pacote",
+            "_deploy_selected": "Deploy completo",
+        }
+        return names.get(getattr(callback, "__name__", ""), "Operação")
 
     def _pick_path(self, variable: tk.Variable) -> None:
         current = variable.get()
