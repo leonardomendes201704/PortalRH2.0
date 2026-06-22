@@ -1,4 +1,4 @@
-export const APP_VERSION = "v0.11.3";
+export const APP_VERSION = "v0.12.8";
 
 export const DATA_MODES = Object.freeze({
   MOCK: "mock",
@@ -16,11 +16,20 @@ const DEFAULT_RUNTIME_CONFIG = Object.freeze({
     panels: "/panels",
     carousel: "/carousel",
     communications: "/communications",
+    polls: "/polls",
     portalLdapLogin: "/auth/ldap/login",
+    portalSession: "/auth/session",
+    portalLogout: "/auth/logout",
     adminLogin: "/admin/auth/login",
     adminSession: "/admin/auth/session",
     adminLogout: "/admin/auth/logout",
-    adminLdap: "/admin/ldap"
+    adminLdap: "/admin/ldap",
+    adminPolls: "/admin/polls",
+    adminPollAssets: "/admin/polls/assets",
+    adminPortalUsers: "/admin/portal-users",
+    adminPortalUserStatus: "/admin/portal-users/{id}/status",
+    adminPortalUserRole: "/admin/portal-users/{id}/role",
+    adminPortalUserPermission: "/admin/portal-users/{id}/permissions"
   }
 });
 
@@ -130,7 +139,7 @@ export function resolveApiEndpoint(domain) {
   const endpoint = config.endpoints?.[domain];
 
   if (!endpoint) {
-    throw new Error(`Endpoint não configurado para o domínio "${domain}".`);
+    throw new Error(`Endpoint nao configurado para o dominio "${domain}".`);
   }
 
   return joinUrl(config.apiBaseUrl, endpoint);

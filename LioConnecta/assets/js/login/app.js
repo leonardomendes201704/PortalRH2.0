@@ -1,10 +1,10 @@
-import { showToast } from "../core/feedback.js?v=0.11.3";
-import { APP_VERSION } from "../core/runtimeConfig.js?v=0.11.3";
+import { showToast } from "../core/feedback.js?v=0.12.8";
+import { APP_VERSION } from "../core/runtimeConfig.js?v=0.12.8";
 import {
   getStoredPortalSession,
   loginWithLdap,
   resolvePortalPostLoginTarget
-} from "../services/portalAuthService.js?v=0.11.3";
+} from "../services/portalAuthService.js?v=0.12.8";
 
 function renderVersionBadge() {
   const badge = document.querySelector(".app-version-badge");

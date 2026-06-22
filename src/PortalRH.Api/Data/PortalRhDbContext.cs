@@ -16,6 +16,11 @@ public class PortalRhDbContext : DbContext
     public DbSet<LdapConfiguration> LdapConfigurations => Set<LdapConfiguration>();
     public DbSet<PortalUser> PortalUsers => Set<PortalUser>();
     public DbSet<PortalSession> PortalSessions => Set<PortalSession>();
+    public DbSet<PortalUserLoginEvent> PortalUserLoginEvents => Set<PortalUserLoginEvent>();
+    public DbSet<PortalUserAdminAuditLog> PortalUserAdminAuditLogs => Set<PortalUserAdminAuditLog>();
+    public DbSet<Poll> Polls => Set<Poll>();
+    public DbSet<PollOption> PollOptions => Set<PollOption>();
+    public DbSet<PollVote> PollVotes => Set<PollVote>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

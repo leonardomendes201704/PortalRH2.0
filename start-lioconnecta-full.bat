@@ -42,7 +42,7 @@ set "FRONT_MODE="
 
 where node >nul 2>nul
 if %errorlevel%==0 (
-  set "FRONT_COMMAND=node \"%NODE_STATIC_SERVER%\""
+  set "FRONT_COMMAND=node dev-static-server.js"
   set "FRONT_MODE=node"
 )
 

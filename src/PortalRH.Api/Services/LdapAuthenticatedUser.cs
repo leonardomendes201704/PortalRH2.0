@@ -8,4 +8,6 @@ public sealed record LdapAuthenticatedUser(
     string DisplayName,
     string? Department,
     string? Title,
-    string? DistinguishedName);
+    string? DistinguishedName,
+    string? ManagerDisplayName,
+    string? ManagerDistinguishedName);
