@@ -4,6 +4,7 @@ import shlex
 import shutil
 import subprocess
 import tarfile
+import time
 import urllib.request
 from datetime import datetime
 from pathlib import Path
@@ -408,7 +409,24 @@ class DeployManager:
             url,
             headers={"User-Agent": "LioConnecta-Deploy-GUI"},
         )
-        with urllib.request.urlopen(request, timeout=20) as response:
-            if response.status >= 400:
-                raise RuntimeError(f"Health check falhou em {url}: HTTP {response.status}")
-            self._log(f"Health check OK: {url} ({response.status})")
+        last_error: Exception | None = None
+
+        for attempt in range(1, 7):
+            try:
+                with urllib.request.urlopen(request, timeout=20) as response:
+                    if response.status >= 400:
+                        raise RuntimeError(f"Health check falhou em {url}: HTTP {response.status}")
+
+                    self._log(f"Health check OK: {url} ({response.status})")
+                    return
+            except Exception as exc:  # noqa: BLE001 - surfaced after retries in GUI
+                last_error = exc
+                if attempt == 6:
+                    break
+
+                self._log(
+                    f"Tentativa {attempt}/6 falhou para {url}. Aguardando 5s antes de tentar novamente..."
+                )
+                time.sleep(5)
+
+        raise RuntimeError(str(last_error) if last_error else f"Health check falhou em {url}")
