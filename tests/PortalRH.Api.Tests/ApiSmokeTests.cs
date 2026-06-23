@@ -34,6 +34,21 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
     }
 
     [Fact]
+    public async Task CorsPolicy_AllowsFrontendOriginsOnPorts3020And4173()
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Options, "/api/admin/auth/login");
+        request.Headers.Add("Origin", "http://10.0.0.79:3020");
+        request.Headers.Add("Access-Control-Request-Method", "POST");
+        request.Headers.Add("Access-Control-Request-Headers", "content-type");
+
+        var response = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        Assert.True(response.Headers.TryGetValues("Access-Control-Allow-Origin", out var allowOrigins));
+        Assert.Contains("http://10.0.0.79:3020", allowOrigins);
+    }
+
+    [Fact]
     public async Task CommunicationsEndpoint_CreatesAndReadsCommunication()
     {
         var loginResponse = await _client.PostAsJsonAsync("/api/admin/auth/login", new AdminLoginRequest("super-admin", "Liotec@2026"));
