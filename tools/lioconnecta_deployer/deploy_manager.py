@@ -252,6 +252,25 @@ class DeployManager:
             return f"echo {password} | sudo -S -p '' systemctl restart {service_name}"
         return f"sudo systemctl restart {service_name}"
 
+    def _build_ldap_runtime_compatibility_command(self, env: EnvironmentConfig) -> str:
+        commands = (
+            "if [ -e /lib/x86_64-linux-gnu/libldap.so.2 ]; then "
+            "ln -sfn /lib/x86_64-linux-gnu/libldap.so.2 "
+            "/usr/lib/x86_64-linux-gnu/libldap-2.5.so.0; "
+            "fi; "
+            "if [ -e /lib/x86_64-linux-gnu/liblber.so.2 ]; then "
+            "ln -sfn /lib/x86_64-linux-gnu/liblber.so.2 "
+            "/usr/lib/x86_64-linux-gnu/liblber-2.5.so.0; "
+            "fi; "
+            "ldconfig"
+        )
+
+        if env.auth_mode == "password":
+            password = shlex.quote(env.password)
+            return f"echo {password} | sudo -S -p '' sh -c {shlex.quote(commands)}"
+
+        return f"sudo sh -c {shlex.quote(commands)}"
+
     def _create_archive(self, source_dir: Path, archive_path: Path) -> None:
         if archive_path.exists():
             archive_path.unlink()
@@ -334,6 +353,7 @@ class DeployManager:
 
         commands.extend(
             [
+                self._build_ldap_runtime_compatibility_command(env),
                 self._build_service_restart_command(env),
                 f"rm -f {shlex.quote(remote_archive)}",
             ]

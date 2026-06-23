@@ -62,6 +62,7 @@ Esse arquivo fica fora do Git para não subir credenciais acidentalmente.
 - `tar`
 - `systemctl`
 - serviço da API previamente configurado
+- OpenLDAP instalado (`libldap2` em Ubuntu/Debian)
 
 ## Observações
 
@@ -70,3 +71,4 @@ Esse arquivo fica fora do Git para não subir credenciais acidentalmente.
 - O campo `Destino final do frontend no servidor` é opcional, mas recomendado quando o frontend for servido por `nginx` ou pasta estática dedicada.
 - O campo `Comando remoto pós-deploy` serve para cenários como `nginx -s reload`, limpeza de cache ou outros acertos do servidor.
 - No primeiro deploy, a ferramenta cria automaticamente a pasta base remota do deploy, a subpasta `releases` e também o destino do frontend, se ele tiver sido preenchido.
+- Em Ubuntu 24.04, o deploy cria automaticamente os aliases de compatibilidade `libldap-2.5.so.0` e `liblber-2.5.so.0` usados pelo .NET 8 a partir das bibliotecas OpenLDAP 2.6 instaladas no servidor.

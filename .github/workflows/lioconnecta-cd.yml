@@ -217,6 +217,13 @@ jobs:
              mkdir -p '${RELEASE_DIR}'; \
              tar -xzf '${ARCHIVE_NAME}' -C '${RELEASE_DIR}'; \
              ln -sfn '${RELEASE_DIR}' '${CURRENT_DIR}'; \
+             if [ -e /lib/x86_64-linux-gnu/libldap.so.2 ]; then \
+               sudo ln -sfn /lib/x86_64-linux-gnu/libldap.so.2 /usr/lib/x86_64-linux-gnu/libldap-2.5.so.0; \
+             fi; \
+             if [ -e /lib/x86_64-linux-gnu/liblber.so.2 ]; then \
+               sudo ln -sfn /lib/x86_64-linux-gnu/liblber.so.2 /usr/lib/x86_64-linux-gnu/liblber-2.5.so.0; \
+             fi; \
+             sudo ldconfig; \
              sudo systemctl restart '${API_SERVICE}'; \
              if [ -n \"${DEPLOY_POST_COMMAND}\" ]; then eval \"${DEPLOY_POST_COMMAND}\"; fi; \
              rm -f '${ARCHIVE_NAME}'"
