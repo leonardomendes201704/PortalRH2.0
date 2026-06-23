@@ -42,8 +42,8 @@ import {
   votePoll
 } from "./polls/index.js?v=0.12.8";
 import { renderFeed } from "./feed/index.js?v=0.12.8";
-import { bindInteractionFeedback, showToast } from "./core/feedback.js?v=0.12.8";
-import { getRuntimeConfig } from "./core/runtimeConfig.js?v=0.12.8";
+import { bindInteractionFeedback, showToast } from "./core/feedback.js?v=0.12.10";
+import { getRuntimeConfig } from "./core/runtimeConfig.js?v=0.12.10";
 import { getPanelData } from "./services/panelService.js?v=0.12.8";
 import { getUserHomeContext } from "./services/userService.js?v=0.12.8";
 import { fetchAdminSession, getAdminAuthHeaders, getStoredAdminSession, isSuperAdminSession, redirectToAdminLogin } from "./services/adminAuthService.js?v=0.12.8";
@@ -1135,7 +1135,7 @@ async function loadPageData(route, slug = "") {
         ...userContext,
         ...panels,
         portalUsersPage: createEmptyPortalUsersPage(),
-        portalUsersLoadError: "Nao foi possivel consultar a API administrativa de usuarios. Verifique se a API local esta ativa em localhost:3030."
+        portalUsersLoadError: "Nao foi possivel consultar a API administrativa de usuarios. Verifique se a API do ambiente esta ativa."
       };
     }
   }

@@ -1,4 +1,4 @@
-export const APP_VERSION = "v0.12.9";
+export const APP_VERSION = "v0.12.10";
 
 export const DATA_MODES = Object.freeze({
   MOCK: "mock",
@@ -6,10 +6,45 @@ export const DATA_MODES = Object.freeze({
   API: "api"
 });
 
+function resolveDefaultApiBaseUrl() {
+  const currentWindow = getWindowObject();
+  const protocol = currentWindow?.location?.protocol?.startsWith("http")
+    ? currentWindow.location.protocol
+    : "http:";
+  const hostname = currentWindow?.location?.hostname || "localhost";
+
+  return `${protocol}//${hostname}:3030/api`;
+}
+
+function isLoopbackHost(hostname) {
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+}
+
+function normalizeApiBaseUrl(candidate) {
+  const value = String(candidate ?? "").trim();
+  if (!value) {
+    return "";
+  }
+
+  const currentWindow = getWindowObject();
+  const currentHost = currentWindow?.location?.hostname || "";
+
+  try {
+    const parsed = new URL(value);
+    if (!isLoopbackHost(currentHost) && isLoopbackHost(parsed.hostname)) {
+      return resolveDefaultApiBaseUrl();
+    }
+  } catch {
+    return value;
+  }
+
+  return value;
+}
+
 const DEFAULT_RUNTIME_CONFIG = Object.freeze({
   dataMode: DATA_MODES.MOCK,
   localBasePath: "./local-api",
-  apiBaseUrl: "http://localhost:3030/api",
+  apiBaseUrl: "",
   endpoints: {
     user: "/me-ui",
     feed: "/feed",
@@ -84,7 +119,11 @@ export function getRuntimeConfig() {
   );
 
   const localBasePath = params.get("localBasePath") ?? stored.localBasePath ?? DEFAULT_RUNTIME_CONFIG.localBasePath;
-  const apiBaseUrl = params.get("apiBaseUrl") ?? stored.apiBaseUrl ?? DEFAULT_RUNTIME_CONFIG.apiBaseUrl;
+  const apiBaseUrl = normalizeApiBaseUrl(
+    params.get("apiBaseUrl") ??
+    stored.apiBaseUrl ??
+    resolveDefaultApiBaseUrl()
+  );
 
   return {
     version: APP_VERSION,
