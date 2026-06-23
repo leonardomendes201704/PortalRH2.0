@@ -1,4 +1,4 @@
-export const APP_VERSION = "v0.11.3";
+export const APP_VERSION = "v0.12.10";
 
 export const DATA_MODES = Object.freeze({
   MOCK: "mock",
@@ -6,21 +6,65 @@ export const DATA_MODES = Object.freeze({
   API: "api"
 });
 
+function resolveDefaultApiBaseUrl() {
+  const currentWindow = getWindowObject();
+  const protocol = currentWindow?.location?.protocol?.startsWith("http")
+    ? currentWindow.location.protocol
+    : "http:";
+  const hostname = currentWindow?.location?.hostname || "localhost";
+
+  return `${protocol}//${hostname}:3030/api`;
+}
+
+function isLoopbackHost(hostname) {
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+}
+
+function normalizeApiBaseUrl(candidate) {
+  const value = String(candidate ?? "").trim();
+  if (!value) {
+    return "";
+  }
+
+  const currentWindow = getWindowObject();
+  const currentHost = currentWindow?.location?.hostname || "";
+
+  try {
+    const parsed = new URL(value);
+    if (!isLoopbackHost(currentHost) && isLoopbackHost(parsed.hostname)) {
+      return resolveDefaultApiBaseUrl();
+    }
+  } catch {
+    return value;
+  }
+
+  return value;
+}
+
 const DEFAULT_RUNTIME_CONFIG = Object.freeze({
   dataMode: DATA_MODES.MOCK,
   localBasePath: "./local-api",
-  apiBaseUrl: "http://localhost:5001/api",
+  apiBaseUrl: "",
   endpoints: {
     user: "/me-ui",
     feed: "/feed",
     panels: "/panels",
     carousel: "/carousel",
     communications: "/communications",
+    polls: "/polls",
     portalLdapLogin: "/auth/ldap/login",
+    portalSession: "/auth/session",
+    portalLogout: "/auth/logout",
     adminLogin: "/admin/auth/login",
     adminSession: "/admin/auth/session",
     adminLogout: "/admin/auth/logout",
-    adminLdap: "/admin/ldap"
+    adminLdap: "/admin/ldap",
+    adminPolls: "/admin/polls",
+    adminPollAssets: "/admin/polls/assets",
+    adminPortalUsers: "/admin/portal-users",
+    adminPortalUserStatus: "/admin/portal-users/{id}/status",
+    adminPortalUserRole: "/admin/portal-users/{id}/role",
+    adminPortalUserPermission: "/admin/portal-users/{id}/permissions"
   }
 });
 
@@ -75,7 +119,11 @@ export function getRuntimeConfig() {
   );
 
   const localBasePath = params.get("localBasePath") ?? stored.localBasePath ?? DEFAULT_RUNTIME_CONFIG.localBasePath;
-  const apiBaseUrl = params.get("apiBaseUrl") ?? stored.apiBaseUrl ?? DEFAULT_RUNTIME_CONFIG.apiBaseUrl;
+  const apiBaseUrl = normalizeApiBaseUrl(
+    params.get("apiBaseUrl") ??
+    stored.apiBaseUrl ??
+    resolveDefaultApiBaseUrl()
+  );
 
   return {
     version: APP_VERSION,
@@ -130,7 +178,7 @@ export function resolveApiEndpoint(domain) {
   const endpoint = config.endpoints?.[domain];
 
   if (!endpoint) {
-    throw new Error(`Endpoint não configurado para o domínio "${domain}".`);
+    throw new Error(`Endpoint nao configurado para o dominio "${domain}".`);
   }
 
   return joinUrl(config.apiBaseUrl, endpoint);

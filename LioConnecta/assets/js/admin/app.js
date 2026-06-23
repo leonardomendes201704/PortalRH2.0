@@ -1,6 +1,6 @@
-import { showToast } from "../core/feedback.js?v=0.11.3";
-import { loginAdmin, fetchAdminSession, getStoredAdminSession, resolvePostLoginTarget } from "../services/adminAuthService.js?v=0.11.3";
-import { getRuntimeConfig } from "../core/runtimeConfig.js?v=0.11.3";
+import { showToast } from "../core/feedback.js?v=0.12.10";
+import { loginAdmin, fetchAdminSession, getStoredAdminSession, resolvePostLoginTarget } from "../services/adminAuthService.js?v=0.12.8";
+import { getRuntimeConfig } from "../core/runtimeConfig.js?v=0.12.10";
 
 function renderVersionBadge() {
   const badge = document.querySelector(".app-version-badge");
@@ -12,27 +12,11 @@ function renderVersionBadge() {
   badge.textContent = `${config.version} • ADMIN`;
 }
 
-function redirectToPortal(hash = "#comunicacao/restrita") {
+function redirectToTarget(hash = "#comunicacao/restrita") {
   window.location.href = `../${hash}`;
 }
 
-async function tryRestoreSession() {
-  const session = getStoredAdminSession();
-  if (!session) {
-    return;
-  }
-
-  try {
-    const validated = await fetchAdminSession();
-    if (validated) {
-      redirectToPortal(resolvePostLoginTarget());
-    }
-  } catch {
-    // Sessao expirada ou invalida: segue para login manual.
-  }
-}
-
-function bindLoginForm() {
+function bindAdminLoginForm() {
   const form = document.getElementById("admin-login-form");
   if (!form) {
     return;
@@ -51,42 +35,55 @@ function bindLoginForm() {
     }
 
     const submitButton = form.querySelector("[type='submit']");
-    const originalLabel = submitButton?.textContent;
+    const originalLabel = submitButton?.textContent || "Entrar como administrador";
 
     if (submitButton) {
       submitButton.disabled = true;
-      submitButton.textContent = "Autenticando...";
+      submitButton.textContent = "Validando...";
     }
 
     try {
       const session = await loginAdmin(username, password);
       if (!session) {
-        throw new Error("Credenciais invalidas.");
+        throw new Error("Sessao administrativa nao retornada.");
       }
 
-      showToast("Login administrativo realizado com sucesso.", "success");
+      showToast(`Acesso administrativo liberado para ${session.user.displayName}.`, "success");
       window.setTimeout(() => {
-        redirectToPortal(resolvePostLoginTarget());
-      }, 500);
+        redirectToTarget(resolvePostLoginTarget());
+      }, 400);
     } catch (error) {
       console.error("Falha no login administrativo.", error);
-      showToast("Usuario ou senha invalidos. Tente novamente.", "danger");
+      showToast("Nao foi possivel autenticar o super-admin com os dados informados.", "danger");
     } finally {
       if (submitButton) {
         submitButton.disabled = false;
-        submitButton.textContent = originalLabel || "Entrar na area admin";
+        submitButton.textContent = originalLabel;
       }
     }
   });
 }
 
-async function bootstrapAdminLogin() {
-  renderVersionBadge();
-  bindLoginForm();
-  await tryRestoreSession();
+async function tryRestoreAdminSession() {
+  const session = getStoredAdminSession();
+  if (!session) {
+    return;
+  }
+
+  try {
+    const validated = await fetchAdminSession();
+    if (validated) {
+      redirectToTarget(resolvePostLoginTarget());
+    }
+  } catch {
+    // Mantem a tela de login exibida quando a sessao expira.
+  }
 }
 
-bootstrapAdminLogin().catch((error) => {
-  console.error("Falha ao iniciar o login administrativo.", error);
-  showToast("Nao foi possivel carregar a tela de login administrativo.", "danger");
-});
+function bootstrapAdminLogin() {
+  renderVersionBadge();
+  bindAdminLoginForm();
+  tryRestoreAdminSession();
+}
+
+bootstrapAdminLogin();

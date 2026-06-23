@@ -38,6 +38,25 @@ public class PortalUserConfiguration : IEntityTypeConfiguration<PortalUser>
         builder.Property(item => item.DistinguishedName)
             .HasColumnType("text");
 
+        builder.Property(item => item.ManagerDisplayName)
+            .HasMaxLength(180);
+
+        builder.Property(item => item.ManagerDistinguishedName)
+            .HasColumnType("text");
+
+        builder.Property(item => item.Role)
+            .HasMaxLength(80)
+            .IsRequired();
+
+        builder.Property(item => item.ModulePermissionsJson)
+            .HasColumnType("text");
+
+        builder.Property(item => item.LastKnownIpAddress)
+            .HasMaxLength(80);
+
+        builder.Property(item => item.LastOrigin)
+            .HasMaxLength(240);
+
         builder.Property(item => item.CreatedAtUtc)
             .IsRequired();
 

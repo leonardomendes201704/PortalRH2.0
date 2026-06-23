@@ -21,6 +21,7 @@ function mapGenericPanel(panel) {
     title: asString(panel?.title, "Painel"),
     name: asString(panel?.name, ""),
     subtitle: asString(panel?.subtitle, ""),
+    description: asString(panel?.description, ""),
     items: asArray(panel?.items).map(mapPanelItem).filter((item) => {
       if (typeof item === "string") {
         return Boolean(item);

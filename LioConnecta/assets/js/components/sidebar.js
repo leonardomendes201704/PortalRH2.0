@@ -122,6 +122,8 @@ export function renderProfileCard(panel) {
           <div class="profile-head-copy">
             <div class="profile-name">${escapeHtml(panel.name)}</div>
             ${panel.subtitle ? `<div class="user-area">${escapeHtml(panel.subtitle)}</div>` : ""}
+            ${panel.description ? `<div class="profile-role">${escapeHtml(panel.description)}</div>` : ""}
+            ${panel.manager ? `<div class="profile-role">Gestor: ${escapeHtml(panel.manager)}</div>` : ""}
             <div class="profile-meta">
               ${renderPanelPill("RH", "brand")}
               ${renderPanelPill("Perfil ativo", "success")}

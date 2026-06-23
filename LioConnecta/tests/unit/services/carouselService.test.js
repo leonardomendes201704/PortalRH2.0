@@ -6,7 +6,7 @@ import { getCarouselData } from "../../../assets/js/services/carouselService.js"
 test("carouselService retorna slides normalizados", async () => {
   const originalFetch = global.fetch;
   const payloads = new Map([
-    ["http://localhost:5001/api/communications", [
+    ["http://localhost:3030/api/communications", [
       {
         slug: "comunicado-destaque",
         title: "Comunicado principal",
@@ -37,7 +37,7 @@ test("carouselService retorna slides normalizados", async () => {
 test("carouselService preserva href vindo do payload", async () => {
   const originalFetch = global.fetch;
   const payloads = new Map([
-    ["http://localhost:5001/api/communications", [
+    ["http://localhost:3030/api/communications", [
       {
         slug: "exemplo",
         title: "Comunicado exemplo",

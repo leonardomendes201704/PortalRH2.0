@@ -2,16 +2,16 @@ import { getJson, putJson } from "./apiClient.js";
 import { resolveApiEndpoint } from "../core/runtimeConfig.js";
 
 const DEFAULT_LDAP_SETTINGS = Object.freeze({
-  isEnabled: false,
-  server: "",
+  isEnabled: true,
+  server: "dc-virtual-02.liotecnica.com.br",
   port: 389,
   useLdaps: false,
   useStartTls: false,
   ignoreCertificateValidation: false,
-  baseDn: "",
-  userSearchBase: "",
-  netbiosDomain: "",
-  loginFormat: "email-or-upn-or-samaccountname",
+  baseDn: "DC=liotecnica,DC=com,DC=br",
+  userSearchBase: "OU=Departamentos,DC=liotecnica,DC=com,DC=br",
+  netbiosDomain: "LIOTECNICA",
+  loginFormat: "domain-backslash-samaccountname",
   bindDn: "",
   hasServiceAccountPassword: false,
   searchFilter: "(|(mail={0})(userPrincipalName={0})(sAMAccountName={0}))",
