@@ -104,6 +104,34 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
     }
 
     [Fact]
+    public async Task AdminLdapEndpoint_ReturnsSeededDefaultConfiguration()
+    {
+        var loginResponse = await _client.PostAsJsonAsync("/api/admin/auth/login", new AdminLoginRequest("super-admin", "Liotec@2026"));
+        Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
+
+        var adminSession = await loginResponse.Content.ReadFromJsonAsync<AdminLoginResponse>();
+        Assert.NotNull(adminSession);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminSession.Token);
+
+        var configuration = await _client.GetFromJsonAsync<LdapConfigurationDto>("/api/admin/ldap");
+
+        Assert.NotNull(configuration);
+        Assert.True(configuration.IsEnabled);
+        Assert.Equal("dc-virtual-02.liotecnica.com.br", configuration.Server);
+        Assert.Equal(389, configuration.Port);
+        Assert.Equal("DC=liotecnica,DC=com,DC=br", configuration.BaseDn);
+        Assert.Equal("OU=Departamentos,DC=liotecnica,DC=com,DC=br", configuration.UserSearchBase);
+        Assert.Equal("LIOTECNICA", configuration.NetbiosDomain);
+        Assert.Equal("domain-backslash-samaccountname", configuration.LoginFormat);
+        Assert.Equal("(|(mail={0})(userPrincipalName={0})(sAMAccountName={0}))", configuration.SearchFilter);
+        Assert.Equal("displayName", configuration.DisplayNameAttribute);
+        Assert.False(configuration.UseLdaps);
+        Assert.False(configuration.UseStartTls);
+        Assert.False(configuration.IgnoreCertificateValidation);
+        Assert.False(configuration.HasServiceAccountPassword);
+    }
+
+    [Fact]
     public async Task AdminLdapEndpoint_SavesAndReadsConfiguration()
     {
         var loginResponse = await _client.PostAsJsonAsync("/api/admin/auth/login", new AdminLoginRequest("super-admin", "Liotec@2026"));

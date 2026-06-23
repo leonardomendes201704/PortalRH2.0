@@ -129,7 +129,7 @@ function renderLdapSettingsSection(ldapSettings = {}) {
 
           <label class="communication-form-field communication-form-field--full">
             <span>Base de busca de usuarios (opcional)</span>
-            <input name="userSearchBase" type="text" value="${escapeHtml(ldapSettings.userSearchBase || "")}" placeholder="OU=Usuarios,DC=liotecnica,DC=com,DC=br" />
+            <input name="userSearchBase" type="text" value="${escapeHtml(ldapSettings.userSearchBase || "")}" placeholder="OU=Departamentos,DC=liotecnica,DC=com,DC=br" />
           </label>
 
           <label class="communication-form-field communication-form-field--full">
