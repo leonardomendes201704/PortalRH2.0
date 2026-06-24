@@ -66,7 +66,12 @@ const DEFAULT_RUNTIME_CONFIG = Object.freeze({
     adminPortalUsers: "/admin/portal-users",
     adminPortalUserStatus: "/admin/portal-users/{id}/status",
     adminPortalUserRole: "/admin/portal-users/{id}/role",
-    adminPortalUserPermission: "/admin/portal-users/{id}/permissions"
+    adminPortalUserPermission: "/admin/portal-users/{id}/permissions",
+    moodSurveyToday: "/mood-survey/today",
+    moodSurveyVote: "/mood-survey/vote",
+    moodSurveyDashboard: "/mood-survey/dashboard",
+    adminMoodSurveyDashboard: "/admin/mood-survey/dashboard",
+    moodSurveyFeedbackMessages: "/mood-survey/feedback-messages"
   }
 });
 
