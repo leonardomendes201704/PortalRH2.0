@@ -3,6 +3,15 @@ import { escapeHtml } from "./html.js";
 
 const NOTIFICATION_ICONS = {
   "Notificações Totais": "fa-solid fa-bell",
+  "Comunicados RH": "fa-solid fa-bullhorn",
+  "Comunicados Corporativos": "fa-solid fa-building",
+  "Tecnologia": "fa-solid fa-microchip",
+  "Politicas": "fa-solid fa-scale-balanced",
+  "Políticas": "fa-solid fa-scale-balanced",
+  "Eventos": "fa-solid fa-calendar-days",
+  "Enquetes": "fa-solid fa-square-poll-vertical",
+  "Lidas": "fa-solid fa-check-double",
+  "Notificações Totais": "fa-solid fa-bell",
   "Comunicados Novos": "fa-solid fa-bullhorn",
   "Interações no Feed": "fa-solid fa-comments",
   "Aprovações Pendentes": "fa-solid fa-circle-check",

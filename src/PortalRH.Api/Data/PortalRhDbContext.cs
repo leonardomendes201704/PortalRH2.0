@@ -21,6 +21,8 @@ public class PortalRhDbContext : DbContext
     public DbSet<Poll> Polls => Set<Poll>();
     public DbSet<PollOption> PollOptions => Set<PollOption>();
     public DbSet<PollVote> PollVotes => Set<PollVote>();
+    public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<PortalUserNotificationRead> PortalUserNotificationReads => Set<PortalUserNotificationRead>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

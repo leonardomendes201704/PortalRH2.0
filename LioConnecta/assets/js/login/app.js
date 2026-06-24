@@ -1,5 +1,5 @@
 import { showToast } from "../core/feedback.js?v=0.12.10";
-import { APP_VERSION } from "../core/runtimeConfig.js?v=0.12.10";
+import { APP_VERSION } from "../core/runtimeConfig.js?v=0.13.0";
 import {
   getStoredPortalSession,
   loginWithLdap,
