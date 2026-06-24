@@ -1,8 +1,24 @@
-import { postJson } from "./apiClient.js";
+import { getJson, postJson, postWithoutBody } from "./apiClient.js";
 import { resolveApiEndpoint } from "../core/runtimeConfig.js";
 
 const STORAGE_KEY = "lioconnecta.portalSession";
 const DEFAULT_PORTAL_HASH = "#inicio";
+
+function normalizePersonName(value) {
+  const text = String(value ?? "").trim();
+  if (!text) {
+    return "";
+  }
+
+  if (/[a-zà-ÿ]/.test(text)) {
+    return text;
+  }
+
+  return text
+    .split(/\s+/)
+    .map((part) => part ? `${part.charAt(0).toUpperCase()}${part.slice(1).toLowerCase()}` : "")
+    .join(" ");
+}
 
 function getStorage() {
   return typeof window !== "undefined" ? window.localStorage : null;
@@ -22,7 +38,19 @@ function normalizeSession(payload) {
       displayName: String(payload.user.displayName ?? ""),
       email: String(payload.user.email ?? ""),
       department: String(payload.user.department ?? ""),
-      title: String(payload.user.title ?? "")
+      title: String(payload.user.title ?? ""),
+      managerDisplayName: normalizePersonName(payload.user.managerDisplayName),
+      role: String(payload.user.role ?? ""),
+      roleLabel: String(payload.user.roleLabel ?? ""),
+      permissions: Array.isArray(payload.user.permissions) ? payload.user.permissions.map((item) => String(item ?? "")) : [],
+      modulePermissions: Array.isArray(payload.user.modulePermissions)
+        ? payload.user.modulePermissions.map((item) => ({
+          moduleKey: String(item?.moduleKey ?? ""),
+          moduleLabel: String(item?.moduleLabel ?? ""),
+          accessLevel: String(item?.accessLevel ?? ""),
+          accessLevelLabel: String(item?.accessLevelLabel ?? "")
+        }))
+        : []
     }
   };
 }
@@ -70,6 +98,16 @@ export function clearPortalSession() {
   storage?.removeItem(STORAGE_KEY);
 }
 
+export function getPortalAuthHeaders() {
+  const session = getStoredPortalSession();
+  return session?.token
+    ? {
+      "X-Portal-Token": session.token,
+      Authorization: `Bearer ${session.token}`
+    }
+    : {};
+}
+
 export async function loginWithLdap(login, password) {
   const response = await postJson(resolveApiEndpoint("portalLdapLogin"), {
     login,
@@ -77,6 +115,35 @@ export async function loginWithLdap(login, password) {
   });
 
   return storePortalSession(response);
+}
+
+export async function fetchPortalSession() {
+  const session = getStoredPortalSession();
+  if (!session) {
+    return null;
+  }
+
+  const payload = await getJson(resolveApiEndpoint("portalSession"), {
+    headers: getPortalAuthHeaders()
+  });
+
+  return storePortalSession(payload);
+}
+
+export async function logoutPortal() {
+  const session = getStoredPortalSession();
+
+  if (session?.token) {
+    try {
+      await postWithoutBody(resolveApiEndpoint("portalLogout"), {
+        headers: getPortalAuthHeaders()
+      });
+    } catch {
+      // Ignora falha remota e encerra sessao localmente.
+    }
+  }
+
+  clearPortalSession();
 }
 
 export function buildPortalLoginUrl(nextHash = DEFAULT_PORTAL_HASH) {

@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using PortalRH.Api.Data;
 using PortalRH.Api.Interfaces;
 using PortalRH.Api.Models;
@@ -16,10 +17,13 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICommunicationService, CommunicationService>();
 builder.Services.AddScoped<IAdminAuthService, AdminAuthService>();
 builder.Services.AddScoped<ILdapConfigurationService, LdapConfigurationService>();
 builder.Services.AddScoped<IPortalAuthService, PortalAuthService>();
+builder.Services.AddScoped<IPortalUserAdminService, PortalUserAdminService>();
+builder.Services.AddScoped<IPollService, PollService>();
 builder.Services.AddScoped<ILdapDirectoryAuthenticator, LdapDirectoryAuthenticator>();
 builder.Services.AddScoped<IPasswordHasher<AdminUser>, PasswordHasher<AdminUser>>();
 builder.Services.AddCors(options =>
@@ -27,7 +31,21 @@ builder.Services.AddCors(options =>
     options.AddPolicy("LioConnectaLocal", policy =>
     {
         policy
-            .WithOrigins("http://127.0.0.1:4173", "http://localhost:4173")
+            .SetIsOriginAllowed(static origin =>
+            {
+                if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri))
+                {
+                    return false;
+                }
+
+                if (!string.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase) &&
+                    !string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+
+                return uri.Port is 3020 or 4173;
+            })
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
@@ -43,6 +61,15 @@ if (!string.IsNullOrWhiteSpace(connectionString))
 var app = builder.Build();
 await PortalRhDbInitializer.InitializeAsync(app.Services);
 
+var webRootPath = builder.Environment.WebRootPath;
+if (string.IsNullOrWhiteSpace(webRootPath))
+{
+    webRootPath = Path.Combine(builder.Environment.ContentRootPath, "wwwroot");
+}
+
+Directory.CreateDirectory(webRootPath);
+Directory.CreateDirectory(Path.Combine(webRootPath, "uploads"));
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -50,6 +77,11 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("LioConnectaLocal");
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(webRootPath),
+    RequestPath = ""
+});
 app.UseAuthorization();
 app.MapControllers();
 

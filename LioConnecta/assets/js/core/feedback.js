@@ -1,9 +1,25 @@
 import { createCommunication } from "../services/communicationService.js";
 import { getAdminAuthHeaders, logoutAdmin, redirectToAdminLogin } from "../services/adminAuthService.js";
 import { saveLdapSettings } from "../services/ldapSettingsService.js";
+import { updatePortalUserPermission, updatePortalUserRole, updatePortalUserStatus } from "../services/portalUsersAdminService.js";
 
 let feedbackBound = false;
 let selectedImageDataUrl = "";
+
+function notifyPortalUsersRefresh(message = "", tone = "success", options = {}) {
+  document.dispatchEvent(new CustomEvent("portal-users:refresh", {
+    detail: {
+      message,
+      tone,
+      preserveModalUserId: options.preserveModalUserId || "",
+      preserveModalMode: options.preserveModalMode || "edit"
+    }
+  }));
+}
+
+function getCurrentHashOrDefault(defaultHash = "#comunicacao/restrita") {
+  return window.location.hash || defaultHash;
+}
 
 function formatAdminDate(value) {
   if (!value) {
@@ -57,6 +73,108 @@ export function bindInteractionFeedback(root = document) {
   feedbackBound = true;
 
   root.addEventListener("change", (event) => {
+    const permissionSelect = event.target.closest("[data-action='update-portal-user-permission']");
+    if (permissionSelect) {
+      const userId = permissionSelect.getAttribute("data-user-id") || "";
+      const userName = permissionSelect.getAttribute("data-user-name") || "Usuario";
+      const moduleLabel = permissionSelect.getAttribute("data-module-label") || "Modulo";
+      const moduleKey = permissionSelect.getAttribute("data-module-key") || "";
+      const previousAccessLevel = permissionSelect.getAttribute("data-access-level") || "";
+      const nextAccessLevel = permissionSelect.value;
+
+      if (!userId || !moduleKey || !nextAccessLevel) {
+        showToast("Nao foi possivel identificar a permissao selecionada.", "danger");
+        return;
+      }
+
+      const isInsideModal = Boolean(permissionSelect.closest("#portal-user-modal"));
+      permissionSelect.disabled = true;
+
+      updatePortalUserPermission(userId, moduleKey, nextAccessLevel, {
+        headers: getAdminAuthHeaders()
+      })
+        .then((updatedUser) => {
+          permissionSelect.setAttribute("data-access-level", nextAccessLevel);
+          notifyPortalUsersRefresh(`Permissao de ${moduleLabel} para ${userName} atualizada.`, "success", {
+            preserveModalUserId: isInsideModal ? updatedUser.id : "",
+            preserveModalMode: isInsideModal ? "edit" : "view"
+          });
+        })
+        .catch((error) => {
+          console.error("Falha ao atualizar permissao modular do usuario do portal.", error);
+          permissionSelect.value = previousAccessLevel;
+
+          const message = error instanceof Error && error.message.includes("HTTP 401")
+            ? "Sua sessao administrativa expirou. Faca login novamente para continuar."
+            : error instanceof Error && error.message.includes("HTTP 403")
+              ? "Apenas o super-admin pode alterar permissoes por modulo."
+              : "Nao foi possivel atualizar a permissao deste modulo agora.";
+
+          showToast(message, "danger");
+
+          if (error instanceof Error && error.message.includes("HTTP 401")) {
+            window.setTimeout(() => {
+              redirectToAdminLogin(getCurrentHashOrDefault("#admin/usuarios"));
+            }, 700);
+          }
+        })
+        .finally(() => {
+          permissionSelect.disabled = false;
+        });
+
+      return;
+    }
+
+    const roleSelect = event.target.closest("[data-action='update-portal-user-role']");
+    if (roleSelect) {
+      const userId = roleSelect.getAttribute("data-user-id") || "";
+      const userName = roleSelect.getAttribute("data-user-name") || "Usuario";
+      const previousRole = roleSelect.getAttribute("data-user-role") || "";
+      const nextRole = roleSelect.value;
+
+      if (!userId || !nextRole) {
+        showToast("Nao foi possivel identificar o perfil selecionado.", "danger");
+        return;
+      }
+
+      const isInsideModal = Boolean(roleSelect.closest("#portal-user-modal"));
+      roleSelect.disabled = true;
+
+      updatePortalUserRole(userId, nextRole, {
+        headers: getAdminAuthHeaders()
+      })
+        .then((updatedUser) => {
+          roleSelect.setAttribute("data-user-role", nextRole);
+          notifyPortalUsersRefresh(`Perfil de ${userName} atualizado com sucesso.`, "success", {
+            preserveModalUserId: isInsideModal ? updatedUser.id : "",
+            preserveModalMode: isInsideModal ? "edit" : "view"
+          });
+        })
+        .catch((error) => {
+          console.error("Falha ao atualizar perfil do usuario do portal.", error);
+          roleSelect.value = previousRole;
+
+          const message = error instanceof Error && error.message.includes("HTTP 401")
+            ? "Sua sessao administrativa expirou. Faca login novamente para continuar."
+            : error instanceof Error && error.message.includes("HTTP 403")
+              ? "Apenas o super-admin pode alterar perfis de acesso."
+              : "Nao foi possivel atualizar o perfil do usuario agora.";
+
+          showToast(message, "danger");
+
+          if (error instanceof Error && error.message.includes("HTTP 401")) {
+            window.setTimeout(() => {
+              redirectToAdminLogin(getCurrentHashOrDefault("#admin/usuarios"));
+            }, 700);
+          }
+        })
+        .finally(() => {
+          roleSelect.disabled = false;
+        });
+
+      return;
+    }
+
     const imageInput = event.target.closest("#admin-image");
     if (!imageInput) {
       return;
@@ -137,13 +255,13 @@ export function bindInteractionFeedback(root = document) {
 
         const message = error instanceof Error && error.message.includes("HTTP 401")
           ? "Sua sessao administrativa expirou. Faca login novamente para publicar."
-          : "Nao foi possivel publicar o comunicado agora. Verifique se a API esta ativa em localhost:5001.";
+          : "Nao foi possivel publicar o comunicado agora. Verifique se a API do ambiente esta ativa.";
 
         showToast(message, "danger");
 
         if (error instanceof Error && error.message.includes("HTTP 401")) {
           window.setTimeout(() => {
-            redirectToAdminLogin("#comunicacao/restrita");
+            redirectToAdminLogin(getCurrentHashOrDefault());
           }, 700);
         }
       } finally {
@@ -207,7 +325,7 @@ export function bindInteractionFeedback(root = document) {
 
         if (error instanceof Error && error.message.includes("HTTP 401")) {
           window.setTimeout(() => {
-            redirectToAdminLogin("#comunicacao/restrita");
+            redirectToAdminLogin(getCurrentHashOrDefault("#configuracoes"));
           }, 700);
         }
       } finally {
@@ -219,7 +337,7 @@ export function bindInteractionFeedback(root = document) {
     }
   });
 
-  root.addEventListener("click", (event) => {
+  root.addEventListener("click", async (event) => {
     const customFeedback = event.target.closest("[data-feedback-message]");
     if (customFeedback) {
       showToast(
@@ -239,8 +357,64 @@ export function bindInteractionFeedback(root = document) {
     if (adminLogoutButton) {
       event.preventDefault();
       logoutAdmin().finally(() => {
-        redirectToAdminLogin("#comunicacao/restrita");
+        redirectToAdminLogin(getCurrentHashOrDefault());
       });
+      return;
+    }
+
+    const userStatusToggle = event.target.closest("[data-action='toggle-portal-user-status']");
+    if (userStatusToggle) {
+      event.preventDefault();
+
+      const userId = userStatusToggle.getAttribute("data-user-id") || "";
+      const userName = userStatusToggle.getAttribute("data-user-name") || "Usuario";
+      const isCurrentlyActive = userStatusToggle.getAttribute("data-user-active") === "true";
+      const nextStatus = !isCurrentlyActive;
+      const originalLabel = userStatusToggle.textContent;
+
+      if (!userId) {
+        showToast("Nao foi possivel identificar o usuario selecionado.", "danger");
+        return;
+      }
+
+      const isInsideModal = Boolean(userStatusToggle.closest("#portal-user-modal"));
+      userStatusToggle.disabled = true;
+      userStatusToggle.textContent = nextStatus ? "Reativando..." : "Desativando...";
+
+      try {
+        const updatedUser = await updatePortalUserStatus(userId, nextStatus, {
+          headers: getAdminAuthHeaders()
+        });
+
+        notifyPortalUsersRefresh(
+          `${userName} ${nextStatus ? "reativado" : "desativado"} com sucesso.`,
+          "success",
+          {
+            preserveModalUserId: isInsideModal ? updatedUser.id : "",
+            preserveModalMode: isInsideModal ? "edit" : "view"
+          }
+        );
+      } catch (error) {
+        console.error("Falha ao atualizar status do usuario do portal.", error);
+
+        const message = error instanceof Error && error.message.includes("HTTP 401")
+          ? "Sua sessao administrativa expirou. Faca login novamente para continuar."
+          : error instanceof Error && error.message.includes("HTTP 403")
+            ? "Apenas o super-admin pode alterar o status de usuarios."
+            : "Nao foi possivel atualizar o status do usuario agora.";
+
+        showToast(message, "danger");
+
+        if (error instanceof Error && error.message.includes("HTTP 401")) {
+          window.setTimeout(() => {
+            redirectToAdminLogin(getCurrentHashOrDefault("#admin/usuarios"));
+          }, 700);
+        }
+      } finally {
+        userStatusToggle.disabled = false;
+        userStatusToggle.textContent = originalLabel || (nextStatus ? "Reativar acesso" : "Desativar acesso");
+      }
+
       return;
     }
 

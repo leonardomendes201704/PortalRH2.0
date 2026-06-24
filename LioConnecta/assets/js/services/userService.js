@@ -5,6 +5,13 @@ import { validateUserContract } from "../validators/userValidator.js";
 import { getRuntimeConfig, resolveDataSource, usesEnvelope } from "../core/runtimeConfig.js";
 import { getStoredPortalSession } from "./portalAuthService.js";
 
+function buildUserHeadline(user = {}, fallbackName = "") {
+  return [user.displayName || fallbackName, user.title, user.department]
+    .map((item) => String(item ?? "").trim())
+    .filter(Boolean)
+    .join(" • ");
+}
+
 export async function getUserHomeContext() {
   const config = getRuntimeConfig();
   const rawPayload = await getJson(resolveDataSource("user"));
@@ -21,8 +28,8 @@ export async function getUserHomeContext() {
     ...viewModel,
     user: {
       ...viewModel.user,
-      name: portalSession.user.displayName || viewModel.user.name,
-      area: portalSession.user.department || viewModel.user.area
+      name: buildUserHeadline(portalSession.user, viewModel.user.name) || viewModel.user.name,
+      area: ""
     }
   };
 }

@@ -6,4 +6,9 @@ public sealed record PortalUserProfileDto(
     string DisplayName,
     string? Email,
     string? Department,
-    string? Title);
+    string? Title,
+    string? ManagerDisplayName,
+    string Role,
+    string RoleLabel,
+    IReadOnlyList<string> Permissions,
+    IReadOnlyList<PortalRH.Api.Contracts.Admin.PortalUsers.PortalUserModulePermissionDto> ModulePermissions);

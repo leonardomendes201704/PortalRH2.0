@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const rootDir = path.dirname(__filename);
-const port = Number(process.env.PORT || 4173);
+const port = Number(process.env.PORT || 3020);
 
 const contentTypes = {
   ".html": "text/html; charset=utf-8",
