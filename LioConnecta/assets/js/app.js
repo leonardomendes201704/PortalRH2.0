@@ -42,10 +42,11 @@ import {
   votePoll
 } from "./polls/index.js?v=0.12.8";
 import { renderFeed } from "./feed/index.js?v=0.12.8";
-import { bindInteractionFeedback, showToast } from "./core/feedback.js?v=0.12.10";
-import { getRuntimeConfig } from "./core/runtimeConfig.js?v=0.12.10";
+import { bindInteractionFeedback, showToast } from "./core/feedback.js?v=0.13.0";
+import { getRuntimeConfig } from "./core/runtimeConfig.js?v=0.13.0";
 import { getPanelData } from "./services/panelService.js?v=0.12.8";
 import { getUserHomeContext } from "./services/userService.js?v=0.12.8";
+import { applyNotificationsToShellData, getNotificationCenterData } from "./services/notificationService.js?v=0.13.0";
 import { fetchAdminSession, getAdminAuthHeaders, getStoredAdminSession, isSuperAdminSession, redirectToAdminLogin } from "./services/adminAuthService.js?v=0.12.8";
 import { fetchPortalSession, getPortalAuthHeaders, getStoredPortalSession, logoutPortal, redirectToPortalLogin } from "./services/portalAuthService.js?v=0.12.8";
 import { getLdapSettingsData } from "./services/ldapSettingsService.js?v=0.12.8";
@@ -1045,6 +1046,18 @@ async function loadPageData(route, slug = "") {
     getUserHomeContext(),
     getPanelData()
   ]);
+  const baseShellData = {
+    ...userContext,
+    ...panels
+  };
+  const isAdminRoute =
+    route === ROUTES.COMMUNICATION_ADMIN ||
+    route === ROUTES.SETTINGS ||
+    route === ROUTES.ADMIN_USERS ||
+    route === ROUTES.ADMIN_POLLS;
+  const shellData = isAdminRoute
+    ? baseShellData
+    : applyNotificationsToShellData(baseShellData, await getNotificationCenterData());
 
   if (
     route === ROUTES.COMMUNICATIONS ||
@@ -1052,8 +1065,7 @@ async function loadPageData(route, slug = "") {
   ) {
     const communications = await getCommunicationCenterData();
     return {
-      ...userContext,
-      ...panels,
+      ...shellData,
       communications
     };
   }
@@ -1064,8 +1076,7 @@ async function loadPageData(route, slug = "") {
     });
 
     return {
-      ...userContext,
-      ...panels,
+      ...shellData,
       polls
     };
   }
@@ -1076,8 +1087,7 @@ async function loadPageData(route, slug = "") {
     });
 
     return {
-      ...userContext,
-      ...panels,
+      ...shellData,
       pollDetail
     };
   }
@@ -1086,8 +1096,7 @@ async function loadPageData(route, slug = "") {
     const communications = await getCommunicationCenterData();
 
     return {
-      ...userContext,
-      ...panels,
+      ...shellData,
       communications
     };
   }
@@ -1098,8 +1107,7 @@ async function loadPageData(route, slug = "") {
     });
 
     return {
-      ...userContext,
-      ...panels,
+      ...shellData,
       ldapSettings
     };
   }
@@ -1123,8 +1131,7 @@ async function loadPageData(route, slug = "") {
       };
 
       return {
-        ...userContext,
-        ...panels,
+        ...shellData,
         portalUsersPage,
         portalUsersLoadError: ""
       };
@@ -1132,8 +1139,7 @@ async function loadPageData(route, slug = "") {
       console.error("Falha ao carregar usuarios administrativos do portal.", error);
 
       return {
-        ...userContext,
-        ...panels,
+        ...shellData,
         portalUsersPage: createEmptyPortalUsersPage(),
         portalUsersLoadError: "Nao foi possivel consultar a API administrativa de usuarios. Verifique se a API do ambiente esta ativa."
       };
@@ -1146,16 +1152,12 @@ async function loadPageData(route, slug = "") {
     });
 
     return {
-      ...userContext,
-      ...panels,
+      ...shellData,
       adminPollsPage
     };
   }
 
-  return {
-    ...userContext,
-    ...panels
-  };
+  return shellData;
 }
 
 async function renderCurrentRoute() {

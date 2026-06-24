@@ -9,6 +9,7 @@ using PortalRH.Api.Contracts.Admin.Polls;
 using PortalRH.Api.Contracts.Admin.PortalUsers;
 using PortalRH.Api.Contracts.Auth;
 using PortalRH.Api.Contracts.Communications;
+using PortalRH.Api.Contracts.Notifications;
 using PortalRH.Api.Contracts.Polls;
 using PortalRH.Api.Data;
 using PortalRH.Api.Interfaces;
@@ -484,6 +485,85 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
         });
 
         Assert.Equal(HttpStatusCode.BadRequest, secondVoteResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task NotificationsEndpoint_ListsRealPersistedSourcesAndMarksRead()
+    {
+        await EnsureLdapEnabledAsync();
+
+        var adminSession = await LoginAdminAsync();
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminSession.Token);
+
+        var communicationResponse = await _client.PostAsJsonAsync("/api/communications", new UpsertCommunicationRequest
+        {
+            Category = "RH",
+            Priority = "Alta prioridade",
+            Title = "Novo comunicado para notificacao",
+            Summary = "Resumo persistido que deve aparecer como notificacao.",
+            Body = "Corpo persistido.",
+            Audience = "Toda a companhia",
+            Channel = "Portal",
+            Status = "Publicado",
+            AttachmentLabel = "Abrir comunicado",
+            Owner = "Recursos Humanos",
+            IsFeatured = false,
+            PublishedAt = new DateTime(2026, 06, 24, 10, 0, 0, DateTimeKind.Utc)
+        });
+        Assert.Equal(HttpStatusCode.Created, communicationResponse.StatusCode);
+
+        var pollResponse = await _client.PostAsJsonAsync("/api/admin/polls", new UpsertPollRequest
+        {
+            Title = "Enquete real para notificacao",
+            Summary = "Resumo da enquete persistida.",
+            Body = "Corpo da enquete.",
+            Audience = "Toda a companhia",
+            Status = "Published",
+            AllowMultipleChoices = false,
+            ResultsVisibility = "AfterVote",
+            IsFeatured = false,
+            PublishedAtUtc = new DateTime(2026, 06, 24, 11, 0, 0, DateTimeKind.Utc),
+            Options =
+            [
+                new UpsertPollOptionRequest { Label = "Opcao A" },
+                new UpsertPollOptionRequest { Label = "Opcao B" }
+            ]
+        });
+        Assert.Equal(HttpStatusCode.Created, pollResponse.StatusCode);
+
+        var portalSession = await LoginPortalUserAsync();
+        _client.DefaultRequestHeaders.Authorization = null;
+        _client.DefaultRequestHeaders.Remove("X-Portal-Token");
+        _client.DefaultRequestHeaders.Add("X-Portal-Token", portalSession.Token);
+
+        var notifications = await _client.GetFromJsonAsync<NotificationListResponse>("/api/notifications");
+
+        Assert.NotNull(notifications);
+        Assert.Equal(2, notifications.Summary.TotalCount);
+        Assert.Equal(2, notifications.Summary.UnreadCount);
+        Assert.Contains(notifications.Items, item => item.SourceType == "communication" && item.Title == "Novo comunicado para notificacao");
+        Assert.Contains(notifications.Items, item => item.SourceType == "poll" && item.Title == "Enquete real para notificacao");
+        Assert.True(notifications.Summary.CategoryCounts.ContainsKey("RH"));
+        Assert.True(notifications.Summary.CategoryCounts.ContainsKey("Enquetes"));
+
+        var firstNotificationId = notifications.Items[0].Id;
+        var markReadResponse = await _client.PostAsync($"/api/notifications/{firstNotificationId}/read", content: null);
+        Assert.Equal(HttpStatusCode.NoContent, markReadResponse.StatusCode);
+
+        var refreshed = await _client.GetFromJsonAsync<NotificationListResponse>("/api/notifications");
+
+        Assert.NotNull(refreshed);
+        Assert.Equal(2, refreshed.Summary.TotalCount);
+        Assert.Equal(1, refreshed.Summary.UnreadCount);
+        Assert.Contains(refreshed.Items, item => item.Id == firstNotificationId && item.IsRead);
+
+        var markAllResponse = await _client.PostAsync("/api/notifications/read-all", content: null);
+        Assert.Equal(HttpStatusCode.OK, markAllResponse.StatusCode);
+
+        var allRead = await _client.GetFromJsonAsync<NotificationListResponse>("/api/notifications");
+        Assert.NotNull(allRead);
+        Assert.Equal(0, allRead.Summary.UnreadCount);
+        Assert.All(allRead.Items, item => Assert.True(item.IsRead));
     }
 
     private async Task<AdminLoginResponse> LoginAdminAsync()
