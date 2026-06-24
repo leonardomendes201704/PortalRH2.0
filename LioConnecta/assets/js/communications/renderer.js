@@ -820,6 +820,18 @@ export function renderCommunicationDetailPage(communication) {
 
         <div class="communication-detail-actions">
           <a href="#comunicacao" class="comm-secondary-button">Voltar para central</a>
+          ${communication.id ? `
+            <button
+              type="button"
+              class="comm-secondary-button ${communication.hasLiked ? "is-active" : ""}"
+              data-action="toggle-communication-like"
+              data-communication-id="${escapeHtml(communication.id)}"
+              aria-pressed="${communication.hasLiked ? "true" : "false"}"
+            >
+              <i class="fa-solid fa-thumbs-up" aria-hidden="true"></i>
+              Curtir (<span data-communication-like-count>${escapeHtml(String(communication.likeCount ?? 0))}</span>)
+            </button>
+          ` : ""}
           <button
             type="button"
             class="feed-composer-submit"

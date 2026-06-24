@@ -35,8 +35,9 @@ import {
   createCommunication,
   updateCommunication,
   deleteCommunication,
-  getCommunicationEditorHeaders
-} from "./services/communicationService.js?v=0.15.1";
+  getCommunicationEditorHeaders,
+  toggleCommunicationLike
+} from "./services/communicationService.js?v=0.15.4";
 import {
   renderHomePollCarousel,
   initPollHomeCarousel,
@@ -58,6 +59,7 @@ import {
   votePoll
 } from "./polls/index.js?v=0.15.0";
 import { renderFeed } from "./feed/index.js?v=0.12.8";
+import { updateCommunicationLikeUi } from "./services/feedService.js?v=0.15.4";
 import { bindInteractionFeedback, showToast } from "./core/feedback.js?v=0.15.2";
 import { getRuntimeConfig } from "./core/runtimeConfig.js?v=0.13.1";
 import { getPanelData } from "./services/panelService.js?v=0.12.8";
@@ -383,6 +385,7 @@ function renderHomePage(data, route) {
   initCarousel();
   initPollHomeCarousel();
   bindPublicPollActions(route);
+  bindCommunicationLikeActions();
 }
 
 function renderCommunicationsPage(data, route) {
@@ -408,6 +411,7 @@ function renderCommunicationReadPage(data, route, slug) {
   const currentCommunication = allCommunications.find((item) => item?.slug === slug);
 
   centerContent.innerHTML = renderCommunicationDetailPage(currentCommunication);
+  bindCommunicationLikeActions();
 }
 
 function renderPollReadPage(data, route) {
@@ -752,6 +756,56 @@ async function refreshAdminPollsRoute(feedbackMessage = "", feedbackTone = "succ
   if (feedbackMessage) {
     showToast(feedbackMessage, feedbackTone);
   }
+}
+
+function bindCommunicationLikeActions() {
+  const buttons = Array.from(document.querySelectorAll("[data-action='toggle-communication-like']"));
+
+  buttons.forEach((button) => {
+    if (button.dataset.bound === "true") {
+      return;
+    }
+
+    button.dataset.bound = "true";
+    button.addEventListener("click", async () => {
+      const communicationId = button.getAttribute("data-communication-id") || "";
+      const scope = button.closest(".post, .communication-detail-card");
+
+      if (!communicationId) {
+        showToast("Esta publicacao ainda nao esta vinculada a um comunicado persistido.", "info");
+        return;
+      }
+
+      if (button.disabled) {
+        return;
+      }
+
+      button.disabled = true;
+
+      try {
+        const result = await toggleCommunicationLike(communicationId, {
+          headers: getPortalAuthHeaders()
+        });
+        updateCommunicationLikeUi(scope, result);
+        showToast(result.hasLiked ? "Curtida registrada." : "Curtida removida.", "success");
+      } catch (error) {
+        console.error("Falha ao registrar curtida no comunicado.", error);
+        const message = error instanceof Error && error.message.includes("HTTP 401")
+          ? "Sua sessao expirou. Faca login novamente para curtir publicacoes."
+          : "Nao foi possivel registrar a curtida neste comunicado.";
+
+        showToast(message, error instanceof Error && error.message.includes("HTTP 401") ? "danger" : "danger");
+
+        if (error instanceof Error && error.message.includes("HTTP 401")) {
+          window.setTimeout(() => {
+            redirectToPortalLogin(window.location.hash || "#inicio");
+          }, 700);
+        }
+      } finally {
+        button.disabled = false;
+      }
+    });
+  });
 }
 
 function bindPublicPollActions(route) {

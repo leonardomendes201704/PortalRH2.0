@@ -17,4 +17,6 @@ public record CommunicationDto(
     bool IsFeatured,
     DateTime PublishedAt,
     DateTime CreatedAtUtc,
-    DateTime UpdatedAtUtc);
+    DateTime UpdatedAtUtc,
+    int LikeCount,
+    bool HasLiked);
