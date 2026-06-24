@@ -40,6 +40,7 @@ import {
 import {
   renderHomePollCarousel,
   initPollHomeCarousel,
+  updateHomePollSlideAfterVote,
   renderPollsHub,
   renderPollDetailPage,
   renderAdminPollsPage,
@@ -55,7 +56,7 @@ import {
   updatePollStatus,
   uploadPollAsset,
   votePoll
-} from "./polls/index.js?v=0.14.6";
+} from "./polls/index.js?v=0.15.0";
 import { renderFeed } from "./feed/index.js?v=0.12.8";
 import { bindInteractionFeedback, showToast } from "./core/feedback.js?v=0.15.2";
 import { getRuntimeConfig } from "./core/runtimeConfig.js?v=0.13.1";
@@ -381,6 +382,7 @@ function renderHomePage(data, route) {
 
   initCarousel();
   initPollHomeCarousel();
+  bindPublicPollActions(route);
 }
 
 function renderCommunicationsPage(data, route) {
@@ -774,10 +776,17 @@ function bindPublicPollActions(route) {
       }
 
       try {
-        await votePoll(pollId, optionIds, {
+        const updatedPoll = await votePoll(pollId, optionIds, {
           headers: getPortalAuthHeaders()
         });
         showToast("Voto registrado com sucesso.", "success");
+
+        const homeSlide = form.closest(".poll-home-carousel__slide");
+        if (homeSlide) {
+          updateHomePollSlideAfterVote(homeSlide, updatedPoll);
+          return;
+        }
+
         await renderCurrentRoute();
       } catch (error) {
         console.error("Falha ao registrar voto na enquete.", error);

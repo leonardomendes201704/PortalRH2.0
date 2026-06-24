@@ -3,6 +3,7 @@ import { escapeHtml } from "../components/html.js";
 import { renderRhAdminHero } from "../people/adminNav.js";
 import { renderPollAdminWizardModal } from "./adminPollWizard.js";
 import { renderHomePollCarousel } from "./pollHomeCarousel.js";
+import { renderPollInteractionBlock } from "./pollVoteUi.js";
 
 function renderPollAttachment(poll, className = "") {
   if (!poll?.attachmentUrl || !poll?.attachmentLabel) {
@@ -85,40 +86,6 @@ function renderPollStatsCard(label, value, detail, tone = "brand") {
   `;
 }
 
-function renderPollOptionBar(option, showResults = false) {
-  const extra = showResults
-    ? `<span class="poll-option-result">${escapeHtml(String(option.votes))} voto(s) • ${escapeHtml(String(option.percentage))}%</span>`
-    : `<span class="poll-option-result">${option.isSelected ? "Seu voto" : "Escolha disponivel"}</span>`;
-
-  return `
-    <div class="poll-option-bar ${option.isSelected ? "is-selected" : ""}">
-      <div class="poll-option-bar__top">
-        <strong>${escapeHtml(option.label)}</strong>
-        ${extra}
-      </div>
-      <div class="poll-option-bar__track">
-        <span style="width:${showResults ? Math.min(option.percentage, 100) : 0}%"></span>
-      </div>
-    </div>
-  `;
-}
-
-function renderPollVoteInput(poll, option, index) {
-  const type = poll.allowMultipleChoices ? "checkbox" : "radio";
-
-  return `
-    <label class="poll-vote-choice ${option.isSelected ? "is-selected" : ""}">
-      <input
-        type="${type}"
-        name="poll-choice-${escapeHtml(poll.id)}"
-        value="${escapeHtml(option.id)}"
-        ${option.isSelected ? "checked" : ""}
-      />
-      <span>${escapeHtml(option.label)}</span>
-    </label>
-  `;
-}
-
 function renderPollMeta(poll) {
   return `
     <div class="poll-meta-row">
@@ -130,36 +97,8 @@ function renderPollMeta(poll) {
   `;
 }
 
-function renderPollVoteForm(poll, compact = false) {
-  return `
-    <form class="poll-vote-form" data-action="submit-poll-vote" data-poll-id="${escapeHtml(poll.id)}">
-      <div class="poll-vote-options ${compact ? "is-compact" : ""}">
-        ${poll.options.map(renderPollVoteInput.bind(null, poll)).join("")}
-      </div>
-      <div class="poll-vote-actions">
-        <button type="submit" class="feed-composer-submit">Registrar voto</button>
-        ${poll.allowMultipleChoices
-          ? '<span class="poll-form-hint">Voce pode selecionar mais de uma opcao.</span>'
-          : '<span class="poll-form-hint">Escolha apenas uma alternativa.</span>'}
-      </div>
-    </form>
-  `;
-}
-
-function renderPollResults(poll) {
-  return `
-    <div class="poll-results-list">
-      ${poll.options.map((option) => renderPollOptionBar(option, true)).join("")}
-    </div>
-  `;
-}
-
 function renderPollCard(poll) {
-  const footer = poll.status === "Published" && !poll.hasVoted
-    ? renderPollVoteForm(poll, true)
-    : poll.resultsVisible
-      ? renderPollResults(poll)
-      : `<div class="poll-results-locked"><i class="fa-solid fa-lock"></i><span>Os resultados serao exibidos ${escapeHtml(poll.resultsVisibilityLabel.toLowerCase())}.</span></div>`;
+  const footer = renderPollInteractionBlock(poll, { compact: true });
 
   return `
     <article class="card poll-card">
@@ -226,11 +165,7 @@ export function renderPollsHub(data, { canManage = false } = {}) {
           </div>
           <div class="poll-featured-card__vote">
             ${renderPollMedia(data.featured, { cover: true })}
-            ${data.featured.status === "Published" && !data.featured.hasVoted
-              ? renderPollVoteForm(data.featured)
-              : data.featured.resultsVisible
-                ? renderPollResults(data.featured)
-                : `<div class="poll-results-locked"><i class="fa-solid fa-lock"></i><span>Resultados ocultos ate a proxima etapa desta enquete.</span></div>`}
+            ${renderPollInteractionBlock(data.featured)}
           </div>
         </div>
       </section>
@@ -289,11 +224,7 @@ export function renderPollDetailPage(poll) {
         </div>
         ${renderPollMeta(poll)}
         ${renderPollAttachment(poll)}
-        ${poll.status === "Published" && !poll.hasVoted
-          ? renderPollVoteForm(poll)
-          : poll.resultsVisible
-            ? renderPollResults(poll)
-            : `<div class="poll-results-locked"><i class="fa-solid fa-lock"></i><span>Os resultados ainda nao podem ser exibidos.</span></div>`}
+        ${renderPollInteractionBlock(poll)}
       </div>
     </section>
   `;

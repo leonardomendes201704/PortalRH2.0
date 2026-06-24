@@ -73,7 +73,7 @@ function mapOption(option = {}) {
   };
 }
 
-function mapPollItem(item = {}) {
+export function mapPollItem(item = {}) {
   return {
     id: normalizeText(item.id),
     slug: normalizeText(item.slug),
