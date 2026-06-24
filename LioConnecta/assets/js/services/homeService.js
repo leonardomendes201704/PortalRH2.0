@@ -4,10 +4,11 @@ import { getPanelData } from "./panelService.js";
 import { getPollCenterData } from "./pollService.js";
 import { getPortalAuthHeaders } from "./portalAuthService.js";
 import { getUserHomeContext } from "./userService.js";
+import { applyAgendaToShellData, getAgendaDayData } from "./agendaService.js";
 import { applyNotificationsToShellData, getNotificationCenterData } from "./notificationService.js";
 
 export async function getHomePageData() {
-  const [userContext, carousel, feed, panels, polls, notifications] = await Promise.all([
+  const [userContext, carousel, feed, panels, polls, notifications, agenda] = await Promise.all([
     getUserHomeContext(),
     getCarouselData(),
     getFeedData(),
@@ -15,14 +16,15 @@ export async function getHomePageData() {
     getPollCenterData({
       headers: getPortalAuthHeaders()
     }),
-    getNotificationCenterData()
+    getNotificationCenterData(),
+    getAgendaDayData()
   ]);
 
-  return applyNotificationsToShellData({
+  return applyAgendaToShellData(applyNotificationsToShellData({
     ...userContext,
     carousel,
     feed,
     pollHighlight: polls.featured,
     ...panels
-  }, notifications);
+  }, notifications), agenda);
 }

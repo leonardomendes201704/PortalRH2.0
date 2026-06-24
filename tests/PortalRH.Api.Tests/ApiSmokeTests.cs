@@ -7,21 +7,25 @@ using PortalRH.Api.Contracts.Admin.Auth;
 using PortalRH.Api.Contracts.Admin.Ldap;
 using PortalRH.Api.Contracts.Admin.Polls;
 using PortalRH.Api.Contracts.Admin.PortalUsers;
+using PortalRH.Api.Contracts.Agenda;
 using PortalRH.Api.Contracts.Auth;
 using PortalRH.Api.Contracts.Communications;
 using PortalRH.Api.Contracts.Notifications;
 using PortalRH.Api.Contracts.Polls;
 using PortalRH.Api.Data;
 using PortalRH.Api.Interfaces;
+using PortalRH.Api.Models;
 
 namespace PortalRH.Api.Tests;
 
 public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
 {
+    private readonly CustomWebApplicationFactory _factory;
     private readonly HttpClient _client;
 
     public ApiSmokeTests(CustomWebApplicationFactory factory)
     {
+        _factory = factory;
         ResetDatabaseAsync(factory.Services).GetAwaiter().GetResult();
         _client = factory.CreateClient();
     }
@@ -566,6 +570,27 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
         Assert.All(allRead.Items, item => Assert.True(item.IsRead));
     }
 
+    [Fact]
+    public async Task AgendaEndpoint_ReturnsPersistedEventsForAuthenticatedPortalUser()
+    {
+        await EnsureLdapEnabledAsync();
+
+        var portalSession = await LoginPortalUserAsync();
+        await SeedAgendaEventsAsync(portalSession.User.Id);
+
+        _client.DefaultRequestHeaders.Authorization = null;
+        _client.DefaultRequestHeaders.Remove("X-Portal-Token");
+        _client.DefaultRequestHeaders.Add("X-Portal-Token", portalSession.Token);
+
+        var agenda = await _client.GetFromJsonAsync<AgendaDayResponse>("/api/agenda");
+
+        Assert.NotNull(agenda);
+        Assert.Equal(2, agenda.TotalCount);
+        Assert.Contains(agenda.Items, item => item.Title == "Daily RH" && item.TimeLabel == "09:00");
+        Assert.Contains(agenda.Items, item => item.Title == "Comite de Pessoas" && item.Location == "Microsoft Teams");
+        Assert.DoesNotContain(agenda.Items, item => item.Title == "Evento de outro colaborador");
+    }
+
     private async Task<AdminLoginResponse> LoginAdminAsync()
     {
         var loginResponse = await _client.PostAsJsonAsync("/api/admin/auth/login", new AdminLoginRequest("super-admin", "Liotec@2026"));
@@ -632,6 +657,82 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
         var portalLogin = await loginResponse.Content.ReadFromJsonAsync<PortalLoginResponse>();
         Assert.NotNull(portalLogin);
         return portalLogin;
+    }
+
+    private async Task SeedAgendaEventsAsync(Guid portalUserId)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<PortalRhDbContext>();
+        var timeZone = ResolveSaoPauloTimeZoneForTests();
+        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timeZone));
+
+        DateTime ToUtc(int hour, int minute = 0)
+        {
+            var localDate = today.ToDateTime(new TimeOnly(hour, minute), DateTimeKind.Unspecified);
+            return TimeZoneInfo.ConvertTimeToUtc(localDate, timeZone);
+        }
+
+        dbContext.AgendaEvents.AddRange(
+            new AgendaEvent
+            {
+                Id = Guid.NewGuid(),
+                PortalUserId = null,
+                Title = "Daily RH",
+                Description = "Alinhamento diario do time.",
+                Location = "Sala RH",
+                Source = "Manual",
+                Audience = "Toda a companhia",
+                IsActive = true,
+                StartAtUtc = ToUtc(9),
+                EndAtUtc = ToUtc(9, 30),
+                CreatedAtUtc = DateTime.UtcNow
+            },
+            new AgendaEvent
+            {
+                Id = Guid.NewGuid(),
+                PortalUserId = portalUserId,
+                Title = "Comite de Pessoas",
+                Description = "Pauta semanal de pessoas.",
+                Location = "Microsoft Teams",
+                Source = "Manual",
+                Audience = "Usuario autenticado",
+                IsActive = true,
+                StartAtUtc = ToUtc(10),
+                EndAtUtc = ToUtc(11),
+                CreatedAtUtc = DateTime.UtcNow
+            },
+            new AgendaEvent
+            {
+                Id = Guid.NewGuid(),
+                PortalUserId = Guid.NewGuid(),
+                Title = "Evento de outro colaborador",
+                Description = "Nao deve aparecer para o usuario logado.",
+                Location = "Sala 2",
+                Source = "Manual",
+                Audience = "Outro usuario",
+                IsActive = true,
+                StartAtUtc = ToUtc(14),
+                EndAtUtc = ToUtc(15),
+                CreatedAtUtc = DateTime.UtcNow
+            });
+
+        await dbContext.SaveChangesAsync();
+    }
+
+    private static TimeZoneInfo ResolveSaoPauloTimeZoneForTests()
+    {
+        try
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById("E. South America Standard Time");
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById("America/Sao_Paulo");
+        }
+        catch (InvalidTimeZoneException)
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById("America/Sao_Paulo");
+        }
     }
 
     private static async Task ResetDatabaseAsync(IServiceProvider services)

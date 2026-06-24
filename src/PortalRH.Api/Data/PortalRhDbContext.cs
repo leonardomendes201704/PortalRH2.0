@@ -23,6 +23,7 @@ public class PortalRhDbContext : DbContext
     public DbSet<PollVote> PollVotes => Set<PollVote>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<PortalUserNotificationRead> PortalUserNotificationReads => Set<PortalUserNotificationRead>();
+    public DbSet<AgendaEvent> AgendaEvents => Set<AgendaEvent>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

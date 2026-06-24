@@ -42,10 +42,11 @@ import {
   votePoll
 } from "./polls/index.js?v=0.12.8";
 import { renderFeed } from "./feed/index.js?v=0.12.8";
-import { bindInteractionFeedback, showToast } from "./core/feedback.js?v=0.13.0";
-import { getRuntimeConfig } from "./core/runtimeConfig.js?v=0.13.0";
+import { bindInteractionFeedback, showToast } from "./core/feedback.js?v=0.13.1";
+import { getRuntimeConfig } from "./core/runtimeConfig.js?v=0.13.1";
 import { getPanelData } from "./services/panelService.js?v=0.12.8";
 import { getUserHomeContext } from "./services/userService.js?v=0.12.8";
+import { applyAgendaToShellData, getAgendaDayData } from "./services/agendaService.js?v=0.13.1";
 import { applyNotificationsToShellData, getNotificationCenterData } from "./services/notificationService.js?v=0.13.0";
 import { fetchAdminSession, getAdminAuthHeaders, getStoredAdminSession, isSuperAdminSession, redirectToAdminLogin } from "./services/adminAuthService.js?v=0.12.8";
 import { fetchPortalSession, getPortalAuthHeaders, getStoredPortalSession, logoutPortal, redirectToPortalLogin } from "./services/portalAuthService.js?v=0.12.8";
@@ -1057,7 +1058,10 @@ async function loadPageData(route, slug = "") {
     route === ROUTES.ADMIN_POLLS;
   const shellData = isAdminRoute
     ? baseShellData
-    : applyNotificationsToShellData(baseShellData, await getNotificationCenterData());
+    : applyAgendaToShellData(
+        applyNotificationsToShellData(baseShellData, await getNotificationCenterData()),
+        await getAgendaDayData()
+      );
 
   if (
     route === ROUTES.COMMUNICATIONS ||

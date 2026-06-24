@@ -21,9 +21,9 @@ Objetivo: remover mocks remanescentes e deixar o portal alimentado por dados per
   - [x] Registrar leitura por usuario
   - [x] Atualizar topbar e painel lateral sem JSON mockado
   - [x] Cobrir com testes automatizados
-- [ ] Agenda / compromissos
-  - [ ] Definir contrato de agenda
-  - [ ] Persistir compromissos
+- [x] Agenda / compromissos
+  - [x] Definir contrato de agenda
+  - [x] Persistir compromissos
   - [ ] Preparar futura integracao Microsoft Graph/Teams
 - [ ] Acessos rapidos
   - [ ] Persistir catalogo de links

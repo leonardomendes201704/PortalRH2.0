@@ -172,7 +172,7 @@ export function renderAgendaCard(panel) {
               <div class="agenda-dot" aria-hidden="true"></div>
               <div class="agenda-copy">
                 <strong>${escapeHtml(title)}</strong>
-                <span>Compromisso corporativo</span>
+                <span>${escapeHtml(typeof item === "object" && item.description ? item.description : "Compromisso corporativo")}</span>
               </div>
             </div>
           `;
