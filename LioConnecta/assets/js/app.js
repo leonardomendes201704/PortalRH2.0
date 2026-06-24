@@ -19,38 +19,68 @@ import {
   renderCommunicationsHub,
   renderCommunicationDetailPage,
   renderCommunicationAdminPage,
+  initCommunicationAdminWizard,
+  openCommunicationAdminWizard,
+  closeCommunicationAdminWizard,
   renderAdminSettingsPage,
   renderAdminUsersPage,
   renderAdminUsersKpiSection,
   renderAdminUsersResultsSection,
   renderAdminUsersActivitySection,
   renderPortalUserModal,
-  getCommunicationCenterData
-} from "./communications/index.js?v=0.12.8";
+  getCommunicationCenterData,
+} from "./communications/index.js?v=0.15.3";
 import {
-  renderHomePollHighlight,
+  canManageCommunications,
+  createCommunication,
+  updateCommunication,
+  deleteCommunication,
+  getCommunicationEditorHeaders
+} from "./services/communicationService.js?v=0.15.1";
+import {
+  renderHomePollCarousel,
+  initPollHomeCarousel,
   renderPollsHub,
   renderPollDetailPage,
   renderAdminPollsPage,
+  initPollAdminWizard,
+  openPollAdminWizard,
+  closePollAdminWizard,
   getPollCenterData,
   getPollDetailData,
   getAdminPollData,
+  canManagePolls,
   createPoll,
   updatePoll,
   updatePollStatus,
   uploadPollAsset,
   votePoll
-} from "./polls/index.js?v=0.12.8";
+} from "./polls/index.js?v=0.14.6";
 import { renderFeed } from "./feed/index.js?v=0.12.8";
-import { bindInteractionFeedback, showToast } from "./core/feedback.js?v=0.13.0";
-import { getRuntimeConfig } from "./core/runtimeConfig.js?v=0.13.0";
+import { bindInteractionFeedback, showToast } from "./core/feedback.js?v=0.15.2";
+import { getRuntimeConfig } from "./core/runtimeConfig.js?v=0.13.1";
 import { getPanelData } from "./services/panelService.js?v=0.12.8";
 import { getUserHomeContext } from "./services/userService.js?v=0.12.8";
+import { applyAgendaToShellData, getAgendaDayData } from "./services/agendaService.js?v=0.13.1";
 import { applyNotificationsToShellData, getNotificationCenterData } from "./services/notificationService.js?v=0.13.0";
 import { fetchAdminSession, getAdminAuthHeaders, getStoredAdminSession, isSuperAdminSession, redirectToAdminLogin } from "./services/adminAuthService.js?v=0.12.8";
-import { fetchPortalSession, getPortalAuthHeaders, getStoredPortalSession, logoutPortal, redirectToPortalLogin } from "./services/portalAuthService.js?v=0.12.8";
+import { ensureValidPortalSession, getPortalAuthHeaders, getStoredPortalSession, logoutPortal, redirectToPortalLogin } from "./services/portalAuthService.js?v=0.13.0";
+import { renderLdapWizardPage, initLdapWizard } from "./settings/index.js?v=0.15.0";
 import { getLdapSettingsData } from "./services/ldapSettingsService.js?v=0.12.8";
 import { listPortalUsers } from "./services/portalUsersAdminService.js?v=0.12.8";
+import { renderRhMoodDashboardPage, initMoodDashboardCharts, destroyMoodDashboardCharts, wrapRhAdminShell } from "./people/index.js?v=0.14.5";
+import {
+  canAccessHrMoodDashboard,
+  getMoodSurveyDashboard,
+  resolveMoodDashboardPeriod
+} from "./services/moodSurveyDashboardService.js?v=0.14.1";
+import {
+  canManageMoodSurveyFeedback,
+  listMoodFeedbackMessages,
+  createMoodFeedbackMessage,
+  updateMoodFeedbackMessage,
+  deleteMoodFeedbackMessage
+} from "./services/moodSurveyFeedbackService.js?v=0.14.1";
 
 const ROUTES = Object.freeze({
   HOME: "inicio",
@@ -60,6 +90,7 @@ const ROUTES = Object.freeze({
   POLL_READ: "enquetes/leitura",
   COMMUNICATION_ADMIN: "comunicacao/restrita",
   SETTINGS: "configuracoes",
+  SETTINGS_LDAP: "configuracoes/ldap",
   ADMIN_USERS: "admin/usuarios",
   ADMIN_POLLS: "admin/enquetes",
   PEOPLE: "pessoas-rh",
@@ -86,10 +117,28 @@ function getNavRoutes() {
 
 let shellInitialized = false;
 let adminUsersRefreshBound = false;
+let moodDashboardQueryState = {
+  periodPreset: "7d",
+  department: "all"
+};
+let moodFeedbackQueryState = {
+  optionKey: "motivated",
+  editingId: ""
+};
+let currentPeopleRhData = {
+  moodDashboard: null,
+  moodDashboardLoadError: "",
+  moodFeedbackPage: null,
+  moodFeedbackLoadError: ""
+};
 let adminUsersSearchDebounce = 0;
 let currentAdminUsersPage = createEmptyPortalUsersPage();
 let currentAdminPollsPage = createEmptyAdminPollsPage();
 let currentAdminPollEditingId = "";
+let pollWizardAutoOpen = false;
+let currentCommunicationsPage = null;
+let currentCommunicationEditingId = "";
+let commWizardAutoOpen = false;
 let adminUsersQueryState = {
   query: "",
   status: "all",
@@ -112,7 +161,8 @@ function createEmptyPortalUsersPage() {
       portalAdmins: 0,
       loginEvents: 0,
       failedLoginEvents: 0,
-      logoutEvents: 0
+      logoutEvents: 0,
+      moodSurveyEvents: 0
     },
     roleOptions: [],
     departmentOptions: [],
@@ -120,6 +170,7 @@ function createEmptyPortalUsersPage() {
     accessLevelOptions: [],
     recentLogins: [],
     recentAuditEntries: [],
+    recentMoodSurveyEntries: [],
     page: 1,
     pageSize: 8,
     totalItems: 0,
@@ -136,8 +187,8 @@ function createEmptyPortalUsersPage() {
 function createEmptyAdminPollsPage() {
   return {
     intro: {
-      eyebrow: "ADMINISTRACAO",
-      title: "Gestao de enquetes internas",
+      eyebrow: "ADMINISTRATIVO",
+      title: "Enquetes",
       subtitle: "Publique novas pesquisas e acompanhe a participacao do portal.",
       loadError: ""
     },
@@ -185,18 +236,33 @@ function bindPortalTopbarActions() {
   });
 }
 
+function isRestrictedAdminRoute(route) {
+  return (
+    route === ROUTES.SETTINGS ||
+    route === ROUTES.SETTINGS_LDAP ||
+    route === ROUTES.ADMIN_USERS
+  );
+}
+
+function isRhWorkspaceRoute(route) {
+  return (
+    route === ROUTES.PEOPLE ||
+    route === ROUTES.ADMIN_POLLS ||
+    route === ROUTES.COMMUNICATION_ADMIN
+  );
+}
+
+function isSidebarlessRoute(route) {
+  return isRestrictedAdminRoute(route) || isRhWorkspaceRoute(route);
+}
+
 function applyLayoutMode(route) {
   const content = document.getElementById("main-content");
   if (!content) {
     return;
   }
 
-  const isRestrictedArea =
-    route === ROUTES.COMMUNICATION_ADMIN ||
-    route === ROUTES.SETTINGS ||
-    route === ROUTES.ADMIN_USERS ||
-    route === ROUTES.ADMIN_POLLS;
-  content.classList.toggle("content--single", isRestrictedArea);
+  content.classList.toggle("content--single", isSidebarlessRoute(route));
 }
 
 async function setupServiceWorker() {
@@ -254,6 +320,10 @@ function parseRoute() {
     return { route: ROUTES.ADMIN_POLLS, slug: "" };
   }
 
+  if (hash === ROUTES.SETTINGS_LDAP) {
+    return { route: ROUTES.SETTINGS_LDAP, slug: "" };
+  }
+
   if (getNavRoutes().some((item) => item.route === hash)) {
     return { route: hash, slug: "" };
   }
@@ -266,7 +336,11 @@ function buildNavItems(navItems = [], route = ROUTES.HOME) {
     ? ROUTES.COMMUNICATIONS
     : route === ROUTES.POLL_READ
       ? ROUTES.POLLS
-      : route;
+      : route === ROUTES.ADMIN_POLLS || route === ROUTES.COMMUNICATION_ADMIN
+        ? ROUTES.PEOPLE
+        : route === ROUTES.SETTINGS_LDAP
+          ? ROUTES.SETTINGS
+          : route;
   const routes = getNavRoutes();
 
   return routes.map((item) => ({
@@ -280,11 +354,7 @@ function renderShell(data, route) {
   const header = document.getElementById("page-header");
   const leftSidebar = document.getElementById("left-sidebar");
   const rightSidebar = document.getElementById("right-sidebar");
-  const isRestrictedArea =
-    route === ROUTES.COMMUNICATION_ADMIN ||
-    route === ROUTES.SETTINGS ||
-    route === ROUTES.ADMIN_USERS ||
-    route === ROUTES.ADMIN_POLLS;
+  const hideDefaultSidebars = isSidebarlessRoute(route);
 
   applyLayoutMode(route);
 
@@ -292,8 +362,8 @@ function renderShell(data, route) {
     ...data,
     navItems: buildNavItems(data.navItems, route)
   });
-  leftSidebar.innerHTML = isRestrictedArea ? "" : renderSidebarPanels(data.leftPanels);
-  rightSidebar.innerHTML = isRestrictedArea ? "" : renderSidebarPanels(data.rightPanels);
+  leftSidebar.innerHTML = hideDefaultSidebars ? "" : renderSidebarPanels(data.leftPanels);
+  rightSidebar.innerHTML = hideDefaultSidebars ? "" : renderSidebarPanels(data.rightPanels);
   bindPortalTopbarActions();
 }
 
@@ -304,12 +374,13 @@ function renderHomePage(data, route) {
   centerContent.innerHTML = [
     renderHero(data.hero),
     renderMoodCard(data.mood),
-    renderHomePollHighlight(data.pollHighlight),
+    renderHomePollCarousel(data.pollHomeCarousel),
     renderCarouselSection(data.carousel),
     renderFeed(data.feed, data.composer)
   ].join("");
 
   initCarousel();
+  initPollHomeCarousel();
 }
 
 function renderCommunicationsPage(data, route) {
@@ -322,7 +393,7 @@ function renderPollsPage(data, route) {
   const centerContent = document.getElementById("center-content");
   renderShell(data, route);
   centerContent.innerHTML = renderPollsHub(data.polls, {
-    canManage: isSuperAdminSession()
+    canManage: canManagePolls()
   });
   bindPublicPollActions(route);
 }
@@ -344,23 +415,241 @@ function renderPollReadPage(data, route) {
   bindPublicPollActions(route);
 }
 
-function renderCommunicationAdminRoute(data, route) {
+function renderCommunicationAdminCurrentView() {
   const centerContent = document.getElementById("center-content");
+  const selectedCommunication = currentCommunicationsPage?.items?.find(
+    (item) => item?.id === currentCommunicationEditingId
+  ) || null;
+
+  const pageContent = !canManageCommunications()
+    ? renderEmptyState(
+      "Acesso restrito ao RH",
+      "A gestao de comunicados e exclusiva para Gestores de RH. Se o perfil foi alterado recentemente, encerre a sessao e faca login novamente."
+    )
+    : renderCommunicationAdminPage(currentCommunicationsPage, {
+      layout: "rh",
+      selectedCommunication
+    });
+
+  centerContent.innerHTML = wrapRhAdminShell(pageContent, "comunicados");
+
+  if (canManageCommunications()) {
+    bindCommunicationAdminActions();
+    if (commWizardAutoOpen) {
+      openCommunicationAdminWizard(document);
+      commWizardAutoOpen = false;
+    }
+  }
+}
+
+function buildCommunicationWizardPayload(values) {
+  const publishedValue = values.publishedAt || "";
+  return {
+    title: values.title,
+    category: values.category,
+    priority: values.priority,
+    summary: values.summary,
+    body: values.body,
+    publishedAt: publishedValue ? new Date(`${publishedValue}T09:00:00`).toISOString() : new Date().toISOString(),
+    audience: values.audience,
+    channel: values.channel,
+    status: values.status,
+    owner: values.owner,
+    attachmentLabel: values.attachmentLabel,
+    imageUrl: values.imageUrl || null,
+    isFeatured: values.isFeatured
+  };
+}
+
+function readCommunicationImageFile(file) {
+  return new Promise((resolve) => {
+    if (!file) {
+      resolve("");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      resolve(typeof reader.result === "string" ? reader.result : "");
+    };
+    reader.onerror = () => resolve("");
+    reader.readAsDataURL(file);
+  });
+}
+
+async function refreshCommunicationAdminRoute(feedbackMessage = "", feedbackTone = "success") {
+  if (parseRoute().route !== ROUTES.COMMUNICATION_ADMIN) {
+    return;
+  }
+
+  const data = await loadPageData(ROUTES.COMMUNICATION_ADMIN);
+  currentCommunicationsPage = data.communications;
+  renderCommunicationAdminCurrentView();
+
+  if (feedbackMessage) {
+    showToast(feedbackMessage, feedbackTone);
+  }
+}
+
+function bindCommunicationAdminActions() {
+  document.querySelectorAll("[data-action='admin-communication-create']").forEach((button) => {
+    button.addEventListener("click", () => {
+      currentCommunicationEditingId = "";
+      commWizardAutoOpen = true;
+      renderCommunicationAdminCurrentView();
+    });
+  });
+
+  document.querySelectorAll("[data-action='admin-communication-edit']").forEach((button) => {
+    button.addEventListener("click", () => {
+      currentCommunicationEditingId = button.getAttribute("data-communication-id") || "";
+      commWizardAutoOpen = true;
+      renderCommunicationAdminCurrentView();
+    });
+  });
+
+  document.querySelectorAll("[data-action='admin-communication-archive'], [data-action='admin-communication-reactivate']").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const communicationId = button.getAttribute("data-communication-id") || "";
+      const nextStatus = button.getAttribute("data-next-status") || "";
+      const item = currentCommunicationsPage?.items?.find((entry) => entry.id === communicationId);
+      if (!communicationId || !nextStatus || !item) {
+        return;
+      }
+
+      try {
+        await updateCommunication(communicationId, {
+          title: item.title,
+          category: item.category,
+          priority: item.priority,
+          summary: item.summary,
+          body: item.bodyText || item.body?.join?.("\n\n") || "",
+          publishedAt: item.publishedAtRaw || new Date().toISOString(),
+          audience: item.audience,
+          channel: item.channel,
+          status: nextStatus,
+          owner: item.owner,
+          attachmentLabel: item.attachmentLabel,
+          imageUrl: item.imageUrl || item.image || null,
+          isFeatured: item.isFeatured
+        }, { headers: getCommunicationEditorHeaders() });
+
+        await refreshCommunicationAdminRoute(
+          nextStatus === "Arquivado" ? "Comunicado inativado com sucesso." : "Comunicado reativado com sucesso."
+        );
+      } catch (error) {
+        console.error("Falha ao atualizar status do comunicado.", error);
+        showToast("Nao foi possivel atualizar o status do comunicado.", "danger");
+      }
+    });
+  });
+
+  document.querySelectorAll("[data-action='admin-communication-delete']").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const communicationId = button.getAttribute("data-communication-id") || "";
+      if (!communicationId || !window.confirm("Deseja excluir este comunicado permanentemente?")) {
+        return;
+      }
+
+      try {
+        await deleteCommunication(communicationId, { headers: getCommunicationEditorHeaders() });
+        currentCommunicationEditingId = "";
+        await refreshCommunicationAdminRoute("Comunicado excluido com sucesso.");
+      } catch (error) {
+        console.error("Falha ao excluir comunicado.", error);
+        showToast("Nao foi possivel excluir o comunicado.", "danger");
+      }
+    });
+  });
+
+  initCommunicationAdminWizard(document, {
+    onClose: () => {
+      currentCommunicationEditingId = "";
+    },
+    onValidation: (message) => {
+      showToast(message, "info");
+    },
+    readImageFile: readCommunicationImageFile,
+    onSubmit: async (values, mode, communicationId) => {
+      const payload = buildCommunicationWizardPayload(values);
+      const headers = getCommunicationEditorHeaders();
+
+      try {
+        if (mode === "edit" && communicationId) {
+          await updateCommunication(communicationId, payload, { headers });
+        } else {
+          await createCommunication(payload, { headers });
+        }
+
+        closeCommunicationAdminWizard(document);
+        currentCommunicationEditingId = "";
+        await refreshCommunicationAdminRoute(
+          mode === "edit" ? "Comunicado atualizado com sucesso." : "Comunicado publicado com sucesso."
+        );
+      } catch (error) {
+        console.error("Falha ao salvar comunicado.", error);
+        const message = error instanceof Error && error.message.includes("HTTP 403")
+          ? "Seu perfil nao possui permissao para publicar comunicados."
+          : "Nao foi possivel salvar o comunicado agora.";
+        showToast(message, "danger");
+      }
+    }
+  });
+}
+
+function renderCommunicationAdminRoute(data, route) {
   renderShell(data, route);
-  centerContent.innerHTML = renderCommunicationAdminPage(data.communications);
+  currentCommunicationsPage = data.communications;
+
+  if (currentCommunicationEditingId && !currentCommunicationsPage?.items?.some((item) => item?.id === currentCommunicationEditingId)) {
+    currentCommunicationEditingId = "";
+  }
+
+  renderCommunicationAdminCurrentView();
 }
 
 function renderAdminSettingsRoute(data, route) {
   const centerContent = document.getElementById("center-content");
   renderShell(data, route);
-  centerContent.innerHTML = renderAdminSettingsPage(data.ldapSettings);
+  centerContent.innerHTML = renderAdminSettingsPage();
+}
+
+function renderAdminLdapRoute(data, route) {
+  const centerContent = document.getElementById("center-content");
+  renderShell(data, route);
+  centerContent.innerHTML = `
+    <div class="ldap-wizard-layout">
+      <div class="ldap-wizard-layout__toolbar">
+        <a href="#configuracoes" class="comm-secondary-button">
+          <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+          Voltar para configuracoes
+        </a>
+      </div>
+      ${renderLdapWizardPage(data.ldapSettings)}
+    </div>
+  `;
+  initLdapWizard(centerContent);
 }
 
 function renderAdminPollsCurrentView() {
   const centerContent = document.getElementById("center-content");
   const selectedPoll = currentAdminPollsPage.items.find((item) => item?.id === currentAdminPollEditingId) || null;
-  centerContent.innerHTML = renderAdminPollsPage(currentAdminPollsPage, selectedPoll);
-  bindAdminPollActions();
+  const pageContent = !canManagePolls()
+    ? renderEmptyState(
+      "Acesso restrito ao RH",
+      "A gestao de enquetes e exclusiva para Gestores de RH. Se o perfil foi alterado recentemente, encerre a sessao e faca login novamente."
+    )
+    : renderAdminPollsPage(currentAdminPollsPage, selectedPoll);
+
+  centerContent.innerHTML = wrapRhAdminShell(pageContent, "enquetes");
+
+  if (canManagePolls()) {
+    bindAdminPollActions();
+    if (pollWizardAutoOpen) {
+      openPollAdminWizard(document);
+      pollWizardAutoOpen = false;
+    }
+  }
 }
 
 function renderAdminPollsRoute(data, route) {
@@ -377,19 +666,12 @@ function renderAdminPollsRoute(data, route) {
   renderAdminPollsCurrentView();
 }
 
-function buildPollOptionRow(optionId = "", optionLabel = "", index = 0) {
-  return `
-    <div class="poll-option-editor" data-option-row>
-      <input type="hidden" name="optionId" value="${optionId}" />
-      <label class="communication-form-field">
-        <span>Opcao ${index + 1}</span>
-        <input type="text" name="optionLabel" value="${optionLabel}" placeholder="Descreva a alternativa" />
-      </label>
-      <button type="button" class="comm-tertiary-button" data-action="remove-poll-option">
-        <i class="fa-solid fa-trash"></i>
-      </button>
-    </div>
-  `;
+function buildPollWizardPayload(values) {
+  return {
+    ...values,
+    publishedAtUtc: normalizeDateTimeInput(values.publishedAtUtc),
+    closesAtUtc: normalizeDateTimeInput(values.closesAtUtc)
+  };
 }
 
 function normalizeDateTimeInput(value) {
@@ -399,31 +681,6 @@ function normalizeDateTimeInput(value) {
 
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
-}
-
-function collectPollFormPayload(form) {
-  const optionRows = Array.from(form.querySelectorAll("[data-option-row]"));
-  const options = optionRows.map((row) => ({
-    id: row.querySelector("input[name='optionId']")?.value?.trim() || null,
-    label: row.querySelector("input[name='optionLabel']")?.value?.trim() || ""
-  })).filter((item) => item.label);
-
-  return {
-    title: form.querySelector("[name='title']")?.value?.trim() || "",
-    summary: form.querySelector("[name='summary']")?.value?.trim() || "",
-    body: form.querySelector("[name='body']")?.value?.trim() || "",
-    imageUrl: form.querySelector("[name='imageUrl']")?.value?.trim() || "",
-    attachmentLabel: form.querySelector("[name='attachmentLabel']")?.value?.trim() || "",
-    attachmentUrl: form.querySelector("[name='attachmentUrl']")?.value?.trim() || "",
-    audience: form.querySelector("[name='audience']")?.value?.trim() || "Toda a companhia",
-    status: form.querySelector("[name='status']")?.value || "Draft",
-    resultsVisibility: form.querySelector("[name='resultsVisibility']")?.value || "AfterVote",
-    allowMultipleChoices: Boolean(form.querySelector("[name='allowMultipleChoices']")?.checked),
-    isFeatured: Boolean(form.querySelector("[name='isFeatured']")?.checked),
-    publishedAtUtc: normalizeDateTimeInput(form.querySelector("[name='publishedAtUtc']")?.value || ""),
-    closesAtUtc: normalizeDateTimeInput(form.querySelector("[name='closesAtUtc']")?.value || ""),
-    options
-  };
 }
 
 function replacePollAssetPreview(container, assetType, url) {
@@ -465,7 +722,7 @@ async function uploadSelectedPollAsset(form, assetType, triggerButton) {
 
   try {
     const response = await uploadPollAsset(assetType, file, {
-      headers: getAdminAuthHeaders()
+      headers: getPortalAuthHeaders()
     });
 
     valueInput.value = response?.url || "";
@@ -531,12 +788,18 @@ function bindPublicPollActions(route) {
 }
 
 function bindAdminPollActions() {
-  const form = document.getElementById("admin-poll-form");
-  const optionList = document.getElementById("poll-option-list");
+  document.querySelectorAll("[data-action='admin-poll-create']").forEach((button) => {
+    button.addEventListener("click", () => {
+      currentAdminPollEditingId = "";
+      pollWizardAutoOpen = true;
+      renderAdminPollsCurrentView();
+    });
+  });
 
   document.querySelectorAll("[data-action='admin-poll-edit']").forEach((button) => {
     button.addEventListener("click", () => {
       currentAdminPollEditingId = button.getAttribute("data-poll-id") || "";
+      pollWizardAutoOpen = true;
       renderAdminPollsCurrentView();
     });
   });
@@ -552,7 +815,7 @@ function bindAdminPollActions() {
 
       try {
         await updatePollStatus(pollId, nextStatus, {
-          headers: getAdminAuthHeaders()
+          headers: getPortalAuthHeaders()
         });
         await refreshAdminPollsRoute("Status da enquete atualizado com sucesso.", "success", currentAdminPollEditingId || pollId);
       } catch (error) {
@@ -562,81 +825,33 @@ function bindAdminPollActions() {
     });
   });
 
-  if (!form || !optionList) {
-    return;
-  }
-
-  form.addEventListener("click", async (event) => {
-    const target = event.target.closest("[data-action]");
-    if (!target) {
-      return;
-    }
-
-    const action = target.getAttribute("data-action");
-    if (action === "add-poll-option") {
-      event.preventDefault();
-      const nextIndex = optionList.querySelectorAll("[data-option-row]").length;
-      optionList.insertAdjacentHTML("beforeend", buildPollOptionRow("", "", nextIndex));
-      return;
-    }
-
-    if (action === "remove-poll-option") {
-      event.preventDefault();
-      const rows = Array.from(optionList.querySelectorAll("[data-option-row]"));
-      if (rows.length <= 2) {
-        showToast("A enquete precisa manter pelo menos duas opcoes.", "info");
-        return;
-      }
-
-      target.closest("[data-option-row]")?.remove();
-      Array.from(optionList.querySelectorAll("[data-option-row]")).forEach((row, index) => {
-        const label = row.querySelector("label span");
-        if (label) {
-          label.textContent = `Opcao ${index + 1}`;
-        }
-      });
-      return;
-    }
-
-    if (action === "admin-poll-reset") {
-      event.preventDefault();
+  initPollAdminWizard(document, {
+    onClose: () => {
       currentAdminPollEditingId = "";
-      renderAdminPollsCurrentView();
-      return;
-    }
+    },
+    onValidation: (message) => {
+      showToast(message, "info");
+    },
+    onUploadAsset: uploadSelectedPollAsset,
+    onSubmit: async (values, mode, pollId) => {
+      const payload = buildPollWizardPayload(values);
 
-    if (action === "upload-poll-asset") {
-      event.preventDefault();
-      const assetType = target.getAttribute("data-asset-type") || "";
-      await uploadSelectedPollAsset(form, assetType, target);
-    }
-  });
+      try {
+        await (mode === "edit" && pollId
+          ? updatePoll(pollId, payload, { headers: getPortalAuthHeaders() })
+          : createPoll(payload, { headers: getPortalAuthHeaders() }));
 
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const mode = form.getAttribute("data-mode") || "create";
-    const pollId = form.getAttribute("data-poll-id") || "";
-    const payload = collectPollFormPayload(form);
-
-    if (payload.options.length < 2) {
-      showToast("Inclua pelo menos duas alternativas na enquete.", "danger");
-      return;
-    }
-
-    try {
-      const response = mode === "edit" && pollId
-        ? await updatePoll(pollId, payload, { headers: getAdminAuthHeaders() })
-        : await createPoll(payload, { headers: getAdminAuthHeaders() });
-
-      currentAdminPollEditingId = response?.id || "";
-      await refreshAdminPollsRoute(
-        mode === "edit" ? "Enquete atualizada com sucesso." : "Enquete criada com sucesso.",
-        "success",
-        currentAdminPollEditingId
-      );
-    } catch (error) {
-      console.error("Falha ao salvar enquete administrativa.", error);
-      showToast("Nao foi possivel salvar a enquete.", "danger");
+        closePollAdminWizard(document);
+        currentAdminPollEditingId = "";
+        await refreshAdminPollsRoute(
+          mode === "edit" ? "Enquete atualizada com sucesso." : "Enquete criada com sucesso.",
+          "success",
+          ""
+        );
+      } catch (error) {
+        console.error("Falha ao salvar enquete administrativa.", error);
+        showToast("Nao foi possivel salvar a enquete.", "danger");
+      }
     }
   });
 }
@@ -929,7 +1144,34 @@ function renderAdminUsersRoute(data, route) {
   bindAdminUsersModal();
 }
 
-async function ensureRestrictedAdminAccess(route = ROUTES.COMMUNICATION_ADMIN) {
+async function ensureCommunicationEditorAccess() {
+  if (getStoredPortalSession()) {
+    const hasPortalAccess = await ensurePortalAccess();
+    return hasPortalAccess;
+  }
+
+  const adminSession = getStoredAdminSession();
+  if (!adminSession) {
+    redirectToAdminLogin(window.location.hash || "#comunicacao/restrita");
+    return false;
+  }
+
+  try {
+    const validatedSession = await fetchAdminSession();
+    if (!validatedSession) {
+      redirectToAdminLogin(window.location.hash || "#comunicacao/restrita");
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Falha ao validar sessao administrativa para comunicados.", error);
+    redirectToAdminLogin(window.location.hash || "#comunicacao/restrita");
+    return false;
+  }
+}
+
+async function ensureRestrictedAdminAccess(route = ROUTES.SETTINGS) {
   const session = getStoredAdminSession();
   if (!session) {
     redirectToAdminLogin(`#${route}`);
@@ -943,7 +1185,7 @@ async function ensureRestrictedAdminAccess(route = ROUTES.COMMUNICATION_ADMIN) {
       return false;
     }
 
-    if ((route === ROUTES.SETTINGS || route === ROUTES.ADMIN_USERS) && !isSuperAdminSession(validatedSession)) {
+    if ((route === ROUTES.SETTINGS || route === ROUTES.SETTINGS_LDAP || route === ROUTES.ADMIN_USERS) && !isSuperAdminSession(validatedSession)) {
       window.location.hash = "#comunicacao/restrita";
       showToast("Esta area e restrita ao super-admin.", "danger");
       return false;
@@ -965,7 +1207,7 @@ async function ensurePortalAccess() {
   }
 
   try {
-    const validatedSession = await fetchPortalSession();
+    const validatedSession = await ensureValidPortalSession();
     if (!validatedSession) {
       redirectToPortalLogin(window.location.hash || "#inicio");
       return false;
@@ -974,9 +1216,243 @@ async function ensurePortalAccess() {
     return true;
   } catch (error) {
     console.error("Falha ao validar sessao do portal.", error);
+    if (getStoredPortalSession()) {
+      return true;
+    }
+
     redirectToPortalLogin(window.location.hash || "#inicio");
     return false;
   }
+}
+
+function buildMoodDashboardQuery() {
+  const period = resolveMoodDashboardPeriod(moodDashboardQueryState.periodPreset);
+  return {
+    startDate: period.startDate,
+    endDate: period.endDate,
+    department: moodDashboardQueryState.department === "all" ? "" : moodDashboardQueryState.department
+  };
+}
+
+function bindMoodDashboardFilters() {
+  const periodFilter = document.getElementById("mood-dashboard-period-filter");
+  const departmentFilter = document.getElementById("mood-dashboard-department-filter");
+
+  if (periodFilter) {
+    periodFilter.addEventListener("change", () => {
+      moodDashboardQueryState = {
+        ...moodDashboardQueryState,
+        periodPreset: periodFilter.value || "7d"
+      };
+
+      renderCurrentRoute().catch((error) => {
+        console.error("Falha ao atualizar dashboard de humor.", error);
+        showToast("Nao foi possivel atualizar o dashboard de humor.", "danger");
+      });
+    });
+  }
+
+  if (departmentFilter) {
+    departmentFilter.addEventListener("change", () => {
+      moodDashboardQueryState = {
+        ...moodDashboardQueryState,
+        department: departmentFilter.value || "all"
+      };
+
+      renderCurrentRoute().catch((error) => {
+        console.error("Falha ao atualizar dashboard de humor.", error);
+        showToast("Nao foi possivel atualizar o dashboard de humor.", "danger");
+      });
+    });
+  }
+}
+
+function renderPeopleRhCurrentView() {
+  const centerContent = document.getElementById("center-content");
+  const pageContent = !canAccessHrMoodDashboard()
+    ? renderRhMoodDashboardPage(null, { accessDenied: true })
+    : renderRhMoodDashboardPage(currentPeopleRhData.moodDashboard, {
+      periodPreset: moodDashboardQueryState.periodPreset,
+      department: moodDashboardQueryState.department,
+      loadError: currentPeopleRhData.moodDashboardLoadError || "",
+      feedbackPage: canManageMoodSurveyFeedback() ? currentPeopleRhData.moodFeedbackPage : null,
+      feedbackLoadError: currentPeopleRhData.moodFeedbackLoadError || "",
+      feedbackOptionKey: moodFeedbackQueryState.optionKey,
+      feedbackEditingId: moodFeedbackQueryState.editingId
+    });
+
+  centerContent.innerHTML = wrapRhAdminShell(pageContent, "humor");
+  bindMoodDashboardFilters();
+
+  if (!canAccessHrMoodDashboard()) {
+    destroyMoodDashboardCharts();
+    return;
+  }
+
+  if (canManageMoodSurveyFeedback()) {
+    bindMoodFeedbackAdminActions();
+  }
+
+  initMoodDashboardCharts(currentPeopleRhData.moodDashboard).catch((error) => {
+    console.error("Falha ao renderizar graficos do dashboard de humor.", error);
+    showToast("Nao foi possivel carregar os graficos do dashboard.", "danger");
+  });
+}
+
+function readMoodFeedbackFormPayload(form) {
+  const sortOrderValue = form.querySelector("[name='sortOrder']")?.value?.trim();
+  const sortOrder = sortOrderValue ? Number(sortOrderValue) : null;
+
+  return {
+    optionKey: form.querySelector("[name='optionKey']")?.value || "motivated",
+    message: form.querySelector("[name='message']")?.value?.trim() || "",
+    sortOrder: Number.isFinite(sortOrder) && sortOrder > 0 ? sortOrder : null,
+    isActive: Boolean(form.querySelector("[name='isActive']")?.checked)
+  };
+}
+
+async function refreshPeopleRhRoute(feedbackMessage = "", feedbackTone = "success") {
+  if (parseRoute().route !== ROUTES.PEOPLE) {
+    return;
+  }
+
+  const data = await loadPageData(ROUTES.PEOPLE);
+  currentPeopleRhData = {
+    moodDashboard: data.moodDashboard,
+    moodDashboardLoadError: data.moodDashboardLoadError || "",
+    moodFeedbackPage: data.moodFeedbackPage,
+    moodFeedbackLoadError: data.moodFeedbackLoadError || ""
+  };
+  renderPeopleRhCurrentView();
+
+  if (feedbackMessage) {
+    showToast(feedbackMessage, feedbackTone);
+  }
+}
+
+function bindMoodFeedbackAdminActions() {
+  const adminSection = document.getElementById("mood-feedback-admin");
+  if (!adminSection || adminSection.dataset.bound === "true") {
+    return;
+  }
+
+  adminSection.dataset.bound = "true";
+
+  adminSection.addEventListener("click", async (event) => {
+    const target = event.target.closest("[data-action]");
+    if (!target) {
+      return;
+    }
+
+    const action = target.getAttribute("data-action");
+
+    if (action === "filter-mood-feedback") {
+      event.preventDefault();
+      moodFeedbackQueryState = {
+        ...moodFeedbackQueryState,
+        optionKey: target.getAttribute("data-option-key") || "motivated",
+        editingId: ""
+      };
+      renderPeopleRhCurrentView();
+      return;
+    }
+
+    if (action === "edit-mood-feedback") {
+      event.preventDefault();
+      moodFeedbackQueryState = {
+        ...moodFeedbackQueryState,
+        editingId: target.getAttribute("data-feedback-id") || ""
+      };
+      renderPeopleRhCurrentView();
+      return;
+    }
+
+    if (action === "cancel-mood-feedback-edit") {
+      event.preventDefault();
+      moodFeedbackQueryState = {
+        ...moodFeedbackQueryState,
+        editingId: ""
+      };
+      renderPeopleRhCurrentView();
+      return;
+    }
+
+    if (action === "delete-mood-feedback") {
+      event.preventDefault();
+      const feedbackId = target.getAttribute("data-feedback-id") || "";
+      if (!feedbackId || !window.confirm("Deseja excluir esta mensagem de feedback?")) {
+        return;
+      }
+
+      try {
+        await deleteMoodFeedbackMessage(feedbackId);
+        moodFeedbackQueryState = {
+          ...moodFeedbackQueryState,
+          editingId: ""
+        };
+        await refreshPeopleRhRoute("Mensagem excluida com sucesso.");
+      } catch (error) {
+        console.error("Falha ao excluir mensagem de feedback do humor.", error);
+        showToast("Nao foi possivel excluir a mensagem.", "danger");
+      }
+    }
+  });
+
+  adminSection.addEventListener("submit", async (event) => {
+    const form = event.target.closest("form[data-action]");
+    if (!form) {
+      return;
+    }
+
+    event.preventDefault();
+    const action = form.getAttribute("data-action");
+    const payload = readMoodFeedbackFormPayload(form);
+
+    if (!payload.message) {
+      showToast("Informe o texto da mensagem.", "info");
+      return;
+    }
+
+    try {
+      if (action === "create-mood-feedback") {
+        await createMoodFeedbackMessage(payload);
+        moodFeedbackQueryState = {
+          optionKey: payload.optionKey,
+          editingId: ""
+        };
+        await refreshPeopleRhRoute("Mensagem cadastrada com sucesso.");
+        return;
+      }
+
+      if (action === "save-mood-feedback") {
+        const feedbackId = form.getAttribute("data-feedback-id") || "";
+        if (!feedbackId) {
+          return;
+        }
+
+        await updateMoodFeedbackMessage(feedbackId, payload);
+        moodFeedbackQueryState = {
+          optionKey: payload.optionKey,
+          editingId: ""
+        };
+        await refreshPeopleRhRoute("Mensagem atualizada com sucesso.");
+      }
+    } catch (error) {
+      console.error("Falha ao salvar mensagem de feedback do humor.", error);
+      showToast("Nao foi possivel salvar a mensagem.", "danger");
+    }
+  });
+}
+
+function renderPeopleRhPage(data, route) {
+  renderShell(data, route);
+  currentPeopleRhData = {
+    moodDashboard: data.moodDashboard,
+    moodDashboardLoadError: data.moodDashboardLoadError || "",
+    moodFeedbackPage: data.moodFeedbackPage,
+    moodFeedbackLoadError: data.moodFeedbackLoadError || ""
+  };
+  renderPeopleRhCurrentView();
 }
 
 function renderPlaceholderPage(data, route) {
@@ -994,13 +1470,24 @@ function renderPlaceholderPage(data, route) {
   `;
 }
 
-function renderLoadingApp() {
+function renderLoadingApp(route = parseRoute().route) {
   const header = document.getElementById("page-header");
   const leftSidebar = document.getElementById("left-sidebar");
   const centerContent = document.getElementById("center-content");
   const rightSidebar = document.getElementById("right-sidebar");
 
+  applyLayoutMode(route);
   header.innerHTML = renderLoadingHeader();
+
+  if (isSidebarlessRoute(route)) {
+    leftSidebar.innerHTML = "";
+    rightSidebar.innerHTML = "";
+    centerContent.innerHTML = isRhWorkspaceRoute(route)
+      ? `<div class="rh-admin-shell"><aside class="rh-admin-nav card rh-admin-nav--loading"><div class="card-header">Administrativo</div></aside><div class="rh-admin-main">${renderLoadingPanel("Carregando area de RH")}</div></div>`
+      : renderLoadingPanel("Carregando area administrativa");
+    return;
+  }
+
   leftSidebar.innerHTML = [
     renderLoadingPanel("Carregando jornada"),
     renderLoadingPanel("Carregando painel"),
@@ -1051,13 +1538,15 @@ async function loadPageData(route, slug = "") {
     ...panels
   };
   const isAdminRoute =
-    route === ROUTES.COMMUNICATION_ADMIN ||
     route === ROUTES.SETTINGS ||
-    route === ROUTES.ADMIN_USERS ||
-    route === ROUTES.ADMIN_POLLS;
-  const shellData = isAdminRoute
+    route === ROUTES.SETTINGS_LDAP ||
+    route === ROUTES.ADMIN_USERS;
+  const shellData = isAdminRoute || isRhWorkspaceRoute(route)
     ? baseShellData
-    : applyNotificationsToShellData(baseShellData, await getNotificationCenterData());
+    : applyAgendaToShellData(
+        applyNotificationsToShellData(baseShellData, await getNotificationCenterData()),
+        await getAgendaDayData()
+      );
 
   if (
     route === ROUTES.COMMUNICATIONS ||
@@ -1101,7 +1590,7 @@ async function loadPageData(route, slug = "") {
     };
   }
 
-  if (route === ROUTES.SETTINGS) {
+  if (route === ROUTES.SETTINGS || route === ROUTES.SETTINGS_LDAP) {
     const ldapSettings = await getLdapSettingsData({
       headers: getAdminAuthHeaders()
     });
@@ -1147,13 +1636,61 @@ async function loadPageData(route, slug = "") {
   }
 
   if (route === ROUTES.ADMIN_POLLS) {
+    if (!canManagePolls()) {
+      return {
+        ...shellData,
+        adminPollsPage: createEmptyAdminPollsPage()
+      };
+    }
+
     const adminPollsPage = await getAdminPollData({
-      headers: getAdminAuthHeaders()
+      headers: getPortalAuthHeaders()
     });
 
     return {
       ...shellData,
       adminPollsPage
+    };
+  }
+
+  if (route === ROUTES.PEOPLE) {
+    if (!canAccessHrMoodDashboard()) {
+      return {
+        ...shellData,
+        moodDashboard: null,
+        moodDashboardLoadError: "",
+        moodFeedbackPage: null,
+        moodFeedbackLoadError: ""
+      };
+    }
+
+    let moodDashboard = null;
+    let moodDashboardLoadError = "";
+    let moodFeedbackPage = null;
+    let moodFeedbackLoadError = "";
+
+    try {
+      moodDashboard = await getMoodSurveyDashboard(buildMoodDashboardQuery());
+    } catch (error) {
+      console.error("Falha ao carregar dashboard de humor do RH.", error);
+      moodDashboardLoadError = "Nao foi possivel consultar a distribuicao de humor. Verifique se a API do ambiente esta ativa.";
+    }
+
+    if (canManageMoodSurveyFeedback()) {
+      try {
+        moodFeedbackPage = await listMoodFeedbackMessages();
+      } catch (error) {
+        console.error("Falha ao carregar mensagens de feedback do humor.", error);
+        moodFeedbackLoadError = "Nao foi possivel carregar as mensagens de feedback.";
+      }
+    }
+
+    return {
+      ...shellData,
+      moodDashboard,
+      moodDashboardLoadError,
+      moodFeedbackPage,
+      moodFeedbackLoadError
     };
   }
 
@@ -1163,21 +1700,30 @@ async function loadPageData(route, slug = "") {
 async function renderCurrentRoute() {
   const { route, slug } = parseRoute();
   renderRuntimeBadge();
-  renderLoadingApp();
+  renderLoadingApp(route);
 
-  if (route === ROUTES.COMMUNICATION_ADMIN || route === ROUTES.SETTINGS || route === ROUTES.ADMIN_USERS || route === ROUTES.ADMIN_POLLS) {
-    const authorized = await ensureRestrictedAdminAccess(route);
-    if (!authorized) {
+  if (route === ROUTES.COMMUNICATION_ADMIN) {
+    const hasEditorAccess = await ensureCommunicationEditorAccess();
+    if (!hasEditorAccess) {
+      return;
+    }
+  } else if (route === ROUTES.SETTINGS || route === ROUTES.SETTINGS_LDAP || route === ROUTES.ADMIN_USERS) {
+    const hasAdminAccess = await ensureRestrictedAdminAccess(route);
+    if (!hasAdminAccess) {
       return;
     }
   } else {
-    const authorized = await ensurePortalAccess();
-    if (!authorized) {
+    const hasPortalAccess = await ensurePortalAccess();
+    if (!hasPortalAccess) {
       return;
     }
   }
 
   const data = await loadPageData(route, slug);
+
+  if (route !== ROUTES.PEOPLE && route !== ROUTES.ADMIN_POLLS) {
+    destroyMoodDashboardCharts();
+  }
 
   if (route === ROUTES.HOME) {
     renderHomePage(data, route);
@@ -1193,10 +1739,14 @@ async function renderCurrentRoute() {
     renderCommunicationAdminRoute(data, route);
   } else if (route === ROUTES.SETTINGS) {
     renderAdminSettingsRoute(data, route);
+  } else if (route === ROUTES.SETTINGS_LDAP) {
+    renderAdminLdapRoute(data, route);
   } else if (route === ROUTES.ADMIN_USERS) {
     renderAdminUsersRoute(data, route);
   } else if (route === ROUTES.ADMIN_POLLS) {
     renderAdminPollsRoute(data, route);
+  } else if (route === ROUTES.PEOPLE) {
+    renderPeopleRhPage(data, route);
   } else {
     renderPlaceholderPage(data, route);
   }
@@ -1223,19 +1773,6 @@ async function bootstrap() {
     });
 
     adminUsersRefreshBound = true;
-  }
-
-  const { route } = parseRoute();
-  if (route === ROUTES.COMMUNICATION_ADMIN || route === ROUTES.SETTINGS || route === ROUTES.ADMIN_USERS || route === ROUTES.ADMIN_POLLS) {
-    const hasAdminAccess = await ensureRestrictedAdminAccess(route);
-    if (!hasAdminAccess) {
-      return;
-    }
-  } else {
-    const hasPortalAccess = await ensurePortalAccess();
-    if (!hasPortalAccess) {
-      return;
-    }
   }
 
   if (!shellInitialized) {

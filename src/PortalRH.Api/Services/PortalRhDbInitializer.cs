@@ -25,5 +25,8 @@ public static class PortalRhDbInitializer
 
         await adminAuthService.EnsureDefaultSuperAdminAsync(cancellationToken);
         await ldapConfigurationService.EnsureDefaultConfigurationAsync(cancellationToken);
+
+        var moodSurveyFeedbackService = scope.ServiceProvider.GetRequiredService<IMoodSurveyFeedbackService>();
+        await moodSurveyFeedbackService.EnsureSeedAsync(cancellationToken);
     }
 }

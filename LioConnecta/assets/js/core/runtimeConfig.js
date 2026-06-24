@@ -1,4 +1,4 @@
-export const APP_VERSION = "v0.13.0";
+export const APP_VERSION = "v0.13.1";
 
 export const DATA_MODES = Object.freeze({
   MOCK: "mock",
@@ -52,6 +52,7 @@ const DEFAULT_RUNTIME_CONFIG = Object.freeze({
     carousel: "/carousel",
     communications: "/communications",
     notifications: "/notifications",
+    agenda: "/agenda",
     polls: "/polls",
     portalLdapLogin: "/auth/ldap/login",
     portalSession: "/auth/session",
@@ -65,7 +66,12 @@ const DEFAULT_RUNTIME_CONFIG = Object.freeze({
     adminPortalUsers: "/admin/portal-users",
     adminPortalUserStatus: "/admin/portal-users/{id}/status",
     adminPortalUserRole: "/admin/portal-users/{id}/role",
-    adminPortalUserPermission: "/admin/portal-users/{id}/permissions"
+    adminPortalUserPermission: "/admin/portal-users/{id}/permissions",
+    moodSurveyToday: "/mood-survey/today",
+    moodSurveyVote: "/mood-survey/vote",
+    moodSurveyDashboard: "/mood-survey/dashboard",
+    adminMoodSurveyDashboard: "/admin/mood-survey/dashboard",
+    moodSurveyFeedbackMessages: "/mood-survey/feedback-messages"
   }
 });
 
@@ -163,7 +169,8 @@ export function resolveDataSource(domain) {
     panels: joinUrl(config.apiBaseUrl, config.endpoints.panels),
     carousel: joinUrl(config.apiBaseUrl, config.endpoints.carousel),
     communications: joinUrl(config.apiBaseUrl, config.endpoints.communications),
-    notifications: joinUrl(config.apiBaseUrl, config.endpoints.notifications)
+    notifications: joinUrl(config.apiBaseUrl, config.endpoints.notifications),
+    agenda: joinUrl(config.apiBaseUrl, config.endpoints.agenda)
   };
 
   const sourceMap = {

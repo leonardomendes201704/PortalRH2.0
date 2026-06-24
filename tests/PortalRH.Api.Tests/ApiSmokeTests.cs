@@ -7,21 +7,26 @@ using PortalRH.Api.Contracts.Admin.Auth;
 using PortalRH.Api.Contracts.Admin.Ldap;
 using PortalRH.Api.Contracts.Admin.Polls;
 using PortalRH.Api.Contracts.Admin.PortalUsers;
+using PortalRH.Api.Contracts.Agenda;
 using PortalRH.Api.Contracts.Auth;
 using PortalRH.Api.Contracts.Communications;
+using PortalRH.Api.Contracts.MoodSurvey;
 using PortalRH.Api.Contracts.Notifications;
 using PortalRH.Api.Contracts.Polls;
 using PortalRH.Api.Data;
 using PortalRH.Api.Interfaces;
+using PortalRH.Api.Models;
 
 namespace PortalRH.Api.Tests;
 
 public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
 {
+    private readonly CustomWebApplicationFactory _factory;
     private readonly HttpClient _client;
 
     public ApiSmokeTests(CustomWebApplicationFactory factory)
     {
+        _factory = factory;
         ResetDatabaseAsync(factory.Services).GetAwaiter().GetResult();
         _client = factory.CreateClient();
     }
@@ -117,6 +122,49 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
         var response = await client.PostAsJsonAsync("/api/communications", request);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task CommunicationsEndpoint_AllowsHrManagerPortalSessionToCreateCommunication()
+    {
+        await EnsureLdapEnabledAsync();
+        var portalSession = await LoginPortalUserAsync();
+        UsePortalAuth(portalSession);
+
+        var forbiddenResponse = await _client.PostAsJsonAsync("/api/communications", new UpsertCommunicationRequest
+        {
+            Category = "RH",
+            Priority = "Alta prioridade",
+            Title = "Comunicado bloqueado para colaborador",
+            Summary = "Resumo",
+            Body = "Corpo",
+            Audience = "Toda a companhia",
+            Channel = "Portal",
+            Status = "Publicado",
+            AttachmentLabel = "Abrir anexo",
+            Owner = "Recursos Humanos",
+            PublishedAt = new DateTime(2026, 06, 24, 10, 0, 0, DateTimeKind.Utc)
+        });
+        Assert.Equal(HttpStatusCode.Unauthorized, forbiddenResponse.StatusCode);
+
+        await PromotePortalUserToHrManagerAsync();
+
+        var allowedResponse = await _client.PostAsJsonAsync("/api/communications", new UpsertCommunicationRequest
+        {
+            Category = "RH",
+            Priority = "Alta prioridade",
+            Title = "Comunicado RH via portal",
+            Summary = "Resumo persistido pelo gestor de RH.",
+            Body = "Corpo persistido pelo gestor de RH.",
+            Audience = "Toda a companhia",
+            Channel = "Portal",
+            Status = "Publicado",
+            AttachmentLabel = "Abrir comunicado",
+            Owner = "Recursos Humanos",
+            PublishedAt = new DateTime(2026, 06, 24, 10, 0, 0, DateTimeKind.Utc)
+        });
+
+        Assert.Equal(HttpStatusCode.Created, allowedResponse.StatusCode);
     }
 
     [Fact]
@@ -376,8 +424,10 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
     [Fact]
     public async Task PollsEndpoint_CreatesListsAndReturnsPublishedPoll()
     {
-        var adminSession = await LoginAdminAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminSession.Token);
+        await EnsureLdapEnabledAsync();
+        var portalSession = await LoginPortalUserAsync();
+        await PromotePortalUserToHrManagerAsync();
+        UsePortalAuth(portalSession);
 
         var imageUploadUrl = await UploadPollAssetAsync("image", "enquete-home.png", "image/png", [137, 80, 78, 71, 13, 10, 26, 10]);
         var attachmentUploadUrl = await UploadPollAssetAsync("attachment", "diretrizes.pdf", "application/pdf", [37, 80, 68, 70, 45, 49, 46, 55]);
@@ -414,7 +464,7 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
         Assert.Equal("Baixar diretrizes", created.AttachmentLabel);
         Assert.Equal(attachmentUploadUrl, created.AttachmentUrl);
 
-        _client.DefaultRequestHeaders.Authorization = null;
+        ClearPortalAuth();
 
         var publicItems = await _client.GetFromJsonAsync<List<PollDto>>("/api/polls");
         Assert.NotNull(publicItems);
@@ -434,9 +484,9 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
     public async Task PollsEndpoint_RegistersSingleVoteAndBlocksSecondAttempt()
     {
         await EnsureLdapEnabledAsync();
-
-        var adminSession = await LoginAdminAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminSession.Token);
+        var portalSession = await LoginPortalUserAsync();
+        await PromotePortalUserToHrManagerAsync();
+        UsePortalAuth(portalSession);
 
         var createResponse = await _client.PostAsJsonAsync("/api/admin/polls", new UpsertPollRequest
         {
@@ -460,11 +510,6 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
         var poll = await createResponse.Content.ReadFromJsonAsync<PollAdminDto>();
         Assert.NotNull(poll);
 
-        var portalSession = await LoginPortalUserAsync();
-        _client.DefaultRequestHeaders.Authorization = null;
-        _client.DefaultRequestHeaders.Remove("X-Portal-Token");
-        _client.DefaultRequestHeaders.Add("X-Portal-Token", portalSession.Token);
-
         var voteResponse = await _client.PostAsJsonAsync($"/api/polls/{poll.Id}/vote", new SubmitPollVoteRequest
         {
             OptionIds = [poll.Options[0].Id]
@@ -485,6 +530,22 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
         });
 
         Assert.Equal(HttpStatusCode.BadRequest, secondVoteResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task PollsAdminEndpoint_RequiresPollAdminPermissionForPortalUsers()
+    {
+        await EnsureLdapEnabledAsync();
+        var portalSession = await LoginPortalUserAsync();
+        UsePortalAuth(portalSession);
+
+        var forbiddenResponse = await _client.GetAsync("/api/admin/polls");
+        Assert.Equal(HttpStatusCode.Forbidden, forbiddenResponse.StatusCode);
+
+        await PromotePortalUserToHrManagerAsync();
+
+        var allowedResponse = await _client.GetAsync("/api/admin/polls");
+        Assert.Equal(HttpStatusCode.OK, allowedResponse.StatusCode);
     }
 
     [Fact]
@@ -512,6 +573,10 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
         });
         Assert.Equal(HttpStatusCode.Created, communicationResponse.StatusCode);
 
+        var portalSession = await LoginPortalUserAsync();
+        await PromotePortalUserToHrManagerAsync();
+        UsePortalAuth(portalSession);
+
         var pollResponse = await _client.PostAsJsonAsync("/api/admin/polls", new UpsertPollRequest
         {
             Title = "Enquete real para notificacao",
@@ -531,10 +596,8 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
         });
         Assert.Equal(HttpStatusCode.Created, pollResponse.StatusCode);
 
-        var portalSession = await LoginPortalUserAsync();
-        _client.DefaultRequestHeaders.Authorization = null;
-        _client.DefaultRequestHeaders.Remove("X-Portal-Token");
-        _client.DefaultRequestHeaders.Add("X-Portal-Token", portalSession.Token);
+        ClearPortalAuth();
+        UsePortalAuth(portalSession);
 
         var notifications = await _client.GetFromJsonAsync<NotificationListResponse>("/api/notifications");
 
@@ -566,6 +629,202 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
         Assert.All(allRead.Items, item => Assert.True(item.IsRead));
     }
 
+    [Fact]
+    public async Task MoodSurveyEndpoint_RegistersDailyVoteWithAuditTrailAndBlocksSecondAttempt()
+    {
+        await EnsureLdapEnabledAsync();
+        var portalSession = await LoginPortalUserAsync();
+
+        _client.DefaultRequestHeaders.Authorization = null;
+        _client.DefaultRequestHeaders.Remove("X-Portal-Token");
+        _client.DefaultRequestHeaders.Remove("X-Forwarded-For");
+        _client.DefaultRequestHeaders.Remove("Origin");
+        _client.DefaultRequestHeaders.Add("X-Portal-Token", portalSession.Token);
+        _client.DefaultRequestHeaders.Add("X-Forwarded-For", "10.30.40.50");
+        _client.DefaultRequestHeaders.Add("Origin", "http://127.0.0.1:3020");
+
+        var initial = await _client.GetFromJsonAsync<MoodSurveyTodayResponse>("/api/mood-survey/today");
+        Assert.NotNull(initial);
+        Assert.False(initial.HasVoted);
+        Assert.Equal(3, initial.Items.Count);
+        Assert.All(initial.Items, item => Assert.Equal(0, item.VoteCount));
+
+        var voteResponse = await _client.PostAsJsonAsync("/api/mood-survey/vote", new SubmitMoodSurveyVoteRequest
+        {
+            OptionKey = "motivated"
+        });
+        Assert.Equal(HttpStatusCode.OK, voteResponse.StatusCode);
+
+        var voted = await voteResponse.Content.ReadFromJsonAsync<MoodSurveyTodayResponse>();
+        Assert.NotNull(voted);
+        Assert.True(voted.HasVoted);
+        Assert.Equal("motivated", voted.SelectedOptionKey);
+        Assert.False(string.IsNullOrWhiteSpace(voted.ThankYouMessage));
+        Assert.Equal(1, voted.Items.First(item => item.Key == "motivated").VoteCount);
+
+        var secondVoteResponse = await _client.PostAsJsonAsync("/api/mood-survey/vote", new SubmitMoodSurveyVoteRequest
+        {
+            OptionKey = "good"
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, secondVoteResponse.StatusCode);
+
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<PortalRhDbContext>();
+        var auditEntries = await dbContext.MoodSurveyAuditLogs
+            .Where(item => item.PortalUserId == portalSession.User.Id)
+            .ToListAsync();
+
+        Assert.Single(auditEntries);
+        Assert.Equal("HumorRegistrado", auditEntries[0].ActionType);
+        Assert.Equal("motivated", auditEntries[0].OptionKey);
+        Assert.Equal("10.30.40.50", auditEntries[0].IpAddress);
+        Assert.Equal("http://127.0.0.1:3020", auditEntries[0].Origin);
+
+        var adminSession = await LoginAdminAsync();
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminSession.Token);
+        _client.DefaultRequestHeaders.Remove("X-Portal-Token");
+
+        var usersPayload = await _client.GetFromJsonAsync<PortalUserAdminListResponse>("/api/admin/portal-users?page=1&pageSize=5");
+        Assert.NotNull(usersPayload);
+        Assert.Equal(1, usersPayload.Summary.MoodSurveyEvents);
+        Assert.Contains(usersPayload.RecentMoodSurveyEntries, item => item.OptionKey == "motivated");
+    }
+
+    [Fact]
+    public async Task MoodSurveyDashboardEndpoint_ReturnsDistributionByDepartmentAndPeriod()
+    {
+        await EnsureLdapEnabledAsync();
+        var portalSession = await LoginPortalUserAsync();
+
+        _client.DefaultRequestHeaders.Authorization = null;
+        _client.DefaultRequestHeaders.Remove("X-Portal-Token");
+        _client.DefaultRequestHeaders.Add("X-Portal-Token", portalSession.Token);
+
+        var voteResponse = await _client.PostAsJsonAsync("/api/mood-survey/vote", new SubmitMoodSurveyVoteRequest
+        {
+            OptionKey = "good"
+        });
+        Assert.Equal(HttpStatusCode.OK, voteResponse.StatusCode);
+
+        var adminSession = await LoginAdminAsync();
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminSession.Token);
+        _client.DefaultRequestHeaders.Remove("X-Portal-Token");
+
+        var dashboard = await _client.GetFromJsonAsync<MoodSurveyDashboardResponse>("/api/admin/mood-survey/dashboard");
+        Assert.NotNull(dashboard);
+        Assert.Equal(1, dashboard.Summary.TotalVotes);
+        Assert.Equal(1, dashboard.Summary.GoodCount);
+        Assert.Contains(dashboard.Departments, item => item.Department == "Recursos Humanos");
+        Assert.NotEmpty(dashboard.DailyTrend);
+    }
+
+    [Fact]
+    public async Task MoodSurveyDashboardEndpoint_RequiresHrPermissionForPortalUsers()
+    {
+        await EnsureLdapEnabledAsync();
+        var portalSession = await LoginPortalUserAsync();
+
+        _client.DefaultRequestHeaders.Authorization = null;
+        _client.DefaultRequestHeaders.Remove("X-Portal-Token");
+        _client.DefaultRequestHeaders.Add("X-Portal-Token", portalSession.Token);
+
+        var forbiddenResponse = await _client.GetAsync("/api/mood-survey/dashboard");
+        Assert.Equal(HttpStatusCode.Forbidden, forbiddenResponse.StatusCode);
+
+        var adminSession = await LoginAdminAsync();
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminSession.Token);
+
+        var usersPayload = await _client.GetFromJsonAsync<PortalUserAdminListResponse>("/api/admin/portal-users?query=roberto&page=1&pageSize=5");
+        var user = Assert.Single(usersPayload!.Items.Where(item => item.Login == "roberto.almeida@liotecnica.com.br"));
+
+        var roleResponse = await _client.PatchAsJsonAsync($"/api/admin/portal-users/{user.Id}/role", new UpdatePortalUserRoleRequest
+        {
+            Role = "HrManager"
+        });
+        Assert.Equal(HttpStatusCode.OK, roleResponse.StatusCode);
+
+        _client.DefaultRequestHeaders.Authorization = null;
+        _client.DefaultRequestHeaders.Remove("X-Portal-Token");
+        _client.DefaultRequestHeaders.Add("X-Portal-Token", portalSession.Token);
+
+        var allowedResponse = await _client.GetAsync("/api/mood-survey/dashboard");
+        Assert.Equal(HttpStatusCode.OK, allowedResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task MoodSurveyFeedbackEndpoint_SeedsMessagesSupportsCrudAndRandomVoteFeedback()
+    {
+        await EnsureLdapEnabledAsync();
+        var portalSession = await LoginPortalUserAsync();
+        await PromotePortalUserToHrManagerAsync();
+
+        _client.DefaultRequestHeaders.Authorization = null;
+        _client.DefaultRequestHeaders.Remove("X-Portal-Token");
+        _client.DefaultRequestHeaders.Add("X-Portal-Token", portalSession.Token);
+
+        var seededMessages = await _client.GetFromJsonAsync<MoodSurveyFeedbackMessageListResponse>("/api/mood-survey/feedback-messages");
+        Assert.NotNull(seededMessages);
+        Assert.Equal(60, seededMessages.Items.Count);
+        Assert.Equal(20, seededMessages.Items.Count(item => item.OptionKey == "motivated"));
+        Assert.Equal(20, seededMessages.Items.Count(item => item.OptionKey == "good"));
+        Assert.Equal(20, seededMessages.Items.Count(item => item.OptionKey == "tired"));
+
+        var createResponse = await _client.PostAsJsonAsync("/api/mood-survey/feedback-messages", new UpsertMoodSurveyFeedbackMessageRequest
+        {
+            OptionKey = "motivated",
+            Message = "Mensagem personalizada de teste.",
+            SortOrder = 99,
+            IsActive = true
+        });
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+        var created = await createResponse.Content.ReadFromJsonAsync<MoodSurveyFeedbackMessageDto>();
+        Assert.NotNull(created);
+
+        var updateResponse = await _client.PutAsJsonAsync($"/api/mood-survey/feedback-messages/{created.Id}", new UpsertMoodSurveyFeedbackMessageRequest
+        {
+            OptionKey = "motivated",
+            Message = "Mensagem personalizada atualizada.",
+            SortOrder = 100,
+            IsActive = true
+        });
+        Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
+
+        var voteResponse = await _client.PostAsJsonAsync("/api/mood-survey/vote", new SubmitMoodSurveyVoteRequest
+        {
+            OptionKey = "motivated"
+        });
+        Assert.Equal(HttpStatusCode.OK, voteResponse.StatusCode);
+
+        var voted = await voteResponse.Content.ReadFromJsonAsync<MoodSurveyTodayResponse>();
+        Assert.NotNull(voted);
+        Assert.False(string.IsNullOrWhiteSpace(voted.ThankYouMessage));
+        Assert.Contains(voted.ThankYouMessage, seededMessages.Items.Select(item => item.Message).Append("Mensagem personalizada atualizada."));
+
+        var deleteResponse = await _client.DeleteAsync($"/api/mood-survey/feedback-messages/{created.Id}");
+        Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task AgendaEndpoint_ReturnsPersistedEventsForAuthenticatedPortalUser()
+    {
+        await EnsureLdapEnabledAsync();
+
+        var portalSession = await LoginPortalUserAsync();
+        await SeedAgendaEventsAsync(portalSession.User.Id);
+
+        _client.DefaultRequestHeaders.Authorization = null;
+        _client.DefaultRequestHeaders.Remove("X-Portal-Token");
+        _client.DefaultRequestHeaders.Add("X-Portal-Token", portalSession.Token);
+
+        var agenda = await _client.GetFromJsonAsync<AgendaDayResponse>("/api/agenda");
+
+        Assert.NotNull(agenda);
+        Assert.Equal(2, agenda.TotalCount);
+        Assert.Contains(agenda.Items, item => item.Title == "Daily RH" && item.TimeLabel == "09:00");
+        Assert.Contains(agenda.Items, item => item.Title == "Comite de Pessoas" && item.Location == "Microsoft Teams");
+        Assert.DoesNotContain(agenda.Items, item => item.Title == "Evento de outro colaborador");
+    }
+
     private async Task<AdminLoginResponse> LoginAdminAsync()
     {
         var loginResponse = await _client.PostAsJsonAsync("/api/admin/auth/login", new AdminLoginRequest("super-admin", "Liotec@2026"));
@@ -574,6 +833,36 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
         var adminSession = await loginResponse.Content.ReadFromJsonAsync<AdminLoginResponse>();
         Assert.NotNull(adminSession);
         return adminSession;
+    }
+
+    private async Task PromotePortalUserToHrManagerAsync(string login = "roberto.almeida@liotecnica.com.br")
+    {
+        var adminSession = await LoginAdminAsync();
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminSession.Token);
+
+        var usersPayload = await _client.GetFromJsonAsync<PortalUserAdminListResponse>($"/api/admin/portal-users?query={Uri.EscapeDataString(login)}&page=1&pageSize=5");
+        var user = Assert.Single(usersPayload!.Items.Where(item => item.Login == login));
+
+        var roleResponse = await _client.PatchAsJsonAsync($"/api/admin/portal-users/{user.Id}/role", new UpdatePortalUserRoleRequest
+        {
+            Role = "HrManager"
+        });
+        Assert.Equal(HttpStatusCode.OK, roleResponse.StatusCode);
+
+        _client.DefaultRequestHeaders.Authorization = null;
+    }
+
+    private void UsePortalAuth(PortalLoginResponse portalSession)
+    {
+        _client.DefaultRequestHeaders.Authorization = null;
+        _client.DefaultRequestHeaders.Remove("X-Portal-Token");
+        _client.DefaultRequestHeaders.Add("X-Portal-Token", portalSession.Token);
+    }
+
+    private void ClearPortalAuth()
+    {
+        _client.DefaultRequestHeaders.Authorization = null;
+        _client.DefaultRequestHeaders.Remove("X-Portal-Token");
     }
 
     private async Task<string> UploadPollAssetAsync(string assetType, string fileName, string contentType, byte[] bytes)
@@ -634,6 +923,82 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
         return portalLogin;
     }
 
+    private async Task SeedAgendaEventsAsync(Guid portalUserId)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<PortalRhDbContext>();
+        var timeZone = ResolveSaoPauloTimeZoneForTests();
+        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timeZone));
+
+        DateTime ToUtc(int hour, int minute = 0)
+        {
+            var localDate = today.ToDateTime(new TimeOnly(hour, minute), DateTimeKind.Unspecified);
+            return TimeZoneInfo.ConvertTimeToUtc(localDate, timeZone);
+        }
+
+        dbContext.AgendaEvents.AddRange(
+            new AgendaEvent
+            {
+                Id = Guid.NewGuid(),
+                PortalUserId = null,
+                Title = "Daily RH",
+                Description = "Alinhamento diario do time.",
+                Location = "Sala RH",
+                Source = "Manual",
+                Audience = "Toda a companhia",
+                IsActive = true,
+                StartAtUtc = ToUtc(9),
+                EndAtUtc = ToUtc(9, 30),
+                CreatedAtUtc = DateTime.UtcNow
+            },
+            new AgendaEvent
+            {
+                Id = Guid.NewGuid(),
+                PortalUserId = portalUserId,
+                Title = "Comite de Pessoas",
+                Description = "Pauta semanal de pessoas.",
+                Location = "Microsoft Teams",
+                Source = "Manual",
+                Audience = "Usuario autenticado",
+                IsActive = true,
+                StartAtUtc = ToUtc(10),
+                EndAtUtc = ToUtc(11),
+                CreatedAtUtc = DateTime.UtcNow
+            },
+            new AgendaEvent
+            {
+                Id = Guid.NewGuid(),
+                PortalUserId = Guid.NewGuid(),
+                Title = "Evento de outro colaborador",
+                Description = "Nao deve aparecer para o usuario logado.",
+                Location = "Sala 2",
+                Source = "Manual",
+                Audience = "Outro usuario",
+                IsActive = true,
+                StartAtUtc = ToUtc(14),
+                EndAtUtc = ToUtc(15),
+                CreatedAtUtc = DateTime.UtcNow
+            });
+
+        await dbContext.SaveChangesAsync();
+    }
+
+    private static TimeZoneInfo ResolveSaoPauloTimeZoneForTests()
+    {
+        try
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById("E. South America Standard Time");
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById("America/Sao_Paulo");
+        }
+        catch (InvalidTimeZoneException)
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById("America/Sao_Paulo");
+        }
+    }
+
     private static async Task ResetDatabaseAsync(IServiceProvider services)
     {
         using var scope = services.CreateScope();
@@ -645,5 +1010,8 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
         await dbContext.Database.EnsureCreatedAsync();
         await adminAuthService.EnsureDefaultSuperAdminAsync(CancellationToken.None);
         await ldapConfigurationService.EnsureDefaultConfigurationAsync(CancellationToken.None);
+
+        var moodSurveyFeedbackService = scope.ServiceProvider.GetRequiredService<IMoodSurveyFeedbackService>();
+        await moodSurveyFeedbackService.EnsureSeedAsync(CancellationToken.None);
     }
 }

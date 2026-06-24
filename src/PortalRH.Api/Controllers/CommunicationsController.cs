@@ -49,7 +49,7 @@ public class CommunicationsController : ControllerBase
     }
 
     [HttpPost]
-    [RequireAdminSession]
+    [RequireCommunicationEditor]
     [ProducesResponseType(typeof(CommunicationDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -60,7 +60,7 @@ public class CommunicationsController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    [RequireAdminSession]
+    [RequireCommunicationEditor]
     [ProducesResponseType(typeof(CommunicationDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -72,7 +72,7 @@ public class CommunicationsController : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
-    [RequireAdminSession]
+    [RequireCommunicationEditor]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
