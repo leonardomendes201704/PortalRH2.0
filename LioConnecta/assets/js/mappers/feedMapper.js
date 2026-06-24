@@ -10,6 +10,8 @@ function mapComment(comment) {
 
 function mapPost(post) {
   return {
+    communicationId: asString(post?.communicationId, ""),
+    slug: asString(post?.slug, ""),
     author: asString(post?.author, "Autor não informado"),
     area: asString(post?.area, "Área não informada"),
     timeAgo: asString(post?.timeAgo, "agora"),
@@ -19,6 +21,7 @@ function mapPost(post) {
     image: asString(post?.image, ""),
     imageAlt: asString(post?.imageAlt, asString(post?.author, "Imagem do post")),
     reactions: asNumber(post?.reactions, 0),
+    hasLiked: Boolean(post?.hasLiked),
     commentsCount: asNumber(post?.commentsCount, 0),
     sharesCount: asNumber(post?.sharesCount, 0),
     comments: asArray(post?.comments).map(mapComment).filter((comment) => comment.text)

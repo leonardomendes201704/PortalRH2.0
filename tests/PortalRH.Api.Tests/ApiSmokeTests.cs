@@ -96,6 +96,79 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
         var listResponse = await _client.GetFromJsonAsync<List<CommunicationDto>>("/api/communications");
         Assert.NotNull(listResponse);
         Assert.Single(listResponse);
+        Assert.Equal(0, listResponse[0].LikeCount);
+        Assert.False(listResponse[0].HasLiked);
+    }
+
+    [Fact]
+    public async Task CommunicationsEndpoint_TogglesLikeWithAuditTrail()
+    {
+        await EnsureLdapEnabledAsync();
+
+        var adminSession = await LoginAdminAsync();
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminSession.Token);
+
+        var createResponse = await _client.PostAsJsonAsync("/api/communications", new UpsertCommunicationRequest
+        {
+            Category = "RH",
+            Priority = "Comunicado",
+            Title = "Comunicado para curtidas",
+            Summary = "Resumo do comunicado para curtidas.",
+            Body = "Corpo do comunicado para curtidas.",
+            Audience = "Toda a companhia",
+            Channel = "Portal",
+            Status = "Publicado",
+            AttachmentLabel = "Abrir anexo",
+            Owner = "Recursos Humanos",
+            PublishedAt = new DateTime(2026, 06, 24, 0, 0, 0, DateTimeKind.Utc)
+        });
+
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+        var created = await createResponse.Content.ReadFromJsonAsync<CommunicationDto>();
+        Assert.NotNull(created);
+
+        var portalSession = await LoginPortalUserAsync();
+        _client.DefaultRequestHeaders.Authorization = null;
+        _client.DefaultRequestHeaders.Remove("X-Portal-Token");
+        _client.DefaultRequestHeaders.Remove("X-Forwarded-For");
+        _client.DefaultRequestHeaders.Remove("Origin");
+        _client.DefaultRequestHeaders.Add("X-Portal-Token", portalSession.Token);
+        _client.DefaultRequestHeaders.Add("X-Forwarded-For", "10.30.40.51");
+        _client.DefaultRequestHeaders.Add("Origin", "http://127.0.0.1:3020");
+
+        var likeResponse = await _client.PostAsync($"/api/communications/{created.Id}/like", content: null);
+        Assert.Equal(HttpStatusCode.OK, likeResponse.StatusCode);
+
+        var liked = await likeResponse.Content.ReadFromJsonAsync<CommunicationLikeResponse>();
+        Assert.NotNull(liked);
+        Assert.Equal(created.Id, liked.CommunicationId);
+        Assert.Equal(1, liked.LikeCount);
+        Assert.True(liked.HasLiked);
+
+        var listResponse = await _client.GetFromJsonAsync<List<CommunicationDto>>("/api/communications");
+        Assert.NotNull(listResponse);
+        Assert.Contains(listResponse, item => item.Id == created.Id && item.LikeCount == 1 && item.HasLiked);
+
+        var unlikeResponse = await _client.PostAsync($"/api/communications/{created.Id}/like", content: null);
+        Assert.Equal(HttpStatusCode.OK, unlikeResponse.StatusCode);
+
+        var unliked = await unlikeResponse.Content.ReadFromJsonAsync<CommunicationLikeResponse>();
+        Assert.NotNull(unliked);
+        Assert.Equal(0, unliked.LikeCount);
+        Assert.False(unliked.HasLiked);
+
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<PortalRhDbContext>();
+        var auditEntries = await dbContext.CommunicationInteractionAuditLogs
+            .Where(item => item.CommunicationId == created.Id && item.PortalUserId == portalSession.User.Id)
+            .OrderBy(item => item.CreatedAtUtc)
+            .ToListAsync();
+
+        Assert.Equal(2, auditEntries.Count);
+        Assert.Equal("CurtidaRegistrada", auditEntries[0].ActionType);
+        Assert.Equal("CurtidaRemovida", auditEntries[1].ActionType);
+        Assert.Equal("10.30.40.51", auditEntries[0].IpAddress);
+        Assert.Equal("http://127.0.0.1:3020", auditEntries[0].Origin);
     }
 
     [Fact]

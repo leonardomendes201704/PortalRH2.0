@@ -100,6 +100,8 @@ function mapCommunicationItem(item = {}) {
     body: normalizeParagraphs(bodyText),
     bodyText,
     isFeatured: Boolean(item.isFeatured),
+    likeCount: Number(item.likeCount ?? 0),
+    hasLiked: Boolean(item.hasLiked),
     updatedAtUtc: normalizeText(item.updatedAtUtc),
     publishedAtRaw,
     publishedAtEditorValue: publishedAtRaw ? String(publishedAtRaw).slice(0, 10) : ""
@@ -185,9 +187,13 @@ function mapCreatePayload(payload = {}) {
   };
 }
 
-export async function listCommunications() {
-  const payload = await getJson(resolveApiEndpoint("communications"));
+export async function listCommunications(options = {}) {
+  const payload = await getJson(resolveApiEndpoint("communications"), options);
   return Array.isArray(payload) ? payload : [];
+}
+
+export async function toggleCommunicationLike(id, options = {}) {
+  return postJson(`${resolveApiEndpoint("communications")}/${encodeURIComponent(id)}/like`, {}, options);
 }
 
 export async function createCommunication(payload = {}, options = {}) {
@@ -234,7 +240,7 @@ export function canManageCommunications(session = getStoredPortalSession()) {
 
 export async function getCommunicationCenterData() {
   try {
-    const apiItems = await listCommunications();
+    const apiItems = await listCommunications({ headers: getPortalAuthHeaders() });
     const normalizedItems = sortByPublishedAtDesc(apiItems).map(mapCommunicationItem);
     return buildCommunicationCenter(normalizedItems);
   } catch (error) {

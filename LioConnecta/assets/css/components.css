@@ -953,6 +953,17 @@
   border-right: 0;
 }
 
+.post-actions button.is-active {
+  color: #1677ff;
+  background: #f5faff;
+}
+
+.communication-detail-actions .comm-secondary-button.is-active {
+  color: #1677ff;
+  border-color: #9ec5ef;
+  background: #f5faff;
+}
+
 .post-comments {
   padding: 12px 14px 0;
   border-top: 1px solid var(--color-line-soft);

@@ -27,6 +27,8 @@ public class PortalRhDbContext : DbContext
     public DbSet<MoodSurveyVote> MoodSurveyVotes => Set<MoodSurveyVote>();
     public DbSet<MoodSurveyAuditLog> MoodSurveyAuditLogs => Set<MoodSurveyAuditLog>();
     public DbSet<MoodSurveyFeedbackMessage> MoodSurveyFeedbackMessages => Set<MoodSurveyFeedbackMessage>();
+    public DbSet<CommunicationLike> CommunicationLikes => Set<CommunicationLike>();
+    public DbSet<CommunicationInteractionAuditLog> CommunicationInteractionAuditLogs => Set<CommunicationInteractionAuditLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

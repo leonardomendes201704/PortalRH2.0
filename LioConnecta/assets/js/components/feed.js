@@ -53,8 +53,16 @@ function renderReactionBubble(type, iconClass, label) {
 }
 
 function renderPost(post) {
+  const canLike = Boolean(post.communicationId);
+  const postActions = [
+    { label: "Curtir", action: canLike ? "toggle-communication-like" : "", active: post.hasLiked },
+    { label: "Comentar", action: "" },
+    { label: "Compartilhar", action: "" },
+    { label: "Salvar", action: "" }
+  ];
+
   return `
-    <article class="post">
+    <article class="post" data-communication-id="${escapeHtml(post.communicationId)}">
       <div class="post-head">
         <div class="post-author">
           <div class="avatar" aria-hidden="true"><i class="fa-solid fa-user"></i></div>
@@ -86,19 +94,23 @@ function renderPost(post) {
           ${renderReactionBubble("like", "fa-solid fa-thumbs-up", "Curtir")}
           ${renderReactionBubble("clap", "fa-solid fa-hands-clapping", "Aplaudir")}
           ${renderReactionBubble("love", "fa-solid fa-heart", "Amei")}
-          <span>${escapeHtml(post.reactions)} reações</span>
+          <span data-post-reactions-count>${escapeHtml(String(post.reactions))} reações</span>
         </div>
         <div>${escapeHtml(post.commentsCount)} comentários • ${escapeHtml(post.sharesCount)} compartilhamentos</div>
       </div>
 
       <div class="post-actions">
-        ${["Curtir", "Comentar", "Compartilhar", "Salvar"].map((action) => `
+        ${postActions.map((item) => `
           <button
             type="button"
+            class="${item.label === "Curtir" && item.active ? "is-active" : ""}"
             data-post-author="${escapeHtml(post.author)}"
+            ${item.action ? `data-action="${escapeHtml(item.action)}"` : ""}
+            ${canLike && item.label === "Curtir" ? `data-communication-id="${escapeHtml(post.communicationId)}"` : ""}
+            ${item.label === "Curtir" ? `aria-pressed="${item.active ? "true" : "false"}"` : ""}
             data-analytics="post.action"
-            data-analytics-label="${escapeHtml(post.author)}:${escapeHtml(action)}"
-          >${escapeHtml(action)}</button>
+            data-analytics-label="${escapeHtml(post.author)}:${escapeHtml(item.label)}"
+          >${escapeHtml(item.label)}</button>
         `).join("")}
       </div>
 
