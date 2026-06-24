@@ -2958,8 +2958,39 @@
   padding: 18px 20px;
   display: grid;
   gap: 16px;
-  align-items: center;
+  align-items: start;
   grid-template-columns: 1fr auto;
+  border: 1px solid #d8e6f3;
+  border-radius: 18px;
+  background: #f5faff;
+}
+
+.poll-home-card__main {
+  display: grid;
+  gap: 14px;
+}
+
+.poll-home-card__vote {
+  display: grid;
+  gap: 12px;
+}
+
+.poll-home-card__vote .poll-vote-options.is-compact {
+  gap: 8px;
+}
+
+.poll-home-card__vote .poll-vote-choice {
+  padding: 10px 12px;
+  border-radius: 14px;
+}
+
+.poll-home-card__vote .poll-vote-actions {
+  gap: 10px;
+}
+
+.poll-home-card__vote .feed-composer-submit {
+  min-height: 40px;
+  padding: 0 18px;
 }
 
 .poll-home-card__header {
@@ -2976,7 +3007,7 @@
 }
 
 .poll-home-carousel {
-  padding: 0 20px 20px;
+  padding: 16px 20px 20px;
 }
 
 .poll-home-carousel__viewport {

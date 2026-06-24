@@ -1,4 +1,6 @@
 import { escapeHtml } from "../components/html.js";
+import { mapPollItem } from "../services/pollService.js";
+import { renderPollInteractionBlock } from "./pollVoteUi.js";
 
 function renderPollAttachment(poll, className = "") {
   if (!poll?.attachmentUrl || !poll?.attachmentLabel) {
@@ -33,20 +35,22 @@ function renderPollHomeSlide(poll, index, total) {
       class="poll-home-carousel__slide carousel-slide"
       role="group"
       aria-label="Enquete ${index + 1} de ${total}"
+      data-poll-id="${escapeHtml(poll.id)}"
     >
       <div class="poll-home-card__body">
-        <div class="poll-home-card__copy">
+        <div class="poll-home-card__main">
           <div class="comm-meta-row">
             <span class="comm-tag comm-tag--solid">${escapeHtml(poll.statusLabel)}</span>
-            <span class="comm-tag">${escapeHtml(String(poll.totalVotes))} voto(s)</span>
+            <span class="comm-tag" data-poll-votes-count>${escapeHtml(String(poll.totalVotes))} voto(s)</span>
             ${poll.isFeatured ? '<span class="comm-tag">Destaque</span>' : ""}
+            ${poll.allowMultipleChoices ? '<span class="comm-tag">Multipla escolha</span>' : ""}
           </div>
           <h3>${escapeHtml(poll.title)}</h3>
           <p>${escapeHtml(poll.summary)}</p>
-          <div class="poll-home-card__actions">
-            <a href="#enquetes/leitura/${escapeHtml(poll.slug)}" class="feed-composer-submit">Responder agora</a>
-            ${renderPollAttachment(poll)}
+          <div class="poll-home-card__vote">
+            ${renderPollInteractionBlock(poll, { compact: true })}
           </div>
+          ${renderPollAttachment(poll) ? `<div class="poll-home-card__actions">${renderPollAttachment(poll)}</div>` : ""}
         </div>
         ${renderPollMedia(poll, { cover: true })}
       </div>
@@ -97,6 +101,24 @@ export function renderHomePollCarousel(polls = []) {
       </div>
     </section>
   `;
+}
+
+export function updateHomePollSlideAfterVote(slide, pollPayload) {
+  if (!slide || !pollPayload) {
+    return;
+  }
+
+  const poll = mapPollItem(pollPayload);
+  const voteRegion = slide.querySelector(".poll-home-card__vote");
+  const votesTag = slide.querySelector("[data-poll-votes-count]");
+
+  if (votesTag) {
+    votesTag.textContent = `${poll.totalVotes} voto(s)`;
+  }
+
+  if (voteRegion) {
+    voteRegion.innerHTML = renderPollInteractionBlock(poll, { compact: true });
+  }
 }
 
 export function initPollHomeCarousel() {

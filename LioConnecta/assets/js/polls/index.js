@@ -3,12 +3,13 @@ export {
   renderPollsHub,
   renderPollDetailPage,
   renderAdminPollsPage
-} from "./renderer.js?v=0.14.6";
+} from "./renderer.js?v=0.15.0";
 
 export {
   renderHomePollCarousel,
-  initPollHomeCarousel
-} from "./pollHomeCarousel.js?v=0.14.6";
+  initPollHomeCarousel,
+  updateHomePollSlideAfterVote
+} from "./pollHomeCarousel.js?v=0.15.0";
 
 export {
   renderPollAdminWizardModal,
