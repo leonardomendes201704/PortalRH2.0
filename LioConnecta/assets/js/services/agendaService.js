@@ -34,6 +34,74 @@ function isAgendaPanelTitle(title) {
   return title === "AGENDA" || title === "AGENDA DO DIA";
 }
 
+function mapAgendaPanelItem(item) {
+  return {
+    type: "agenda-event",
+    id: item.id,
+    title: item.title,
+    timeLabel: item.timeLabel,
+    label: `${item.timeLabel} • ${item.title}`,
+    description: item.location || item.description || "",
+    detailDescription: item.description || "",
+    location: item.location || "",
+    source: item.source || "",
+    audience: item.audience || "",
+    startAtUtc: item.startAtUtc,
+    endAtUtc: item.endAtUtc
+  };
+}
+
+export function normalizeAgendaPanelItem(item, fallbackId = "") {
+  if (typeof item === "string") {
+    const [time, ...titleParts] = String(item).split("•");
+    const title = titleParts.join("•").trim() || String(item).trim();
+
+    return {
+      id: fallbackId,
+      title,
+      description: "",
+      detailDescription: "",
+      location: "",
+      timeLabel: time.trim(),
+      source: "",
+      audience: "",
+      startAtUtc: "",
+      endAtUtc: ""
+    };
+  }
+
+  const label = String(item.label || "");
+  const parsedTitle = String(item.title || "").trim();
+  const parsedTime = String(item.timeLabel || "").trim();
+  const [timeFromLabel, ...titlePartsFromLabel] = label.split("•");
+  const title = parsedTitle || titlePartsFromLabel.join("•").trim() || label.trim();
+  const timeLabel = parsedTime || timeFromLabel.trim();
+
+  return {
+    id: String(item.id || fallbackId),
+    title,
+    description: String(item.description || ""),
+    detailDescription: String(item.detailDescription || item.description || ""),
+    location: String(item.location || ""),
+    timeLabel,
+    source: String(item.source || ""),
+    audience: String(item.audience || ""),
+    startAtUtc: String(item.startAtUtc || ""),
+    endAtUtc: String(item.endAtUtc || "")
+  };
+}
+
+export function collectAgendaEventsFromPanels(panels = []) {
+  const agendaPanel = panels.find((panel) => isAgendaPanelTitle(panel.title));
+  if (!agendaPanel) {
+    return [];
+  }
+
+  return (Array.isArray(agendaPanel.items) ? agendaPanel.items : [])
+    .map((item, index) => normalizeAgendaPanelItem(item, `agenda-item-${index}`))
+    .filter((item) => item.title);
+}
+
 export function applyAgendaToShellData(data, agenda) {
   const normalized = normalizeAgendaPayload(agenda);
 
@@ -47,10 +115,7 @@ export function applyAgendaToShellData(data, agenda) {
       return {
         ...panel,
         title: "AGENDA",
-        items: normalized.items.map((item) => ({
-          label: `${item.timeLabel} • ${item.title}`,
-          description: item.location || item.description || ""
-        }))
+        items: normalized.items.map(mapAgendaPanelItem)
       };
     }),
     agenda: normalized

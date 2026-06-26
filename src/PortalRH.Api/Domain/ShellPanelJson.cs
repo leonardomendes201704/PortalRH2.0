@@ -21,6 +21,30 @@ internal static class ShellPanelJson
             ? Serialize(new { label })
             : Serialize(new { label, description });
 
+    public static JsonNode AgendaPanelItem(
+        Guid id,
+        string title,
+        string timeLabel,
+        string? description,
+        string? location,
+        string source,
+        DateTime startAtUtc,
+        DateTime endAtUtc) =>
+        Serialize(new
+        {
+            type = "agenda-event",
+            id = id.ToString(),
+            title,
+            timeLabel,
+            label = $"{timeLabel} • {title}",
+            description = location ?? description ?? string.Empty,
+            detailDescription = description ?? string.Empty,
+            location = location ?? string.Empty,
+            source,
+            startAtUtc = startAtUtc.ToUniversalTime().ToString("O"),
+            endAtUtc = endAtUtc.ToUniversalTime().ToString("O")
+        });
+
     public static JsonNode LabelLink(string label, string url, string? badge = null) =>
         badge is null ? Serialize(new { label, url }) : Serialize(new { label, url, badge });
 
