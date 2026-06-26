@@ -57,8 +57,8 @@ import {
   uploadPollAsset,
   votePoll
 } from "./polls/index.js?v=0.15.0";
-import { renderFeed, renderSavedFeed } from "./feed/index.js?v=0.22.0";
-import { updateFeedLikeUi, createFeedPost, toggleFeedLike, toggleFeedShare, toggleFeedSave, getSavedFeedData, uploadFeedAsset, deleteFeedPost, updateFeedShareUi, updateFeedSaveUi } from "./services/feedService.js?v=0.22.0";
+import { renderFeed, renderSavedFeed } from "./feed/index.js?v=0.22.2";
+import { updateFeedLikeUi, createFeedPost, toggleFeedLike, toggleFeedShare, toggleFeedSave, getSavedFeedData, uploadFeedAsset, deleteFeedPost, updateFeedShareUi, updateFeedSaveUi } from "./services/feedService.js?v=0.22.2";
 import { bindFeedPhotoComposerActions, clearPendingFeedPhotos, getPendingFeedPhotos } from "./components/feedPhotoModal.js?v=0.21.4";
 import { bindFeedPhotoViewerActions } from "./components/feedPhotoViewerModal.js?v=0.21.4";
 import { bindFeedPostCommentActions } from "./components/feedPostCommentComposer.js?v=0.21.4";
