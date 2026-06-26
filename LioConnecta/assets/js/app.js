@@ -86,7 +86,7 @@ import {
   isHrProfileModuleSlug,
   getHrProfileModuleData,
   renderHrProfileModulePage
-} from "./hrProfile/index.js?v=0.23.0";
+} from "./hrProfile/index.js?v=0.23.1";
 import {
   canManageMoodSurveyFeedback,
   listMoodFeedbackMessages,
