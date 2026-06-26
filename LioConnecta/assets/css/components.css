@@ -1134,6 +1134,13 @@
   font-weight: 600;
 }
 
+.post-comment-mention-hint {
+  margin: 0;
+  padding: 8px 10px;
+  font-size: 11px;
+  color: #64748b;
+}
+
 .post-comment-box {
   flex: 1;
   min-height: 42px;

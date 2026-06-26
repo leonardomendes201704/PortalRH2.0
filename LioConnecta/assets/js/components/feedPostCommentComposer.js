@@ -1,12 +1,12 @@
 import { escapeHtml } from "./html.js";
-import { DATA_MODES, getRuntimeConfig } from "../core/runtimeConfig.js?v=0.21.0";
-import { createFeedPostComment, suggestFeedMentions } from "../services/feedService.js?v=0.21.0";
+import { DATA_MODES, getRuntimeConfig } from "../core/runtimeConfig.js?v=0.21.1";
+import { createFeedPostComment, suggestFeedMentions } from "../services/feedService.js?v=0.21.1";
 import { getPortalAuthHeaders } from "../services/portalAuthService.js?v=0.17.0";
 import { showToast } from "../core/feedback.js?v=0.16.0";
 import { canInteractWithFeed } from "../services/portalPermissionService.js?v=0.17.0";
 
 const composerState = new WeakMap();
-let suggestTimer = null;
+const suggestTimers = new WeakMap();
 
 function canCommentOnPosts() {
   return getRuntimeConfig().dataMode === DATA_MODES.API && canInteractWithFeed();
@@ -131,12 +131,54 @@ function getActiveMentionQuery(textarea) {
     return null;
   }
 
+  if (atIndex > 0) {
+    const charBefore = before[atIndex - 1];
+    if (charBefore !== " " && charBefore !== "\n" && charBefore !== "\t") {
+      return null;
+    }
+  }
+
   const fragment = before.slice(atIndex + 1);
-  if (!fragment || /\s/.test(fragment)) {
+  if (fragment.includes("\n")) {
+    return null;
+  }
+
+  if (fragment.length > 80) {
+    return null;
+  }
+
+  if (fragment.endsWith(" ") && fragment.trim().includes(" ")) {
     return null;
   }
 
   return { query: fragment, start: atIndex, end: cursor };
+}
+
+function showMentionHint(form) {
+  const dropdown = form.querySelector(".post-comment-mention-dropdown");
+  if (!dropdown) {
+    return;
+  }
+
+  dropdown.hidden = false;
+  dropdown.innerHTML = `
+    <p class="post-comment-mention-hint">Digite o nome do colaborador para buscar</p>
+  `;
+}
+
+function syncMentionState(form, textarea) {
+  const active = getActiveMentionQuery(textarea);
+  if (!active) {
+    hideMentionDropdown(form);
+    return;
+  }
+
+  if (!active.query) {
+    showMentionHint(form);
+    return;
+  }
+
+  scheduleMentionSuggestions(form, active.query);
 }
 
 function hideMentionDropdown(form) {
@@ -180,13 +222,14 @@ function renderMentionDropdown(form, suggestions, activeIndex) {
 }
 
 async function loadMentionSuggestions(form, query) {
-  if (query.length < 2) {
-    hideMentionDropdown(form);
+  const normalized = String(query || "").trim();
+  if (!normalized) {
+    showMentionHint(form);
     return;
   }
 
   try {
-    const payload = await suggestFeedMentions(query, { headers: getPortalAuthHeaders() });
+    const payload = await suggestFeedMentions(normalized, { headers: getPortalAuthHeaders() });
     const items = Array.isArray(payload?.items) ? payload.items : [];
     const state = getComposerState(form);
     state.suggestions = items.map((item) => ({
@@ -203,10 +246,14 @@ async function loadMentionSuggestions(form, query) {
 }
 
 function scheduleMentionSuggestions(form, query) {
-  clearTimeout(suggestTimer);
-  suggestTimer = setTimeout(() => {
+  const existing = suggestTimers.get(form);
+  if (existing) {
+    clearTimeout(existing);
+  }
+
+  suggestTimers.set(form, setTimeout(() => {
     loadMentionSuggestions(form, query);
-  }, 220);
+  }, 180));
 }
 
 function applyMentionSelection(form, textarea, suggestion) {
@@ -314,18 +361,15 @@ function bindComposerForm(form) {
 
   resizeTextarea(textarea);
 
-  textarea.addEventListener("input", () => {
+  const handleMentionSync = () => {
     resizeTextarea(textarea);
     submitButton.disabled = !textarea.value.trim();
+    syncMentionState(form, textarea);
+  };
 
-    const active = getActiveMentionQuery(textarea);
-    if (!active) {
-      hideMentionDropdown(form);
-      return;
-    }
-
-    scheduleMentionSuggestions(form, active.query);
-  });
+  textarea.addEventListener("input", handleMentionSync);
+  textarea.addEventListener("keyup", handleMentionSync);
+  textarea.addEventListener("click", handleMentionSync);
 
   textarea.addEventListener("keydown", (event) => {
     const state = getComposerState(form);
@@ -343,7 +387,7 @@ function bindComposerForm(form) {
       return;
     }
 
-    if (dropdownOpen && event.key === "Enter" && !event.shiftKey && state.suggestions.length) {
+    if (dropdownOpen && (event.key === "Enter" || event.key === "Tab") && state.suggestions.length) {
       event.preventDefault();
       pickActiveSuggestion(form, textarea);
       return;
@@ -351,6 +395,11 @@ function bindComposerForm(form) {
 
     if (event.key === "Escape") {
       hideMentionDropdown(form);
+      return;
+    }
+
+    if (event.key === "@" || event.key.length === 1) {
+      queueMicrotask(() => syncMentionState(form, textarea));
     }
   });
 

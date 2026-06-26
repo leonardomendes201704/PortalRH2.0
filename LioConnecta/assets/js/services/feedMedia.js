@@ -1,7 +1,8 @@
-import { getRuntimeConfig } from "../core/runtimeConfig.js";
+import { DATA_MODES, getRuntimeConfig } from "../core/runtimeConfig.js?v=0.21.1";
 
 function resolveUploadsOrigin() {
-  const apiBase = String(getRuntimeConfig().apiBaseUrl || "").trim();
+  const config = getRuntimeConfig();
+  const apiBase = String(config.apiBaseUrl || "").trim();
   if (!apiBase) {
     return "";
   }
@@ -9,32 +10,64 @@ function resolveUploadsOrigin() {
   return apiBase.replace(/\/api\/?$/i, "");
 }
 
-export function resolveFeedMediaUrl(url = "") {
+function normalizeFeedMediaPath(url = "") {
   const value = String(url || "").trim();
   if (!value) {
     return "";
   }
 
   if (/^https?:\/\//i.test(value)) {
-    try {
-      const parsed = new URL(value);
-      if (parsed.pathname.includes("/uploads/feed/")) {
-        const origin = resolveUploadsOrigin();
-        return origin ? `${origin}${parsed.pathname}` : value;
-      }
-    } catch {
-      return value;
-    }
-
     return value;
   }
 
   if (value.startsWith("/uploads/")) {
-    const origin = resolveUploadsOrigin();
-    return origin ? `${origin}${value}` : value;
+    return value;
+  }
+
+  if (!value.includes("/") && /\.(jpe?g|png|gif|webp|bmp)$/i.test(value)) {
+    return `/uploads/feed/${value}`;
   }
 
   return value;
+}
+
+export function resolveFeedMediaUrl(url = "") {
+  const normalized = normalizeFeedMediaPath(url);
+  if (!normalized) {
+    return "";
+  }
+
+  if (/^https?:\/\//i.test(normalized)) {
+    try {
+      const parsed = new URL(normalized);
+      if (parsed.pathname.includes("/uploads/feed/")) {
+        const origin = resolveUploadsOrigin();
+        return origin ? `${origin}${parsed.pathname}` : normalized;
+      }
+    } catch {
+      return normalized;
+    }
+
+    return normalized;
+  }
+
+  if (normalized.startsWith("/uploads/")) {
+    const origin = resolveUploadsOrigin();
+    if (origin) {
+      return `${origin}${normalized}`;
+    }
+
+    if (getRuntimeConfig().dataMode === DATA_MODES.API) {
+      const currentWindow = typeof window !== "undefined" ? window : undefined;
+      const protocol = currentWindow?.location?.protocol?.startsWith("http")
+        ? currentWindow.location.protocol
+        : "http:";
+      const hostname = currentWindow?.location?.hostname || "localhost";
+      return `${protocol}//${hostname}:3030${normalized}`;
+    }
+  }
+
+  return normalized;
 }
 
 export function serializeGalleryImages(images = []) {

@@ -213,6 +213,7 @@ jobs:
             "${DEPLOY_USER}@${DEPLOY_HOST}" \
             "set -e; \
              mkdir -p '${DEPLOY_PATH}/releases'; \
+             mkdir -p '${DEPLOY_PATH}/shared/uploads/feed'; \
              rm -rf '${RELEASE_DIR}'; \
              mkdir -p '${RELEASE_DIR}'; \
              tar -xzf '${ARCHIVE_NAME}' -C '${RELEASE_DIR}'; \

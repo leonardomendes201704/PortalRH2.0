@@ -1,7 +1,7 @@
 import { renderEmptyState } from "./cards.js";
 import { escapeHtml } from "./html.js";
-import { resolveFeedMediaUrl, serializeGalleryImages } from "../services/feedMedia.js?v=0.21.0";
-import { renderCommentBody, renderPostCommentComposer } from "./feedPostCommentComposer.js?v=0.21.0";
+import { resolveFeedMediaUrl, serializeGalleryImages } from "../services/feedMedia.js?v=0.21.1";
+import { renderCommentBody, renderPostCommentComposer } from "./feedPostCommentComposer.js?v=0.21.1";
 
 const PHOTO_ACTION_LABEL = "Adicionar fotos";
 
