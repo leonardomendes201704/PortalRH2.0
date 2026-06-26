@@ -1,4 +1,4 @@
-export const APP_VERSION = "v0.23.1";
+export const APP_VERSION = "v0.23.2";
 
 export const DATA_MODES = Object.freeze({
   MOCK: "mock",
@@ -85,6 +85,7 @@ const DEFAULT_RUNTIME_CONFIG = Object.freeze({
     adminSession: "/admin/auth/session",
     adminLogout: "/admin/auth/logout",
     adminLdap: "/admin/ldap",
+    adminMicrosoftGraph: "/admin/microsoft-graph",
     adminPolls: "/admin/polls",
     adminPollAssets: "/admin/polls/assets",
     adminPortalUsers: "/admin/portal-users",
