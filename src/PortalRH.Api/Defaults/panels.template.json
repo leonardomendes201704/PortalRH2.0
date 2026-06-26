@@ -96,16 +96,6 @@
         { "label": "17:30 • Comite de Cultura" },
         { "label": "18:00 • Encerramento Executivo" }
       ]
-    },
-    {
-      "title": "COMUNICADOS",
-      "moduleKey": "communications",
-      "items": [
-        { "label": "Politica hibrida atualizada" },
-        { "label": "Campanha interna de inovacao" },
-        { "label": "Nova trilha de lideranca" },
-        { "label": "Calendario corporativo 2026" }
-      ]
     }
   ]
 }

@@ -294,15 +294,17 @@ img {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   font-size: 13px;
   padding: 6px 4px;
   color: #111827;
 }
 
-.menu-item span:first-child::before {
-  content: "◦";
-  color: #3f556c;
-  margin-right: 8px;
+.menu-item-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
 }
 
 .menu-badge {

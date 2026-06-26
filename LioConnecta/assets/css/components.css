@@ -1380,12 +1380,6 @@
   font-size: 13px;
 }
 
-.profile-links div::before {
-  content: "◦";
-  color: #3f556c;
-  margin-right: 8px;
-}
-
 .app-footer-note {
   padding: 12px;
   font-size: 12px;
@@ -2107,11 +2101,12 @@ body.feed-photo-viewer-open {
   display: inline-grid;
   place-items: center;
   min-width: 34px;
-  min-height: 24px;
+  min-height: 34px;
   padding: 0 6px;
   border-radius: 999px;
   background: #f4f8fd;
   line-height: 1;
+  font-size: 16px;
 }
 
 .quick-item-label {
@@ -2148,6 +2143,24 @@ body.feed-photo-viewer-open {
 
 .profile-link-row::before {
   content: none !important;
+}
+
+.panel-item-icon {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #eef4fb;
+  color: #365677;
+  font-size: 11px;
+}
+
+.panel-item-icon--compact {
+  width: 24px;
+  height: 24px;
+  font-size: 11px;
 }
 
 .profile-link-icon {
@@ -2191,8 +2204,6 @@ body.feed-photo-viewer-open {
 
 .notifications-summary {
   padding: 12px;
-  display: grid;
-  gap: 10px;
   border-bottom: 1px solid #e6eef5;
   background: linear-gradient(180deg, #fcfdff, #f6faff);
 }
@@ -2206,6 +2217,7 @@ body.feed-photo-viewer-open {
 .notifications-total-icon {
   width: 42px;
   height: 42px;
+  flex: 0 0 auto;
   border-radius: 14px;
   display: grid;
   place-items: center;
@@ -2214,22 +2226,24 @@ body.feed-photo-viewer-open {
   font-size: 16px;
 }
 
-.notifications-total strong {
-  display: block;
-  font-size: 24px;
+.notifications-total-copy {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.notifications-total-count {
+  font-size: 22px;
   line-height: 1;
   color: #173154;
 }
 
-.notifications-total span:last-child {
-  font-size: 12px;
+.notifications-total-label {
+  font-size: 13px;
+  line-height: 1.2;
   color: #617389;
-}
-
-.notifications-pills {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
 }
 
 .notification-list {
@@ -2246,7 +2260,8 @@ body.feed-photo-viewer-open {
   padding: 7px 4px;
 }
 
-.notification-icon {
+.notification-icon,
+.panel-item-icon.notification-icon {
   width: 24px;
   height: 24px;
   border-radius: 50%;
@@ -2283,7 +2298,7 @@ body.feed-photo-viewer-open {
 
 .agenda-item {
   display: grid;
-  grid-template-columns: 48px 10px 1fr;
+  grid-template-columns: 48px 24px 1fr;
   align-items: start;
   gap: 10px;
   width: 100%;
@@ -2315,6 +2330,10 @@ body.feed-photo-viewer-open {
   font-weight: 700;
   color: #173154;
   padding-top: 2px;
+}
+
+.agenda-item-icon {
+  margin-top: 0;
 }
 
 .agenda-dot {
