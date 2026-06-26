@@ -23,7 +23,6 @@ public class PortalPanelsComposer : IPortalPanelsComposer
 
     private readonly INotificationService _notificationService;
     private readonly IAgendaService _agendaService;
-    private readonly ICommunicationService _communicationService;
     private readonly IQuickLinkService _quickLinkService;
     private readonly IJourneyService _journeyService;
     private readonly IKpiService _kpiService;
@@ -34,7 +33,6 @@ public class PortalPanelsComposer : IPortalPanelsComposer
     public PortalPanelsComposer(
         INotificationService notificationService,
         IAgendaService agendaService,
-        ICommunicationService communicationService,
         IQuickLinkService quickLinkService,
         IJourneyService journeyService,
         IKpiService kpiService,
@@ -44,7 +42,6 @@ public class PortalPanelsComposer : IPortalPanelsComposer
     {
         _notificationService = notificationService;
         _agendaService = agendaService;
-        _communicationService = communicationService;
         _quickLinkService = quickLinkService;
         _journeyService = journeyService;
         _kpiService = kpiService;
@@ -60,7 +57,6 @@ public class PortalPanelsComposer : IPortalPanelsComposer
         var savedCount = await _feedService.GetSavedItemCountAsync(user.Id, cancellationToken);
         var quickLinks = await _quickLinkService.GetActiveAsync(cancellationToken);
         var agenda = await _agendaService.GetTodayAsync(user.Id, cancellationToken);
-        var communications = await _communicationService.GetAllAsync(user.Id, cancellationToken);
 
         var journeyTask = _journeyService.GetSummaryAsync(user, cancellationToken);
         var systemsTask = _corporateSystemsService.GetSystemsAsync(user, cancellationToken);
@@ -81,8 +77,7 @@ public class PortalPanelsComposer : IPortalPanelsComposer
         {
             BuildQuickLinksPanel(quickLinks),
             BuildProfilePanel(await hrProfileTask),
-            BuildAgendaPanel(agenda),
-            BuildCommunicationsPanel(communications)
+            BuildAgendaPanel(agenda)
         };
 
         return new PanelsResponse(
@@ -190,19 +185,6 @@ public class PortalPanelsComposer : IPortalPanelsComposer
             .ToList();
 
         return new PanelDto(string.Empty, "AGENDA", string.Empty, string.Empty, string.Empty, string.Empty, PortalModulePermissionCatalog.Agenda, items);
-    }
-
-    private static PanelDto BuildCommunicationsPanel(IReadOnlyList<Contracts.Communications.CommunicationDto> communications)
-    {
-        var items = communications
-            .Where(item => !string.IsNullOrWhiteSpace(item.Title))
-            .OrderByDescending(item => item.PublishedAt)
-            .Take(4)
-            .Select(item => ShellPanelJson.LabelOnly(item.Title, $"#comunicacao/leitura/{item.Slug}"))
-            .Cast<JsonNode>()
-            .ToList();
-
-        return new PanelDto(string.Empty, "COMUNICADOS", string.Empty, string.Empty, string.Empty, string.Empty, PortalModulePermissionCatalog.Communications, items);
     }
 
     private static IReadOnlyList<PanelDto> FilterPanels(IReadOnlyList<PanelDto> panels, PortalUser user)
