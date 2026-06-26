@@ -411,7 +411,7 @@ public class FeedService : IFeedService
     public async Task<FeedMentionSuggestionsResponse> SuggestMentionsAsync(string query, CancellationToken cancellationToken)
     {
         var normalizedQuery = query?.Trim() ?? string.Empty;
-        if (normalizedQuery.Length < 2)
+        if (normalizedQuery.Length < 1)
         {
             return new FeedMentionSuggestionsResponse([]);
         }

@@ -83,8 +83,8 @@ if (string.IsNullOrWhiteSpace(webRootPath))
 var uploadsRoot = PortalUploadPaths.ResolveUploadsRoot(builder.Configuration, builder.Environment);
 
 Directory.CreateDirectory(webRootPath);
-Directory.CreateDirectory(uploadsRoot);
-Directory.CreateDirectory(Path.Combine(uploadsRoot, PortalUploadPaths.FeedFolderName));
+PortalUploadPaths.EnsureFeedUploadsReady(builder.Configuration, builder.Environment);
+uploadsRoot = PortalUploadPaths.ResolveUploadsRoot(builder.Configuration, builder.Environment);
 
 if (app.Environment.IsDevelopment())
 {
