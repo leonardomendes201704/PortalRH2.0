@@ -1,10 +1,12 @@
-export const APP_VERSION = "v0.16.1";
+export const APP_VERSION = "v0.16.2";
 
 export const DATA_MODES = Object.freeze({
   MOCK: "mock",
   LOCAL: "local",
   API: "api"
 });
+
+const MOCK_SHELL_DOMAINS = new Set(["user", "panels", "carousel"]);
 
 function resolveDefaultApiBaseUrl() {
   const currentWindow = getWindowObject();
@@ -195,6 +197,10 @@ export function resolveDataSource(domain) {
     [DATA_MODES.LOCAL]: localSources,
     [DATA_MODES.API]: apiSources
   };
+
+  if (config.dataMode === DATA_MODES.API && MOCK_SHELL_DOMAINS.has(domain)) {
+    return mockSources[domain];
+  }
 
   return sourceMap[config.dataMode][domain];
 }
