@@ -5007,28 +5007,25 @@ body.feed-photo-viewer-open {
   color: var(--color-primary);
 }
 
-.hr-profile-page__header {
-  align-items: flex-start;
-  gap: 16px;
-}
-
-.hr-profile-page__intro h2 {
-  margin: 8px 0 0;
-}
-
-.hr-profile-page__back {
-  color: var(--color-primary);
-  font-size: 0.88rem;
-  text-decoration: none;
-}
-
-.hr-profile-page__back:hover {
-  text-decoration: underline;
-}
-
-.hr-profile-page__body {
+.hr-profile-main {
   display: grid;
-  gap: 20px;
+  gap: 14px;
+  min-width: 0;
+}
+
+.hr-profile-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.hr-profile-card-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .hr-profile-metrics {
@@ -5038,12 +5035,13 @@ body.feed-photo-viewer-open {
 }
 
 .hr-profile-metric {
-  background: var(--color-surface-alt);
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius-md);
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+  border: 1px solid #dbe6f0;
+  border-radius: 16px;
   display: grid;
   gap: 4px;
-  padding: 14px 16px;
+  padding: 16px;
+  box-shadow: var(--shadow-soft);
 }
 
 .hr-profile-metric span {
@@ -5058,20 +5056,6 @@ body.feed-photo-viewer-open {
 .hr-profile-metric small {
   color: var(--color-text-muted);
   font-size: 0.78rem;
-}
-
-.hr-profile-section,
-.hr-profile-data-section {
-  display: grid;
-  gap: 12px;
-}
-
-.hr-profile-section__head {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  justify-content: space-between;
 }
 
 .hr-profile-table-wrap {
@@ -5105,14 +5089,15 @@ body.feed-photo-viewer-open {
 
 .hr-profile-list-item {
   align-items: center;
-  background: var(--color-surface-alt);
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius-md);
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+  border: 1px solid #dbe6f0;
+  border-radius: 16px;
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
   justify-content: space-between;
-  padding: 14px 16px;
+  padding: 16px;
+  box-shadow: var(--shadow-soft);
 }
 
 .hr-profile-list-item span {
@@ -5135,12 +5120,13 @@ body.feed-photo-viewer-open {
 }
 
 .hr-profile-benefit-card {
-  background: var(--color-surface-alt);
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius-md);
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+  border: 1px solid #dbe6f0;
+  border-radius: 16px;
   display: grid;
   gap: 8px;
   padding: 16px;
+  box-shadow: var(--shadow-soft);
 }
 
 .hr-profile-benefit-card__head {
@@ -5161,12 +5147,13 @@ body.feed-photo-viewer-open {
 }
 
 .hr-profile-competency {
-  background: var(--color-surface-alt);
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius-md);
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+  border: 1px solid #dbe6f0;
+  border-radius: 16px;
   display: grid;
   gap: 8px;
-  padding: 14px 16px;
+  padding: 16px;
+  box-shadow: var(--shadow-soft);
 }
 
 .hr-profile-competency__head {
@@ -5189,15 +5176,22 @@ body.feed-photo-viewer-open {
 }
 
 .hr-profile-feedback {
-  background: var(--color-surface-alt);
+  background: #f8fbff;
   border-left: 3px solid var(--color-primary);
   margin: 0;
-  padding: 12px 14px;
+  padding: 14px 16px;
+  border-radius: 0 12px 12px 0;
 }
 
 .hr-profile-sections {
   display: grid;
   gap: 18px;
+}
+
+.hr-profile-data-section h3 {
+  margin: 0 0 10px;
+  font-size: 14px;
+  color: #31577d;
 }
 
 .hr-profile-fields {
@@ -5207,12 +5201,13 @@ body.feed-photo-viewer-open {
 }
 
 .hr-profile-field {
-  background: var(--color-surface-alt);
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius-md);
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+  border: 1px solid #dbe6f0;
+  border-radius: 16px;
   display: grid;
   gap: 4px;
-  padding: 12px 14px;
+  padding: 14px 16px;
+  box-shadow: var(--shadow-soft);
 }
 
 .hr-profile-field span,

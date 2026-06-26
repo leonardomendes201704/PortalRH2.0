@@ -1,5 +1,5 @@
 import { getJson } from "../services/apiClient.js";
-import { DATA_MODES, getRuntimeConfig, resolveApiEndpoint } from "../core/runtimeConfig.js?v=0.23.0";
+import { DATA_MODES, getRuntimeConfig, resolveApiEndpoint } from "../core/runtimeConfig.js?v=0.23.1";
 import { getPortalAuthHeaders } from "../services/portalAuthService.js";
 import { getHrProfileModule } from "./moduleCatalog.js";
 
