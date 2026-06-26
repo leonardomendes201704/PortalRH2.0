@@ -164,6 +164,49 @@ public class FeedController : ControllerBase
         }
     }
 
+    [HttpPost("{id:guid}/share")]
+    [RequirePortalSession]
+    [ProducesResponseType(typeof(FeedShareResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ToggleShare(Guid id, [FromBody] ToggleFeedShareRequest request, CancellationToken cancellationToken)
+    {
+        var session = PortalSessionHttpContext.Get(HttpContext);
+        if (session?.PortalUser is null)
+        {
+            return Unauthorized(new { message = "Sessao do portal nao encontrada." });
+        }
+
+        if (!PortalModuleAccess.HasModuleAccess(
+                session.PortalUser,
+                PortalModulePermissionCatalog.Feed,
+                PortalModulePermissionCatalog.Interact,
+                PortalModulePermissionCatalog.Manage))
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new
+            {
+                message = "Voce nao possui permissao para compartilhar no feed."
+            });
+        }
+
+        try
+        {
+            var result = await _feedService.ToggleShareAsync(
+                id,
+                request.Source,
+                session.PortalUserId,
+                BuildAuditContext(session.PortalUser.Login, session.PortalUser.DisplayName),
+                cancellationToken);
+
+            return result is null ? NotFound() : Ok(result);
+        }
+        catch (InvalidOperationException exception)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = exception.Message });
+        }
+    }
+
     [HttpDelete("{id:guid}")]
     [RequirePortalSession]
     [ProducesResponseType(typeof(DeleteFeedPostResponse), StatusCodes.Status200OK)]

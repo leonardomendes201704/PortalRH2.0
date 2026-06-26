@@ -15,6 +15,11 @@ public interface ICommunicationService
         Guid portalUserId,
         CommunicationAuditContext auditContext,
         CancellationToken cancellationToken);
+    Task<CommunicationShareResponse?> ToggleShareAsync(
+        Guid communicationId,
+        Guid portalUserId,
+        CommunicationAuditContext auditContext,
+        CancellationToken cancellationToken);
 }
 
 public sealed record CommunicationAuditContext(

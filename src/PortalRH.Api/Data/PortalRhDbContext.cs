@@ -28,10 +28,12 @@ public class PortalRhDbContext : DbContext
     public DbSet<MoodSurveyAuditLog> MoodSurveyAuditLogs => Set<MoodSurveyAuditLog>();
     public DbSet<MoodSurveyFeedbackMessage> MoodSurveyFeedbackMessages => Set<MoodSurveyFeedbackMessage>();
     public DbSet<CommunicationLike> CommunicationLikes => Set<CommunicationLike>();
+    public DbSet<CommunicationShare> CommunicationShares => Set<CommunicationShare>();
     public DbSet<CommunicationInteractionAuditLog> CommunicationInteractionAuditLogs => Set<CommunicationInteractionAuditLog>();
     public DbSet<FeedPost> FeedPosts => Set<FeedPost>();
     public DbSet<FeedPostAuditLog> FeedPostAuditLogs => Set<FeedPostAuditLog>();
     public DbSet<FeedPostLike> FeedPostLikes => Set<FeedPostLike>();
+    public DbSet<FeedPostShare> FeedPostShares => Set<FeedPostShare>();
     public DbSet<FeedPostMedia> FeedPostMedia => Set<FeedPostMedia>();
     public DbSet<FeedPostMediaComment> FeedPostMediaComments => Set<FeedPostMediaComment>();
     public DbSet<FeedPostComment> FeedPostComments => Set<FeedPostComment>();

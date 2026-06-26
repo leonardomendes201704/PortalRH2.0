@@ -221,6 +221,79 @@ public class CommunicationService : ICommunicationService
         return new CommunicationLikeResponse(communicationId, likeCount, hasLiked);
     }
 
+    public async Task<CommunicationShareResponse?> ToggleShareAsync(
+        Guid communicationId,
+        Guid portalUserId,
+        CommunicationAuditContext auditContext,
+        CancellationToken cancellationToken)
+    {
+        var communication = await _dbContext.Communications
+            .AsNoTracking()
+            .FirstOrDefaultAsync(item => item.Id == communicationId, cancellationToken);
+
+        if (communication is null)
+        {
+            return null;
+        }
+
+        if (!IsLikeableStatus(communication.Status))
+        {
+            throw new InvalidOperationException("Somente comunicados publicados podem ser compartilhados.");
+        }
+
+        var existingShare = await _dbContext.CommunicationShares
+            .FirstOrDefaultAsync(
+                item => item.CommunicationId == communicationId && item.PortalUserId == portalUserId,
+                cancellationToken);
+
+        var now = DateTime.UtcNow;
+        string actionType;
+        bool hasShared;
+
+        if (existingShare is not null)
+        {
+            _dbContext.CommunicationShares.Remove(existingShare);
+            actionType = CommunicationInteractionAuditActionTypes.ShareRemoved;
+            hasShared = false;
+        }
+        else
+        {
+            _dbContext.CommunicationShares.Add(new CommunicationShare
+            {
+                Id = Guid.NewGuid(),
+                CommunicationId = communicationId,
+                PortalUserId = portalUserId,
+                CreatedAtUtc = now,
+                IpAddress = auditContext.IpAddress,
+                Origin = auditContext.Origin
+            });
+            actionType = CommunicationInteractionAuditActionTypes.ShareRegistered;
+            hasShared = true;
+        }
+
+        _dbContext.CommunicationInteractionAuditLogs.Add(new CommunicationInteractionAuditLog
+        {
+            Id = Guid.NewGuid(),
+            CommunicationId = communicationId,
+            PortalUserId = portalUserId,
+            ActionType = actionType,
+            ActorLogin = auditContext.ActorLogin,
+            ActorDisplayName = auditContext.ActorDisplayName,
+            IpAddress = auditContext.IpAddress,
+            Origin = auditContext.Origin,
+            UserAgent = auditContext.UserAgent,
+            CreatedAtUtc = now
+        });
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        var shareCount = await _dbContext.CommunicationShares
+            .AsNoTracking()
+            .CountAsync(item => item.CommunicationId == communicationId, cancellationToken);
+
+        return new CommunicationShareResponse(communicationId, shareCount, hasShared);
+    }
+
     private async Task<EngagementSnapshot> LoadEngagementAsync(
         IReadOnlyCollection<Guid> communicationIds,
         Guid? portalUserId,

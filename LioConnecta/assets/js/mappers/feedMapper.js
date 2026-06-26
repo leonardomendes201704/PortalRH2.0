@@ -53,6 +53,7 @@ function mapPost(post) {
     hasLiked: Boolean(post?.hasLiked),
     commentsCount: asNumber(post?.commentsCount, 0),
     sharesCount: asNumber(post?.sharesCount, 0),
+    hasShared: Boolean(post?.hasShared),
     comments: asArray(post?.comments).map(mapComment).filter((comment) => comment.text)
   };
 }

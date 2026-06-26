@@ -18,6 +18,12 @@ public interface IFeedService
         Guid portalUserId,
         FeedAuditContext auditContext,
         CancellationToken cancellationToken);
+    Task<FeedShareResponse?> ToggleShareAsync(
+        Guid itemId,
+        string source,
+        Guid portalUserId,
+        FeedAuditContext auditContext,
+        CancellationToken cancellationToken);
     Task<FeedMediaCommentsResponse?> GetMediaCommentsAsync(Guid mediaId, CancellationToken cancellationToken);
     Task<FeedMediaCommentDto?> CreateMediaCommentAsync(
         Guid mediaId,

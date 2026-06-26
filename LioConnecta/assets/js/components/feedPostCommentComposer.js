@@ -83,14 +83,16 @@ function renderCommentItem(comment) {
 }
 
 function updatePostCommentCount(postEl, count) {
-  const statsRow = postEl.querySelector(".post-stats > div:last-child");
+  const statsRow = postEl.querySelector("[data-post-stats-meta], .post-stats > div:last-child");
   if (!statsRow) {
     return;
   }
 
-  const sharesMatch = statsRow.textContent?.match(/(\d+)\s+compartilhamentos/);
-  const shares = sharesMatch ? sharesMatch[1] : "0";
-  statsRow.textContent = `${formatCommentsLabel(count)} \u2022 ${shares} compartilhamentos`;
+  const sharesCount = Number(statsRow.getAttribute("data-shares-count") ?? 0);
+  const commentsLabel = count === 1 ? "1 comentário" : `${count} comentários`;
+  const sharesLabel = sharesCount === 1 ? "1 compartilhamento" : `${sharesCount} compartilhamentos`;
+  statsRow.setAttribute("data-comments-count", String(count));
+  statsRow.textContent = `${commentsLabel} • ${sharesLabel}`;
 }
 
 function appendCommentToPost(postEl, comment) {
