@@ -57,14 +57,14 @@ import {
   uploadPollAsset,
   votePoll
 } from "./polls/index.js?v=0.15.0";
-import { renderFeed } from "./feed/index.js?v=0.21.3";
-import { updateFeedLikeUi, createFeedPost, toggleFeedLike, uploadFeedAsset } from "./services/feedService.js?v=0.21.3";
-import { bindFeedPhotoComposerActions, clearPendingFeedPhotos, getPendingFeedPhotos } from "./components/feedPhotoModal.js?v=0.21.3";
-import { bindFeedPhotoViewerActions } from "./components/feedPhotoViewerModal.js?v=0.21.3";
-import { bindFeedPostCommentActions } from "./components/feedPostCommentComposer.js?v=0.21.3";
-import { bindMentionField } from "./components/feedMentions.js?v=0.21.3";
+import { renderFeed } from "./feed/index.js?v=0.21.4";
+import { updateFeedLikeUi, createFeedPost, toggleFeedLike, uploadFeedAsset } from "./services/feedService.js?v=0.21.4";
+import { bindFeedPhotoComposerActions, clearPendingFeedPhotos, getPendingFeedPhotos } from "./components/feedPhotoModal.js?v=0.21.4";
+import { bindFeedPhotoViewerActions } from "./components/feedPhotoViewerModal.js?v=0.21.4";
+import { bindFeedPostCommentActions } from "./components/feedPostCommentComposer.js?v=0.21.4";
+import { bindMentionField } from "./components/feedMentions.js?v=0.21.4";
 import { bindInteractionFeedback, showToast } from "./core/feedback.js?v=0.16.0";
-import { DATA_MODES, getRuntimeConfig } from "./core/runtimeConfig.js?v=0.21.3";
+import { DATA_MODES, getRuntimeConfig } from "./core/runtimeConfig.js?v=0.21.4";
 import { getPanelData } from "./services/panelService.js?v=0.12.8";
 import { getUserHomeContext } from "./services/userService.js?v=0.12.8";
 import { applyAgendaToShellData, getAgendaDayData } from "./services/agendaService.js?v=0.13.1";

@@ -1,6 +1,6 @@
 import { escapeHtml } from "./html.js";
-import { DATA_MODES, getRuntimeConfig } from "../core/runtimeConfig.js?v=0.21.3";
-import { createFeedPostComment } from "../services/feedService.js?v=0.21.3";
+import { DATA_MODES, getRuntimeConfig } from "../core/runtimeConfig.js?v=0.21.4";
+import { createFeedPostComment } from "../services/feedService.js?v=0.21.4";
 import { getPortalAuthHeaders } from "../services/portalAuthService.js?v=0.17.0";
 import { showToast } from "../core/feedback.js?v=0.16.0";
 import { canInteractWithFeed } from "../services/portalPermissionService.js?v=0.17.0";
@@ -8,7 +8,7 @@ import {
   bindMentionField,
   renderMentionBody,
   renderMentionDropdownMarkup
-} from "./feedMentions.js?v=0.21.3";
+} from "./feedMentions.js?v=0.21.4";
 
 const mentionControls = new WeakMap();
 

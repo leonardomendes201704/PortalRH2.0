@@ -1,5 +1,5 @@
 import { escapeHtml } from "./html.js";
-import { suggestFeedMentions } from "../services/feedService.js?v=0.21.3";
+import { suggestFeedMentions } from "../services/feedService.js?v=0.21.4";
 import { getPortalAuthHeaders } from "../services/portalAuthService.js?v=0.17.0";
 
 const mentionState = new WeakMap();
