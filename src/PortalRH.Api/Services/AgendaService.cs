@@ -3,58 +3,137 @@ using PortalRH.Api.Contracts.Agenda;
 using PortalRH.Api.Data;
 using PortalRH.Api.Interfaces;
 using PortalRH.Api.Models;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace PortalRH.Api.Services;
 
 public class AgendaService : IAgendaService
 {
+    private const int MaxUpcomingItems = 10;
     private static readonly TimeZoneInfo SaoPauloTimeZone = ResolveSaoPauloTimeZone();
-    private readonly PortalRhDbContext _dbContext;
 
-    public AgendaService(PortalRhDbContext dbContext)
+    private readonly PortalRhDbContext _dbContext;
+    private readonly IMicrosoftGraphCalendarService _microsoftGraphCalendarService;
+
+    public AgendaService(
+        PortalRhDbContext dbContext,
+        IMicrosoftGraphCalendarService microsoftGraphCalendarService)
     {
         _dbContext = dbContext;
+        _microsoftGraphCalendarService = microsoftGraphCalendarService;
     }
 
     public async Task<AgendaDayResponse> GetTodayAsync(Guid portalUserId, CancellationToken cancellationToken)
     {
-        var nowLocal = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, SaoPauloTimeZone);
-        var localDate = DateOnly.FromDateTime(nowLocal);
-        var startLocal = localDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Unspecified);
-        var endLocal = localDate.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Unspecified);
-        var startUtc = TimeZoneInfo.ConvertTimeToUtc(startLocal, SaoPauloTimeZone);
-        var endUtc = TimeZoneInfo.ConvertTimeToUtc(endLocal, SaoPauloTimeZone);
+        var portalUser = await _dbContext.PortalUsers
+            .AsNoTracking()
+            .FirstOrDefaultAsync(item => item.Id == portalUserId, cancellationToken);
 
-        var events = await _dbContext.AgendaEvents
+        if (portalUser is null)
+        {
+            var nowLocal = GetNowLocal();
+            return new AgendaDayResponse(DateOnly.FromDateTime(nowLocal), 0, Array.Empty<AgendaItemDto>());
+        }
+
+        var nowUtc = DateTime.UtcNow;
+        var nowLocalDate = DateOnly.FromDateTime(GetNowLocal());
+        var graphEvents = await _microsoftGraphCalendarService.GetUpcomingEventsAsync(
+            portalUser,
+            MaxUpcomingItems,
+            cancellationToken);
+        var databaseEvents = await LoadDatabaseEventsAsync(portalUserId, nowUtc, cancellationToken);
+
+        var items = MergeUpcomingEvents(
+            graphEvents.Select(MapGraphEventToDto).ToList(),
+            databaseEvents.Select(MapDatabaseEventToDto).ToList(),
+            nowLocalDate)
+            .OrderBy(item => item.StartAtUtc)
+            .Take(MaxUpcomingItems)
+            .ToList();
+
+        return new AgendaDayResponse(nowLocalDate, items.Count, items);
+    }
+
+    private async Task<List<AgendaEvent>> LoadDatabaseEventsAsync(
+        Guid portalUserId,
+        DateTime nowUtc,
+        CancellationToken cancellationToken)
+    {
+        return await _dbContext.AgendaEvents
             .AsNoTracking()
             .Where(item =>
                 item.IsActive &&
                 (item.PortalUserId == null || item.PortalUserId == portalUserId) &&
-                item.StartAtUtc < endUtc &&
-                item.EndAtUtc > startUtc)
+                item.EndAtUtc > nowUtc)
             .OrderBy(item => item.StartAtUtc)
             .ThenBy(item => item.Title)
+            .Take(MaxUpcomingItems)
             .ToListAsync(cancellationToken);
-
-        var items = events.Select(MapToDto).ToList();
-
-        return new AgendaDayResponse(localDate, items.Count, items);
     }
 
-    private static AgendaItemDto MapToDto(AgendaEvent item)
+    private static List<AgendaItemDto> MergeUpcomingEvents(
+        IReadOnlyList<AgendaItemDto> graphItems,
+        IReadOnlyList<AgendaItemDto> databaseItems,
+        DateOnly referenceDate)
     {
-        var startLocal = TimeZoneInfo.ConvertTimeFromUtc(NormalizeUtc(item.StartAtUtc), SaoPauloTimeZone);
+        var merged = new List<AgendaItemDto>(graphItems.Count + databaseItems.Count);
+        var seenKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
+        foreach (var item in graphItems.Concat(databaseItems).OrderBy(entry => entry.StartAtUtc))
+        {
+            var key = $"{item.StartAtUtc:O}|{item.Title}";
+            if (!seenKeys.Add(key))
+            {
+                continue;
+            }
+
+            merged.Add(item with { TimeLabel = FormatTimeLabel(item.StartAtUtc, referenceDate) });
+        }
+
+        return merged;
+    }
+
+    private static AgendaItemDto MapDatabaseEventToDto(AgendaEvent item)
+    {
         return new AgendaItemDto(
             item.Id,
             item.Title,
             item.Description,
             item.Location,
-            startLocal.ToString("HH:mm"),
+            string.Empty,
             item.Source,
             item.Audience,
             NormalizeUtc(item.StartAtUtc),
             NormalizeUtc(item.EndAtUtc));
+    }
+
+    private static AgendaItemDto MapGraphEventToDto(MicrosoftGraphCalendarEvent item)
+    {
+        return new AgendaItemDto(
+            CreateStableGuid(item.Id),
+            item.Title,
+            item.Description,
+            item.Location,
+            string.Empty,
+            "microsoft-365",
+            "Usuario autenticado",
+            NormalizeUtc(item.StartAtUtc),
+            NormalizeUtc(item.EndAtUtc));
+    }
+
+    private static string FormatTimeLabel(DateTime startAtUtc, DateOnly referenceDate)
+    {
+        var startLocal = TimeZoneInfo.ConvertTimeFromUtc(NormalizeUtc(startAtUtc), SaoPauloTimeZone);
+        var startDate = DateOnly.FromDateTime(startLocal);
+        return startDate == referenceDate
+            ? startLocal.ToString("HH:mm")
+            : startLocal.ToString("dd/MM HH:mm");
+    }
+
+    private static DateTime GetNowLocal()
+    {
+        return TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, SaoPauloTimeZone);
     }
 
     private static DateTime NormalizeUtc(DateTime value)
@@ -62,6 +141,14 @@ public class AgendaService : IAgendaService
         return value.Kind == DateTimeKind.Utc
             ? value
             : DateTime.SpecifyKind(value, DateTimeKind.Utc);
+    }
+
+    private static Guid CreateStableGuid(string value)
+    {
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(value));
+        var guidBytes = new byte[16];
+        Array.Copy(hash, guidBytes, 16);
+        return new Guid(guidBytes);
     }
 
     private static TimeZoneInfo ResolveSaoPauloTimeZone()
