@@ -17,6 +17,13 @@ public interface IFeedService
         Guid portalUserId,
         FeedAuditContext auditContext,
         CancellationToken cancellationToken);
+    Task<FeedMediaCommentsResponse?> GetMediaCommentsAsync(Guid mediaId, CancellationToken cancellationToken);
+    Task<FeedMediaCommentDto?> CreateMediaCommentAsync(
+        Guid mediaId,
+        Guid portalUserId,
+        string text,
+        FeedAuditContext auditContext,
+        CancellationToken cancellationToken);
 }
 
 public sealed record FeedAuditContext(

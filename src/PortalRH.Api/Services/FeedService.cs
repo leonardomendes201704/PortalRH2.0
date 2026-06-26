@@ -14,6 +14,8 @@ public class FeedService : IFeedService
     private const int MaxMediaPerPost = 10;
     private const int MaxMediaDescriptionLength = 500;
 
+    private const int MaxMediaCommentLength = 1000;
+
     private static readonly HashSet<string> AllowedAspectRatios = new(StringComparer.OrdinalIgnoreCase)
     {
         "1:1", "16:9", "9:16", "free"
@@ -56,11 +58,14 @@ public class FeedService : IFeedService
             ? await LoadLikedCommunicationIdsAsync(communicationIds, portalUserId.Value, cancellationToken)
             : [];
 
+        var mediaIds = userPosts.SelectMany(item => item.Media).Select(item => item.Id).ToList();
+        var mediaCommentCounts = await LoadMediaCommentCountsAsync(mediaIds, cancellationToken);
+
         var items = new List<FeedItemDto>();
 
         items.AddRange(userPosts.Select(item =>
         {
-            var media = MapMediaItems(item.Media);
+            var media = MapMediaItems(item.Media, mediaCommentCounts);
             return new FeedItemDto(
                 item.Id,
                 FeedItemSources.UserPost,
@@ -176,7 +181,7 @@ public class FeedService : IFeedService
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        var mappedMedia = MapMediaItems(entity.Media);
+        var mappedMedia = MapMediaItems(entity.Media, new Dictionary<Guid, int>());
 
         return new FeedItemDto(
             entity.Id,
@@ -224,6 +229,82 @@ public class FeedService : IFeedService
         throw new InvalidOperationException("Origem da publicacao invalida para curtida.");
     }
 
+    public async Task<FeedMediaCommentsResponse?> GetMediaCommentsAsync(Guid mediaId, CancellationToken cancellationToken)
+    {
+        var media = await _dbContext.FeedPostMedia
+            .AsNoTracking()
+            .FirstOrDefaultAsync(item => item.Id == mediaId, cancellationToken);
+
+        if (media is null)
+        {
+            return null;
+        }
+
+        var comments = await _dbContext.FeedPostMediaComments
+            .AsNoTracking()
+            .Include(item => item.PortalUser)
+            .Where(item => item.FeedPostMediaId == mediaId)
+            .OrderBy(item => item.CreatedAtUtc)
+            .ToListAsync(cancellationToken);
+
+        return new FeedMediaCommentsResponse(
+            mediaId,
+            comments.Select(item => MapMediaComment(item)).ToList());
+    }
+
+    public async Task<FeedMediaCommentDto?> CreateMediaCommentAsync(
+        Guid mediaId,
+        Guid portalUserId,
+        string text,
+        FeedAuditContext auditContext,
+        CancellationToken cancellationToken)
+    {
+        var normalizedText = text?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(normalizedText))
+        {
+            throw new InvalidOperationException("Informe um comentario para a foto.");
+        }
+
+        if (normalizedText.Length > MaxMediaCommentLength)
+        {
+            throw new InvalidOperationException($"O comentario da foto pode ter no maximo {MaxMediaCommentLength} caracteres.");
+        }
+
+        var media = await _dbContext.FeedPostMedia
+            .AsNoTracking()
+            .FirstOrDefaultAsync(item => item.Id == mediaId, cancellationToken);
+
+        if (media is null)
+        {
+            return null;
+        }
+
+        var user = await _dbContext.PortalUsers
+            .AsNoTracking()
+            .FirstOrDefaultAsync(item => item.Id == portalUserId, cancellationToken);
+
+        if (user is null)
+        {
+            throw new InvalidOperationException("Usuario do portal nao encontrado.");
+        }
+
+        var entity = new FeedPostMediaComment
+        {
+            Id = Guid.NewGuid(),
+            FeedPostMediaId = mediaId,
+            PortalUserId = portalUserId,
+            Text = normalizedText,
+            CreatedAtUtc = DateTime.UtcNow,
+            IpAddress = auditContext.IpAddress,
+            Origin = auditContext.Origin
+        };
+
+        _dbContext.FeedPostMediaComments.Add(entity);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return MapMediaComment(entity, user.DisplayName);
+    }
+
     private static List<CreateFeedPostMediaItem> NormalizeMediaItems(IReadOnlyList<CreateFeedPostMediaItem>? media)
     {
         if (media is null || media.Count == 0)
@@ -269,16 +350,46 @@ public class FeedService : IFeedService
         return normalized;
     }
 
-    private static IReadOnlyList<FeedMediaItemDto> MapMediaItems(IEnumerable<FeedPostMedia> media)
+    private static FeedMediaCommentDto MapMediaComment(FeedPostMediaComment comment, string? authorOverride = null)
+    {
+        return new FeedMediaCommentDto(
+            comment.Id,
+            authorOverride ?? comment.PortalUser?.DisplayName ?? "Colaborador",
+            comment.Text,
+            comment.CreatedAtUtc);
+    }
+
+    private static IReadOnlyList<FeedMediaItemDto> MapMediaItems(
+        IEnumerable<FeedPostMedia> media,
+        IReadOnlyDictionary<Guid, int> commentCounts)
     {
         return media
             .OrderBy(item => item.SortOrder)
             .Select(item => new FeedMediaItemDto(
+                item.Id,
                 item.Url,
                 item.Description,
                 item.AspectRatio,
-                item.SortOrder))
+                item.SortOrder,
+                commentCounts.GetValueOrDefault(item.Id)))
             .ToList();
+    }
+
+    private async Task<Dictionary<Guid, int>> LoadMediaCommentCountsAsync(
+        IReadOnlyCollection<Guid> mediaIds,
+        CancellationToken cancellationToken)
+    {
+        if (mediaIds.Count == 0)
+        {
+            return [];
+        }
+
+        return await _dbContext.FeedPostMediaComments
+            .AsNoTracking()
+            .Where(item => mediaIds.Contains(item.FeedPostMediaId))
+            .GroupBy(item => item.FeedPostMediaId)
+            .Select(group => new { FeedPostMediaId = group.Key, Count = group.Count() })
+            .ToDictionaryAsync(item => item.FeedPostMediaId, item => item.Count, cancellationToken);
     }
 
     private async Task<FeedLikeResponse?> ToggleUserPostLikeAsync(

@@ -59,7 +59,8 @@ import {
 } from "./polls/index.js?v=0.15.0";
 import { renderFeed } from "./feed/index.js?v=0.12.8";
 import { updateFeedLikeUi, createFeedPost, toggleFeedLike, uploadFeedAsset } from "./services/feedService.js?v=0.19.0";
-import { bindFeedPhotoComposerActions, clearPendingFeedPhotos, getPendingFeedPhotos } from "./components/feedPhotoModal.js?v=0.19.0";
+import { bindFeedPhotoComposerActions, clearPendingFeedPhotos, getPendingFeedPhotos } from "./components/feedPhotoModal.js?v=0.20.0";
+import { bindFeedPhotoViewerActions } from "./components/feedPhotoViewerModal.js?v=0.20.0";
 import { bindInteractionFeedback, showToast } from "./core/feedback.js?v=0.16.0";
 import { DATA_MODES, getRuntimeConfig } from "./core/runtimeConfig.js?v=0.19.0";
 import { getPanelData } from "./services/panelService.js?v=0.12.8";
@@ -1944,6 +1945,7 @@ async function renderCurrentRoute() {
 
 async function bootstrap() {
   bindInteractionFeedback(document);
+  bindFeedPhotoViewerActions();
 
   if (!adminUsersRefreshBound) {
     document.addEventListener("portal-users:refresh", (event) => {

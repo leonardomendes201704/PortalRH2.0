@@ -11,9 +11,11 @@ function mapComment(comment) {
 function mapPost(post) {
   const images = asArray(post?.images)
     .map((item) => ({
+      id: asString(item?.id, ""),
       url: asString(item?.url, ""),
       description: asString(item?.description, ""),
-      aspectRatio: asString(item?.aspectRatio, "free")
+      aspectRatio: asString(item?.aspectRatio, "free"),
+      commentCount: asNumber(item?.commentCount, 0)
     }))
     .filter((item) => item.url);
 

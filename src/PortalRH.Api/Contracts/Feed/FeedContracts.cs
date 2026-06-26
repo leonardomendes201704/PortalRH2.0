@@ -1,10 +1,29 @@
 namespace PortalRH.Api.Contracts.Feed;
 
 public record FeedMediaItemDto(
+    Guid Id,
     string Url,
     string Description,
     string AspectRatio,
-    int SortOrder);
+    int SortOrder,
+    int CommentCount);
+
+public record FeedMediaCommentDto(
+    Guid Id,
+    string Author,
+    string Text,
+    DateTime CreatedAtUtc);
+
+public record FeedMediaCommentsResponse(
+    Guid MediaId,
+    IReadOnlyList<FeedMediaCommentDto> Items);
+
+public record CreateFeedMediaCommentRequest
+{
+    public string Text { get; set; } = string.Empty;
+}
+
+public record CreateFeedMediaCommentResponse(FeedMediaCommentDto Item);
 
 public record FeedItemDto(
     Guid Id,

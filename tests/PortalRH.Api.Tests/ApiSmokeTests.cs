@@ -261,6 +261,55 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
     }
 
     [Fact]
+    public async Task FeedEndpoint_CreatesAndListsMediaCommentsSeparatelyFromPost()
+    {
+        await EnsureLdapEnabledAsync();
+        var portalSession = await LoginPortalUserAsync();
+
+        _client.DefaultRequestHeaders.Authorization = null;
+        _client.DefaultRequestHeaders.Remove("X-Portal-Token");
+        _client.DefaultRequestHeaders.Add("X-Portal-Token", portalSession.Token);
+
+        var imageUploadUrl = await UploadFeedAssetAsync("feed-comentario.png", "image/png", [137, 80, 78, 71, 13, 10, 26, 10]);
+        var createResponse = await _client.PostAsJsonAsync("/api/feed", new CreateFeedPostRequest
+        {
+            Text = "Post com comentario na foto.",
+            Media =
+            [
+                new CreateFeedPostMediaItem
+                {
+                    Url = imageUploadUrl,
+                    Description = "Foto comentada",
+                    AspectRatio = "1:1"
+                }
+            ]
+        });
+
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+        var created = await createResponse.Content.ReadFromJsonAsync<CreateFeedPostResponse>();
+        Assert.NotNull(created);
+        var mediaId = created.Item.Media[0].Id;
+
+        var commentResponse = await _client.PostAsJsonAsync($"/api/feed/media/{mediaId}/comments", new CreateFeedMediaCommentRequest
+        {
+            Text = "Comentario exclusivo da foto."
+        });
+        Assert.Equal(HttpStatusCode.Created, commentResponse.StatusCode);
+
+        var commentPayload = await commentResponse.Content.ReadFromJsonAsync<CreateFeedMediaCommentResponse>();
+        Assert.NotNull(commentPayload);
+        Assert.Equal("Comentario exclusivo da foto.", commentPayload.Item.Text);
+
+        var listResponse = await _client.GetAsync($"/api/feed/media/{mediaId}/comments");
+        Assert.Equal(HttpStatusCode.OK, listResponse.StatusCode);
+
+        var comments = await listResponse.Content.ReadFromJsonAsync<FeedMediaCommentsResponse>();
+        Assert.NotNull(comments);
+        Assert.Single(comments.Items);
+        Assert.Equal("Comentario exclusivo da foto.", comments.Items[0].Text);
+    }
+
+    [Fact]
     public async Task FeedEndpoint_TogglesLikeOnUserPostWithAuditTrail()
     {
         await EnsureLdapEnabledAsync();

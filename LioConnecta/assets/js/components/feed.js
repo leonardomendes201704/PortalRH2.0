@@ -1,5 +1,6 @@
 import { renderEmptyState } from "./cards.js";
 import { escapeHtml } from "./html.js";
+import { serializeGalleryImages } from "./feedPhotoViewerModal.js";
 
 const PHOTO_ACTION_LABEL = "Adicionar fotos";
 
@@ -60,16 +61,21 @@ function renderPostGallery(post) {
   const visible = images.slice(0, 4);
 
   return `
-    <div class="post-gallery post-gallery--${Math.min(total, 4)}" data-gallery-count="${total}">
+    <div class="post-gallery post-gallery--${Math.min(total, 4)}" data-gallery-count="${total}" data-feed-gallery="${serializeGalleryImages(images)}">
       ${visible.map((image, index) => `
-        <figure
+        <button
+          type="button"
           class="post-gallery__item ${index === 3 && total > 4 ? "post-gallery__item--more" : ""}"
           data-aspect="${escapeHtml(image.aspectRatio || "free")}"
+          data-action="open-feed-photo-viewer"
+          data-photo-index="${index}"
+          aria-label="${escapeHtml(image.description || `Abrir foto ${index + 1}`)}"
         >
           <img src="${escapeHtml(image.url)}" alt="${escapeHtml(image.description || post.author)}" loading="lazy">
-          ${image.description ? `<figcaption>${escapeHtml(image.description)}</figcaption>` : ""}
+          ${image.description ? `<span class="post-gallery__caption">${escapeHtml(image.description)}</span>` : ""}
+          ${Number(image.commentCount) > 0 ? `<span class="post-gallery__comment-badge">${escapeHtml(String(image.commentCount))}</span>` : ""}
           ${index === 3 && total > 4 ? `<span class="post-gallery__more">+${total - 4}</span>` : ""}
-        </figure>
+        </button>
       `).join("")}
     </div>
   `;
