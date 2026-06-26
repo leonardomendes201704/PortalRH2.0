@@ -133,11 +133,6 @@ function renderPost(post) {
           </div>
         ` : ""}
         ${renderPostGallery(post)}
-        ${!Array.isArray(post.images) && post.image ? `
-          <div class="post-image">
-            <img src="${escapeHtml(post.image)}" alt="${escapeHtml(post.imageAlt ?? post.author)}">
-          </div>
-        ` : ""}
       </div>
 
       <div class="post-stats">
