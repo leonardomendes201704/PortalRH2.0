@@ -9,6 +9,16 @@ function mapComment(comment) {
 }
 
 function mapPost(post) {
+  const images = asArray(post?.images)
+    .map((item) => ({
+      url: asString(item?.url, ""),
+      description: asString(item?.description, ""),
+      aspectRatio: asString(item?.aspectRatio, "free")
+    }))
+    .filter((item) => item.url);
+
+  const image = asString(post?.image, images[0]?.url || "");
+
   return {
     postId: asString(post?.postId, ""),
     source: asString(post?.source, ""),
@@ -20,8 +30,9 @@ function mapPost(post) {
     text: asString(post?.text, ""),
     highlightTitle: asString(post?.highlightTitle, ""),
     highlightText: asString(post?.highlightText, ""),
-    image: asString(post?.image, ""),
+    image,
     imageAlt: asString(post?.imageAlt, asString(post?.author, "Imagem do post")),
+    images,
     reactions: asNumber(post?.reactions, 0),
     hasLiked: Boolean(post?.hasLiked),
     commentsCount: asNumber(post?.commentsCount, 0),
@@ -33,7 +44,7 @@ function mapPost(post) {
 export function mapFeedViewModel(raw = {}, { allowDefaults = true } = {}) {
   const posts = asArray(raw.posts)
     .map(mapPost)
-    .filter((post) => post.text || post.image);
+    .filter((post) => post.text || post.image || post.images.length);
 
   return {
     title: asString(raw.title, DEFAULT_FEED_TITLE),
