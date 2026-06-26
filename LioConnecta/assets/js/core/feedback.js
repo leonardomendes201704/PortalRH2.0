@@ -500,6 +500,10 @@ export function bindInteractionFeedback(root = document) {
 
     const composerAction = event.target.closest(".feed-action-chip");
     if (composerAction) {
+      if (composerAction.dataset.action || composerAction.disabled) {
+        return;
+      }
+
       const label = composerAction.querySelector("span")?.textContent?.trim() || "Item";
       showToast(`${label} adicionado ao rascunho do post.`, "info");
       return;

@@ -1,4 +1,4 @@
-export const APP_VERSION = "v0.18.0";
+export const APP_VERSION = "v0.19.0";
 
 export const DATA_MODES = Object.freeze({
   MOCK: "mock",
@@ -61,6 +61,7 @@ const DEFAULT_RUNTIME_CONFIG = Object.freeze({
   endpoints: {
     user: "/me-ui",
     feed: "/feed",
+    feedAssets: "/feed/assets",
     panels: "/panels",
     carousel: "/carousel",
     communications: "/communications",

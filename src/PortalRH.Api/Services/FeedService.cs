@@ -11,6 +11,13 @@ public class FeedService : IFeedService
 {
     private const string FeedTitle = "FEED LIOCONNECTA";
     private const int MaxPostLength = 2000;
+    private const int MaxMediaPerPost = 10;
+    private const int MaxMediaDescriptionLength = 500;
+
+    private static readonly HashSet<string> AllowedAspectRatios = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "1:1", "16:9", "9:16", "free"
+    };
 
     private readonly PortalRhDbContext _dbContext;
     private readonly ICommunicationService _communicationService;
@@ -26,6 +33,7 @@ public class FeedService : IFeedService
         var userPosts = await _dbContext.FeedPosts
             .AsNoTracking()
             .Include(item => item.PortalUser)
+            .Include(item => item.Media)
             .OrderByDescending(item => item.CreatedAtUtc)
             .ToListAsync(cancellationToken);
 
@@ -50,19 +58,24 @@ public class FeedService : IFeedService
 
         var items = new List<FeedItemDto>();
 
-        items.AddRange(userPosts.Select(item => new FeedItemDto(
-            item.Id,
-            FeedItemSources.UserPost,
-            null,
-            item.PortalUser?.DisplayName ?? "Colaborador",
-            item.PortalUser?.Department ?? "Companhia",
-            item.CreatedAtUtc,
-            item.Text,
-            null,
-            null,
-            null,
-            userPostLikeCounts.GetValueOrDefault(item.Id),
-            likedUserPostIds.Contains(item.Id))));
+        items.AddRange(userPosts.Select(item =>
+        {
+            var media = MapMediaItems(item.Media);
+            return new FeedItemDto(
+                item.Id,
+                FeedItemSources.UserPost,
+                null,
+                item.PortalUser?.DisplayName ?? "Colaborador",
+                item.PortalUser?.Department ?? "Companhia",
+                item.CreatedAtUtc,
+                item.Text,
+                null,
+                null,
+                media.FirstOrDefault()?.Url,
+                userPostLikeCounts.GetValueOrDefault(item.Id),
+                likedUserPostIds.Contains(item.Id),
+                media);
+        }));
 
         items.AddRange(communications.Select(item => new FeedItemDto(
             item.Id,
@@ -76,7 +89,8 @@ public class FeedService : IFeedService
             item.Summary,
             item.ImageUrl,
             communicationLikeCounts.GetValueOrDefault(item.Id),
-            likedCommunicationIds.Contains(item.Id))));
+            likedCommunicationIds.Contains(item.Id),
+            [])));
 
         return new FeedResponse(
             FeedTitle,
@@ -88,18 +102,26 @@ public class FeedService : IFeedService
     public async Task<FeedItemDto> CreatePostAsync(
         Guid portalUserId,
         string text,
+        IReadOnlyList<CreateFeedPostMediaItem> media,
         FeedAuditContext auditContext,
         CancellationToken cancellationToken)
     {
         var normalizedText = text?.Trim() ?? string.Empty;
-        if (string.IsNullOrWhiteSpace(normalizedText))
+        var normalizedMedia = NormalizeMediaItems(media);
+
+        if (string.IsNullOrWhiteSpace(normalizedText) && normalizedMedia.Count == 0)
         {
-            throw new InvalidOperationException("Informe um texto para publicar no feed.");
+            throw new InvalidOperationException("Informe um texto ou ao menos uma foto para publicar no feed.");
         }
 
         if (normalizedText.Length > MaxPostLength)
         {
             throw new InvalidOperationException($"A publicacao pode ter no maximo {MaxPostLength} caracteres.");
+        }
+
+        if (normalizedMedia.Count > MaxMediaPerPost)
+        {
+            throw new InvalidOperationException($"A publicacao pode ter no maximo {MaxMediaPerPost} fotos.");
         }
 
         var user = await _dbContext.PortalUsers
@@ -122,6 +144,21 @@ public class FeedService : IFeedService
             Origin = auditContext.Origin
         };
 
+        for (var index = 0; index < normalizedMedia.Count; index++)
+        {
+            var mediaItem = normalizedMedia[index];
+            entity.Media.Add(new FeedPostMedia
+            {
+                Id = Guid.NewGuid(),
+                FeedPostId = entity.Id,
+                Url = mediaItem.Url,
+                Description = mediaItem.Description,
+                AspectRatio = mediaItem.AspectRatio,
+                SortOrder = index,
+                CreatedAtUtc = now
+            });
+        }
+
         _dbContext.FeedPosts.Add(entity);
         _dbContext.FeedPostAuditLogs.Add(new FeedPostAuditLog
         {
@@ -139,6 +176,8 @@ public class FeedService : IFeedService
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
+        var mappedMedia = MapMediaItems(entity.Media);
+
         return new FeedItemDto(
             entity.Id,
             FeedItemSources.UserPost,
@@ -149,9 +188,10 @@ public class FeedService : IFeedService
             entity.Text,
             null,
             null,
-            null,
+            mappedMedia.FirstOrDefault()?.Url,
             0,
-            false);
+            false,
+            mappedMedia);
     }
 
     public async Task<FeedLikeResponse?> ToggleLikeAsync(
@@ -182,6 +222,63 @@ public class FeedService : IFeedService
         }
 
         throw new InvalidOperationException("Origem da publicacao invalida para curtida.");
+    }
+
+    private static List<CreateFeedPostMediaItem> NormalizeMediaItems(IReadOnlyList<CreateFeedPostMediaItem>? media)
+    {
+        if (media is null || media.Count == 0)
+        {
+            return [];
+        }
+
+        var normalized = new List<CreateFeedPostMediaItem>();
+
+        foreach (var item in media)
+        {
+            var url = item.Url?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                throw new InvalidOperationException("Informe a URL de cada foto anexada.");
+            }
+
+            if (!url.Contains("/uploads/feed/", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("URL de foto invalida para publicacao no feed.");
+            }
+
+            var description = item.Description?.Trim() ?? string.Empty;
+            if (description.Length > MaxMediaDescriptionLength)
+            {
+                throw new InvalidOperationException($"A descricao da foto pode ter no maximo {MaxMediaDescriptionLength} caracteres.");
+            }
+
+            var aspectRatio = item.AspectRatio?.Trim() ?? "free";
+            if (!AllowedAspectRatios.Contains(aspectRatio))
+            {
+                aspectRatio = "free";
+            }
+
+            normalized.Add(new CreateFeedPostMediaItem
+            {
+                Url = url,
+                Description = description,
+                AspectRatio = aspectRatio
+            });
+        }
+
+        return normalized;
+    }
+
+    private static IReadOnlyList<FeedMediaItemDto> MapMediaItems(IEnumerable<FeedPostMedia> media)
+    {
+        return media
+            .OrderBy(item => item.SortOrder)
+            .Select(item => new FeedMediaItemDto(
+                item.Url,
+                item.Description,
+                item.AspectRatio,
+                item.SortOrder))
+            .ToList();
     }
 
     private async Task<FeedLikeResponse?> ToggleUserPostLikeAsync(

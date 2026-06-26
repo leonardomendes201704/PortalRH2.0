@@ -58,9 +58,10 @@ import {
   votePoll
 } from "./polls/index.js?v=0.15.0";
 import { renderFeed } from "./feed/index.js?v=0.12.8";
-import { updateFeedLikeUi, createFeedPost, toggleFeedLike } from "./services/feedService.js?v=0.16.1";
+import { updateFeedLikeUi, createFeedPost, toggleFeedLike, uploadFeedAsset } from "./services/feedService.js?v=0.19.0";
+import { bindFeedPhotoComposerActions, clearPendingFeedPhotos, getPendingFeedPhotos } from "./components/feedPhotoModal.js?v=0.19.0";
 import { bindInteractionFeedback, showToast } from "./core/feedback.js?v=0.16.0";
-import { getRuntimeConfig } from "./core/runtimeConfig.js?v=0.13.1";
+import { DATA_MODES, getRuntimeConfig } from "./core/runtimeConfig.js?v=0.19.0";
 import { getPanelData } from "./services/panelService.js?v=0.12.8";
 import { getUserHomeContext } from "./services/userService.js?v=0.12.8";
 import { applyAgendaToShellData, getAgendaDayData } from "./services/agendaService.js?v=0.13.1";
@@ -394,7 +395,8 @@ function renderHomePage(data, route) {
 
   const composer = {
     ...data.composer,
-    enabled: data.composer?.enabled !== false && canInteractWithFeed()
+    enabled: data.composer?.enabled !== false && canInteractWithFeed(),
+    photoEnabled: canInteractWithFeed() && getRuntimeConfig().dataMode === DATA_MODES.API
   };
 
   centerContent.innerHTML = [
@@ -411,6 +413,9 @@ function renderHomePage(data, route) {
   bindFeedLikeActions();
   if (composer.enabled) {
     bindFeedComposerActions();
+    if (composer.photoEnabled) {
+      bindFeedPhotoComposerActions();
+    }
   }
 }
 
@@ -798,10 +803,11 @@ function bindFeedComposerActions() {
 
       const textarea = form.querySelector("textarea[name='text']");
       const text = String(textarea?.value || "").trim();
+      const pendingPhotos = getPendingFeedPhotos();
       const submitButton = form.querySelector(".feed-composer-submit");
 
-      if (!text) {
-        showToast("Escreva algo antes de publicar no feed.", "danger");
+      if (!text && !pendingPhotos.length) {
+        showToast("Escreva algo ou adicione ao menos uma foto antes de publicar.", "danger");
         return;
       }
 
@@ -810,9 +816,24 @@ function bindFeedComposerActions() {
       }
 
       try {
-        await createFeedPost(text, {
-          headers: getPortalAuthHeaders()
-        });
+        const headers = getPortalAuthHeaders();
+        const media = [];
+
+        for (const photo of pendingPhotos) {
+          const upload = await uploadFeedAsset(
+            new File([photo.blob], photo.fileName || "feed-photo.jpg", { type: photo.blob.type || "image/jpeg" }),
+            { headers }
+          );
+
+          media.push({
+            url: String(upload?.url || ""),
+            description: String(photo.description || ""),
+            aspectRatio: String(photo.aspectRatio || "free")
+          });
+        }
+
+        await createFeedPost({ text, media }, { headers });
+        clearPendingFeedPhotos();
         showToast("Publicacao enviada ao feed.", "success");
         await renderCurrentRoute();
       } catch (error) {
@@ -820,7 +841,7 @@ function bindFeedComposerActions() {
         const message = error instanceof Error && error.message.includes("HTTP 401")
           ? "Sua sessao expirou. Faca login novamente para publicar no feed."
           : error instanceof Error && error.message.includes("HTTP 400")
-            ? "Nao foi possivel publicar. Verifique o texto informado."
+            ? "Nao foi possivel publicar. Verifique o texto e as fotos informados."
             : "Nao foi possivel publicar no feed agora.";
 
         showToast(message, "danger");
