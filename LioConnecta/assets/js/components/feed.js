@@ -2,7 +2,7 @@ import { renderEmptyState } from "./cards.js";
 import { escapeHtml } from "./html.js";
 import { resolveFeedMediaUrl, serializeGalleryImages } from "../services/feedMedia.js?v=0.21.4";
 import { renderPostCommentComposer } from "./feedPostCommentComposer.js?v=0.21.4";
-import { renderMentionBody, renderMentionDropdownMarkup } from "./feedMentions.js?v=0.21.4";
+import { renderMentionBody, renderMentionDropdownMarkup } from "./feedMentions.js?v=0.21.7";
 
 const PHOTO_ACTION_LABEL = "Adicionar fotos";
 

@@ -62,7 +62,7 @@ import { updateFeedLikeUi, createFeedPost, toggleFeedLike, uploadFeedAsset } fro
 import { bindFeedPhotoComposerActions, clearPendingFeedPhotos, getPendingFeedPhotos } from "./components/feedPhotoModal.js?v=0.21.4";
 import { bindFeedPhotoViewerActions } from "./components/feedPhotoViewerModal.js?v=0.21.4";
 import { bindFeedPostCommentActions } from "./components/feedPostCommentComposer.js?v=0.21.4";
-import { bindMentionField } from "./components/feedMentions.js?v=0.21.4";
+import { bindMentionField } from "./components/feedMentions.js?v=0.21.7";
 import { bindInteractionFeedback, showToast } from "./core/feedback.js?v=0.16.0";
 import { DATA_MODES, getRuntimeConfig } from "./core/runtimeConfig.js?v=0.21.4";
 import { getPanelData } from "./services/panelService.js?v=0.12.8";
