@@ -832,6 +832,17 @@ export function renderCommunicationDetailPage(communication) {
               <i class="fa-solid fa-thumbs-up" aria-hidden="true"></i>
               Curtir (<span data-communication-like-count>${escapeHtml(String(communication.likeCount ?? 0))}</span>)
             </button>
+            <button
+              type="button"
+              class="comm-secondary-button ${communication.hasSaved ? "is-active" : ""}"
+              data-action="toggle-feed-save"
+              data-feed-item-id="${escapeHtml(communication.id)}"
+              data-feed-source="Communication"
+              aria-pressed="${communication.hasSaved ? "true" : "false"}"
+            >
+              <i class="fa-regular fa-bookmark" aria-hidden="true"></i>
+              Salvar
+            </button>
           ` : ""}
           <button
             type="button"

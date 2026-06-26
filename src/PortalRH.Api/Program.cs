@@ -39,6 +39,8 @@ builder.Services.AddScoped<IHrProfileService, HrProfileService>();
 builder.Services.AddScoped<ICorporateSystemsService, CorporateSystemsService>();
 builder.Services.AddScoped<ILdapDirectoryAuthenticator, LdapDirectoryAuthenticator>();
 builder.Services.AddScoped<IPasswordHasher<AdminUser>, PasswordHasher<AdminUser>>();
+builder.Services.AddScoped<IPasswordHasher<PortalUser>, PasswordHasher<PortalUser>>();
+builder.Services.AddScoped<IPortalUserSeedService, PortalUserSeedService>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("LioConnectaLocal", policy =>

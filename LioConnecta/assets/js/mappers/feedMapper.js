@@ -54,6 +54,7 @@ function mapPost(post) {
     commentsCount: asNumber(post?.commentsCount, 0),
     sharesCount: asNumber(post?.sharesCount, 0),
     hasShared: Boolean(post?.hasShared),
+    hasSaved: Boolean(post?.hasSaved),
     comments: asArray(post?.comments).map(mapComment).filter((comment) => comment.text)
   };
 }

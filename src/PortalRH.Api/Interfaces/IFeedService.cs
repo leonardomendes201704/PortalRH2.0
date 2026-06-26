@@ -24,6 +24,14 @@ public interface IFeedService
         Guid portalUserId,
         FeedAuditContext auditContext,
         CancellationToken cancellationToken);
+    Task<FeedSaveResponse?> ToggleSaveAsync(
+        Guid itemId,
+        string source,
+        Guid portalUserId,
+        FeedAuditContext auditContext,
+        CancellationToken cancellationToken);
+    Task<FeedResponse> GetSavedFeedAsync(Guid portalUserId, CancellationToken cancellationToken);
+    Task<int> GetSavedItemCountAsync(Guid portalUserId, CancellationToken cancellationToken);
     Task<FeedMediaCommentsResponse?> GetMediaCommentsAsync(Guid mediaId, CancellationToken cancellationToken);
     Task<FeedMediaCommentDto?> CreateMediaCommentAsync(
         Guid mediaId,

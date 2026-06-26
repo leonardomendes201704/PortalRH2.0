@@ -37,3 +37,8 @@ public interface IPortalPanelsComposer
 {
     Task<Contracts.Shell.PanelsResponse> BuildAsync(PortalUser user, CancellationToken cancellationToken);
 }
+
+public interface IPortalUserSeedService
+{
+    Task EnsureSeedAsync(CancellationToken cancellationToken);
+}

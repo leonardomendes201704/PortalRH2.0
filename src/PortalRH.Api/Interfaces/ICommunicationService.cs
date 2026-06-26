@@ -20,6 +20,11 @@ public interface ICommunicationService
         Guid portalUserId,
         CommunicationAuditContext auditContext,
         CancellationToken cancellationToken);
+    Task<CommunicationSaveResponse?> ToggleSaveAsync(
+        Guid communicationId,
+        Guid portalUserId,
+        CommunicationAuditContext auditContext,
+        CancellationToken cancellationToken);
 }
 
 public sealed record CommunicationAuditContext(

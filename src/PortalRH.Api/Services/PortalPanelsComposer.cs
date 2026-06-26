@@ -29,6 +29,7 @@ public class PortalPanelsComposer : IPortalPanelsComposer
     private readonly IKpiService _kpiService;
     private readonly IHrProfileService _hrProfileService;
     private readonly ICorporateSystemsService _corporateSystemsService;
+    private readonly IFeedService _feedService;
 
     public PortalPanelsComposer(
         INotificationService notificationService,
@@ -38,7 +39,8 @@ public class PortalPanelsComposer : IPortalPanelsComposer
         IJourneyService journeyService,
         IKpiService kpiService,
         IHrProfileService hrProfileService,
-        ICorporateSystemsService corporateSystemsService)
+        ICorporateSystemsService corporateSystemsService,
+        IFeedService feedService)
     {
         _notificationService = notificationService;
         _agendaService = agendaService;
@@ -48,12 +50,14 @@ public class PortalPanelsComposer : IPortalPanelsComposer
         _kpiService = kpiService;
         _hrProfileService = hrProfileService;
         _corporateSystemsService = corporateSystemsService;
+        _feedService = feedService;
     }
 
     public async Task<PanelsResponse> BuildAsync(PortalUser user, CancellationToken cancellationToken)
     {
         // DbContext nao e thread-safe: consultas ao banco devem ser sequenciais no mesmo request.
         var notifications = await _notificationService.GetForUserAsync(user.Id, cancellationToken);
+        var savedCount = await _feedService.GetSavedItemCountAsync(user.Id, cancellationToken);
         var quickLinks = await _quickLinkService.GetActiveAsync(cancellationToken);
         var agenda = await _agendaService.GetTodayAsync(user.Id, cancellationToken);
         var communications = await _communicationService.GetAllAsync(user.Id, cancellationToken);
@@ -68,7 +72,7 @@ public class PortalPanelsComposer : IPortalPanelsComposer
         var leftPanels = new List<PanelDto>
         {
             BuildJourneyPanel(await journeyTask),
-            BuildNotificationsPanel(notifications),
+            BuildNotificationsPanel(notifications, savedCount),
             BuildCorporateSystemsPanel(await systemsTask),
             BuildKpiPanel(await kpisTask)
         };
@@ -96,7 +100,7 @@ public class PortalPanelsComposer : IPortalPanelsComposer
         return new PanelDto(string.Empty, "MINHA JORNADA", string.Empty, string.Empty, string.Empty, string.Empty, PortalModulePermissionCatalog.Home, items);
     }
 
-    private static PanelDto BuildNotificationsPanel(NotificationListResponse notifications)
+    private static PanelDto BuildNotificationsPanel(NotificationListResponse notifications, int savedCount)
     {
         var items = new List<JsonNode>
         {
@@ -113,6 +117,11 @@ public class PortalPanelsComposer : IPortalPanelsComposer
         {
             items.Add(ShellPanelJson.LabelBadge("Lidas", notifications.Summary.ReadCount.ToString()));
         }
+
+        items.Add(ShellPanelJson.LabelLink(
+            "Itens Salvos",
+            "#inicio/salvos",
+            savedCount > 0 ? savedCount.ToString() : null));
 
         return new PanelDto(string.Empty, "MEU PAINEL", string.Empty, string.Empty, string.Empty, string.Empty, PortalModulePermissionCatalog.Home, items);
     }

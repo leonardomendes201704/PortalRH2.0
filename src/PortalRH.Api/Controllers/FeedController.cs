@@ -28,6 +28,22 @@ public class FeedController : ControllerBase
         return Ok(payload);
     }
 
+    [HttpGet("saved")]
+    [RequirePortalSession]
+    [ProducesResponseType(typeof(FeedResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetSavedFeed(CancellationToken cancellationToken)
+    {
+        var session = PortalSessionHttpContext.Get(HttpContext);
+        if (session?.PortalUser is null)
+        {
+            return Unauthorized(new { message = "Sessao do portal nao encontrada." });
+        }
+
+        var payload = await _feedService.GetSavedFeedAsync(session.PortalUserId, cancellationToken);
+        return Ok(payload);
+    }
+
     [HttpPost]
     [RequirePortalSession]
     [ProducesResponseType(typeof(CreateFeedPostResponse), StatusCodes.Status201Created)]
@@ -204,6 +220,37 @@ public class FeedController : ControllerBase
         catch (InvalidOperationException exception)
         {
             return StatusCode(StatusCodes.Status403Forbidden, new { message = exception.Message });
+        }
+    }
+
+    [HttpPost("{id:guid}/save")]
+    [RequirePortalSession]
+    [ProducesResponseType(typeof(FeedSaveResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ToggleSave(Guid id, [FromBody] ToggleFeedSaveRequest request, CancellationToken cancellationToken)
+    {
+        var session = PortalSessionHttpContext.Get(HttpContext);
+        if (session?.PortalUser is null)
+        {
+            return Unauthorized(new { message = "Sessao do portal nao encontrada." });
+        }
+
+        try
+        {
+            var result = await _feedService.ToggleSaveAsync(
+                id,
+                request.Source,
+                session.PortalUserId,
+                BuildAuditContext(session.PortalUser.Login, session.PortalUser.DisplayName),
+                cancellationToken);
+
+            return result is null ? NotFound() : Ok(result);
+        }
+        catch (InvalidOperationException exception)
+        {
+            return BadRequest(new { message = exception.Message });
         }
     }
 
