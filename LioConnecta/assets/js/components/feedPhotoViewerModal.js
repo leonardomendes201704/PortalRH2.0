@@ -1,9 +1,10 @@
 import { escapeHtml } from "./html.js";
-import { DATA_MODES, getRuntimeConfig } from "../core/runtimeConfig.js?v=0.20.1";
-import { createFeedMediaComment, getFeedMediaComments } from "../services/feedService.js?v=0.20.1";
+import { DATA_MODES, getRuntimeConfig } from "../core/runtimeConfig.js?v=0.20.2";
+import { createFeedMediaComment, getFeedMediaComments } from "../services/feedService.js?v=0.20.2";
 import { getPortalAuthHeaders } from "../services/portalAuthService.js?v=0.13.0";
 import { showToast } from "../core/feedback.js?v=0.16.0";
 import { canInteractWithFeed } from "../services/portalPermissionService.js?v=0.17.0";
+import { readGalleryImages, resolveFeedMediaUrl } from "../services/feedMedia.js?v=0.20.2";
 
 let modalRoot = null;
 let viewerState = null;
@@ -29,19 +30,6 @@ function formatCommentTime(value) {
 
 function canCommentOnPhotos() {
   return getRuntimeConfig().dataMode === DATA_MODES.API && canInteractWithFeed();
-}
-
-function parseGalleryImages(rawValue) {
-  if (!rawValue) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(rawValue);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
 }
 
 function getCurrentPhoto() {
@@ -98,7 +86,7 @@ function renderThumbnails() {
           data-photo-index="${index}"
           aria-label="Foto ${index + 1}"
         >
-          <img src="${escapeHtml(image.url)}" alt="">
+          <img src="${escapeHtml(image.resolvedUrl || resolveFeedMediaUrl(image.url))}" alt="">
         </button>
       `).join("")}
     </div>
@@ -158,7 +146,7 @@ function updateViewerUi() {
   const nextButton = modalRoot.querySelector("[data-action='next-feed-photo-viewer']");
 
   if (imageEl) {
-    imageEl.src = photo.url;
+    imageEl.src = photo.resolvedUrl || resolveFeedMediaUrl(photo.url);
     imageEl.alt = photo.description || "Foto da publicacao";
   }
 
@@ -370,11 +358,12 @@ function bindModalActions() {
 }
 
 export async function openFeedPhotoViewer(images = [], startIndex = 0) {
-  const normalizedImages = Array.isArray(images)
-    ? images.filter((item) => item?.url)
-    : [];
+  const normalizedImages = getResolvedImages(
+    Array.isArray(images) ? images.filter((item) => item?.url) : []
+  );
 
   if (!normalizedImages.length) {
+    showToast("Nao foi possivel abrir esta foto.", "danger");
     return;
   }
 
@@ -396,6 +385,13 @@ export async function openFeedPhotoViewer(images = [], startIndex = 0) {
   await loadCommentsForCurrentPhoto();
 }
 
+function getResolvedImages(images = []) {
+  return images.map((image) => ({
+    ...image,
+    resolvedUrl: resolveFeedMediaUrl(image.url)
+  }));
+}
+
 export function bindFeedPhotoViewerActions() {
   if (viewerActionsBound) {
     return;
@@ -404,22 +400,32 @@ export function bindFeedPhotoViewerActions() {
   viewerActionsBound = true;
 
   document.addEventListener("click", (event) => {
-    const trigger = event.target.closest("[data-action='open-feed-photo-viewer']");
+    const trigger = event.target.closest("[data-action='open-feed-photo-viewer'], .post-gallery__item");
     if (!trigger) {
       return;
     }
 
     event.preventDefault();
+    event.stopPropagation();
 
-    const gallery = trigger.closest("[data-feed-gallery]");
-    const images = parseGalleryImages(gallery?.getAttribute("data-feed-gallery"));
+    const gallery = trigger.closest(".post-gallery[data-feed-gallery]");
+    if (!gallery) {
+      return;
+    }
+
+    const images = readGalleryImages(gallery);
     const index = Number(trigger.getAttribute("data-photo-index") || 0);
+
+    if (!images.length) {
+      showToast("Nao foi possivel abrir esta foto.", "danger");
+      return;
+    }
 
     openFeedPhotoViewer(images, index).catch((error) => {
       console.error("Falha ao abrir visualizador de fotos.", error);
       showToast("Nao foi possivel abrir a foto.", "danger");
     });
-  });
+  }, true);
 
   document.addEventListener("keydown", (event) => {
     if (!modalRoot || event.key !== "Escape") {
@@ -428,14 +434,4 @@ export function bindFeedPhotoViewerActions() {
 
     closeModal();
   });
-}
-
-export function serializeGalleryImages(images = []) {
-  return escapeHtml(JSON.stringify(images.map((image) => ({
-    id: String(image.id || ""),
-    url: String(image.url || ""),
-    description: String(image.description || ""),
-    aspectRatio: String(image.aspectRatio || "free"),
-    commentCount: Number(image.commentCount ?? 0)
-  }))));
 }

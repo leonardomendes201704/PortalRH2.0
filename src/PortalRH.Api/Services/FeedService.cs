@@ -367,12 +367,30 @@ public class FeedService : IFeedService
             .OrderBy(item => item.SortOrder)
             .Select(item => new FeedMediaItemDto(
                 item.Id,
-                item.Url,
+                NormalizeMediaPublicUrl(item.Url),
                 item.Description,
                 item.AspectRatio,
                 item.SortOrder,
                 commentCounts.GetValueOrDefault(item.Id)))
             .ToList();
+    }
+
+    private static string NormalizeMediaPublicUrl(string url)
+    {
+        var value = url?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        var marker = "/uploads/feed/";
+        var index = value.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+        if (index >= 0)
+        {
+            return value[index..];
+        }
+
+        return value;
     }
 
     private async Task<Dictionary<Guid, int>> LoadMediaCommentCountsAsync(

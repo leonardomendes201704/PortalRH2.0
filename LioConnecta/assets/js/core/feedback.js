@@ -349,6 +349,10 @@ export function bindInteractionFeedback(root = document) {
   });
 
   root.addEventListener("click", async (event) => {
+    if (event.target.closest("[data-action='open-feed-photo-viewer'], .post-gallery__item")) {
+      return;
+    }
+
     const customFeedback = event.target.closest("[data-feedback-message]");
     if (customFeedback) {
       showToast(
