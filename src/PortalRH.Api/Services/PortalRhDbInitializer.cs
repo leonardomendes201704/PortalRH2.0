@@ -28,5 +28,8 @@ public static class PortalRhDbInitializer
 
         var moodSurveyFeedbackService = scope.ServiceProvider.GetRequiredService<IMoodSurveyFeedbackService>();
         await moodSurveyFeedbackService.EnsureSeedAsync(cancellationToken);
+
+        var quickLinkService = scope.ServiceProvider.GetRequiredService<IQuickLinkService>();
+        await quickLinkService.EnsureSeedAsync(cancellationToken);
     }
 }

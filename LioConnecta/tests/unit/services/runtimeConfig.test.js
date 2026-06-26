@@ -23,9 +23,10 @@ test("runtimeConfig mantém shell estático mesmo em modo api", () => {
   };
 
   try {
-    assert.equal(resolveDataSource("user"), "./assets/data/user.json");
-    assert.equal(resolveDataSource("panels"), "./assets/data/panels.json");
+    assert.equal(resolveDataSource("user"), "http://10.0.0.80:3030/api/me-ui");
+    assert.equal(resolveDataSource("panels"), "http://10.0.0.80:3030/api/panels");
     assert.equal(resolveDataSource("feed"), "http://10.0.0.80:3030/api/feed");
+    assert.equal(resolveDataSource("carousel"), "./assets/data/carousel.json");
   } finally {
     globalThis.window = previousWindow;
   }

@@ -14,6 +14,11 @@ using PortalRH.Api.Contracts.Feed;
 using PortalRH.Api.Contracts.MoodSurvey;
 using PortalRH.Api.Contracts.Notifications;
 using PortalRH.Api.Contracts.Polls;
+using PortalRH.Api.Contracts.HrProfile;
+using PortalRH.Api.Contracts.Journey;
+using PortalRH.Api.Contracts.Kpis;
+using PortalRH.Api.Contracts.QuickLinks;
+using PortalRH.Api.Contracts.Shell;
 using PortalRH.Api.Data;
 using PortalRH.Api.Interfaces;
 using PortalRH.Api.Models;
@@ -255,6 +260,130 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
             .ToListAsync();
 
         Assert.Single(auditEntries);
+    }
+
+    [Fact]
+    public async Task MeUiEndpoint_ReturnsPersonalizedShellForPortalSession()
+    {
+        await EnsureLdapEnabledAsync();
+        var portalSession = await LoginPortalUserAsync();
+        UsePortalAuth(portalSession);
+
+        var meUi = await _client.GetFromJsonAsync<MeUiResponse>("/api/me-ui");
+
+        Assert.NotNull(meUi);
+        Assert.Equal("LIOCONNECTA", meUi.Brand.Name);
+        Assert.Equal(portalSession.User.DisplayName, meUi.User.Name);
+        Assert.Contains(meUi.NavItems, item => item.Route == "inicio");
+        Assert.Contains(meUi.NavItems, item => item.Route == "comunicacao");
+        Assert.DoesNotContain(meUi.NavItems, item => item.Route == "configuracoes");
+        Assert.True(meUi.Composer.Enabled);
+        Assert.NotEmpty(meUi.Composer.Actions);
+    }
+
+    [Fact]
+    public async Task MeUiEndpoint_IncludesSettingsNavigationForPortalAdmin()
+    {
+        await EnsureLdapEnabledAsync();
+        await LoginPortalUserAsync();
+
+        var adminSession = await LoginAdminAsync();
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminSession.Token);
+
+        var usersPayload = await _client.GetFromJsonAsync<PortalUserAdminListResponse>("/api/admin/portal-users?query=roberto&page=1&pageSize=5");
+        Assert.NotNull(usersPayload);
+
+        var user = Assert.Single(usersPayload.Items.Where(item => item.Login == "roberto.almeida@liotecnica.com.br"));
+        var roleResponse = await _client.PatchAsJsonAsync($"/api/admin/portal-users/{user.Id}/role", new UpdatePortalUserRoleRequest
+        {
+            Role = "PortalAdmin"
+        });
+        Assert.Equal(HttpStatusCode.OK, roleResponse.StatusCode);
+
+        _client.DefaultRequestHeaders.Authorization = null;
+        var portalSession = await LoginPortalUserAsync();
+        UsePortalAuth(portalSession);
+
+        var meUi = await _client.GetFromJsonAsync<MeUiResponse>("/api/me-ui");
+
+        Assert.NotNull(meUi);
+        Assert.Contains(meUi.NavItems, item => item.Route == "configuracoes" && item.ModuleKey == "settings");
+    }
+
+    [Fact]
+    public async Task PanelsEndpoint_ReturnsPersonalizedProfilePanelForPortalSession()
+    {
+        await EnsureLdapEnabledAsync();
+        var portalSession = await LoginPortalUserAsync();
+        UsePortalAuth(portalSession);
+
+        var panels = await _client.GetFromJsonAsync<PanelsResponse>("/api/panels");
+
+        Assert.NotNull(panels);
+        Assert.NotEmpty(panels.LeftPanels);
+        Assert.NotEmpty(panels.RightPanels);
+
+        var profilePanel = panels.RightPanels.FirstOrDefault(item => string.Equals(item.Type, "profile", StringComparison.OrdinalIgnoreCase));
+        Assert.NotNull(profilePanel);
+        Assert.Equal(portalSession.User.DisplayName, profilePanel.Name);
+        Assert.Equal(portalSession.User.Department ?? string.Empty, profilePanel.Subtitle);
+        Assert.NotNull(profilePanel.Items);
+        Assert.NotEmpty(profilePanel.Items);
+
+        var quickLinksPanel = panels.RightPanels.FirstOrDefault(item => string.Equals(item.Type, "quick-links", StringComparison.OrdinalIgnoreCase));
+        Assert.NotNull(quickLinksPanel);
+        Assert.NotEmpty(quickLinksPanel.Items!);
+
+        var journeyPanel = panels.LeftPanels.FirstOrDefault(item => item.Title == "MINHA JORNADA");
+        Assert.NotNull(journeyPanel);
+        Assert.NotEmpty(journeyPanel.Items!);
+    }
+
+    [Fact]
+    public async Task OperationalEndpoints_ReturnSimulatedProvidersForPortalSession()
+    {
+        await EnsureLdapEnabledAsync();
+        var portalSession = await LoginPortalUserAsync();
+        UsePortalAuth(portalSession);
+
+        var quickLinks = await _client.GetFromJsonAsync<QuickLinkListResponse>("/api/quick-links");
+        var journey = await _client.GetFromJsonAsync<JourneySummaryResponse>("/api/journey/summary");
+        var kpis = await _client.GetFromJsonAsync<KpiSummaryResponse>("/api/kpis/summary");
+        var hrProfile = await _client.GetFromJsonAsync<HrProfileResponse>("/api/hr/profile");
+
+        Assert.NotNull(quickLinks);
+        Assert.NotEmpty(quickLinks.Items);
+        Assert.NotNull(journey);
+        Assert.True(journey.IsSimulated);
+        Assert.NotEmpty(journey.Items);
+        Assert.NotNull(kpis);
+        Assert.True(kpis.IsSimulated);
+        Assert.NotNull(hrProfile);
+        Assert.True(hrProfile.IsSimulated);
+        Assert.Equal(portalSession.User.DisplayName, hrProfile.Name);
+        Assert.Contains(hrProfile.Items, item => item.Url.Contains("rh/holerite", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task MeUiEndpoint_RequiresPortalSession()
+    {
+        _client.DefaultRequestHeaders.Authorization = null;
+        _client.DefaultRequestHeaders.Remove("X-Portal-Token");
+
+        var response = await _client.GetAsync("/api/me-ui");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PanelsEndpoint_RequiresPortalSession()
+    {
+        _client.DefaultRequestHeaders.Authorization = null;
+        _client.DefaultRequestHeaders.Remove("X-Portal-Token");
+
+        var response = await _client.GetAsync("/api/panels");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]
@@ -1172,5 +1301,8 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
 
         var moodSurveyFeedbackService = scope.ServiceProvider.GetRequiredService<IMoodSurveyFeedbackService>();
         await moodSurveyFeedbackService.EnsureSeedAsync(CancellationToken.None);
+
+        var quickLinkService = scope.ServiceProvider.GetRequiredService<IQuickLinkService>();
+        await quickLinkService.EnsureSeedAsync(CancellationToken.None);
     }
 }

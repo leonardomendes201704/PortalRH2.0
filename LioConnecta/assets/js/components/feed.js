@@ -158,11 +158,12 @@ function renderPost(post) {
 
 export function renderFeed(feed, composer) {
   const posts = Array.isArray(feed.posts) ? feed.posts : [];
+  const showComposer = composer?.enabled !== false;
 
   return `
     <section class="card feed-card">
       <div class="card-header">${escapeHtml(feed.title)}</div>
-      ${renderComposer(composer)}
+      ${showComposer ? renderComposer(composer) : ""}
       <div class="feed-list">
         ${posts.length
           ? posts.map(renderPost).join("")

@@ -29,6 +29,13 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IAgendaService, AgendaService>();
 builder.Services.AddScoped<IMoodSurveyService, MoodSurveyService>();
 builder.Services.AddScoped<IMoodSurveyFeedbackService, MoodSurveyFeedbackService>();
+builder.Services.AddScoped<IPortalShellService, PortalShellService>();
+builder.Services.AddScoped<IPortalPanelsComposer, PortalPanelsComposer>();
+builder.Services.AddScoped<IQuickLinkService, QuickLinkService>();
+builder.Services.AddScoped<IJourneyService, JourneyService>();
+builder.Services.AddScoped<IKpiService, KpiService>();
+builder.Services.AddScoped<IHrProfileService, HrProfileService>();
+builder.Services.AddScoped<ICorporateSystemsService, CorporateSystemsService>();
 builder.Services.AddScoped<ILdapDirectoryAuthenticator, LdapDirectoryAuthenticator>();
 builder.Services.AddScoped<IPasswordHasher<AdminUser>, PasswordHasher<AdminUser>>();
 builder.Services.AddCors(options =>

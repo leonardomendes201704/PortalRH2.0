@@ -67,6 +67,7 @@ import { applyAgendaToShellData, getAgendaDayData } from "./services/agendaServi
 import { applyNotificationsToShellData, getNotificationCenterData } from "./services/notificationService.js?v=0.13.0";
 import { fetchAdminSession, getAdminAuthHeaders, getStoredAdminSession, isSuperAdminSession, redirectToAdminLogin } from "./services/adminAuthService.js?v=0.12.8";
 import { ensureValidPortalSession, getPortalAuthHeaders, getStoredPortalSession, logoutPortal, redirectToPortalLogin } from "./services/portalAuthService.js?v=0.13.0";
+import { canInteractWithFeed, canViewRoute } from "./services/portalPermissionService.js?v=0.17.0";
 import { renderLdapWizardPage, initLdapWizard } from "./settings/index.js?v=0.15.0";
 import { getLdapSettingsData } from "./services/ldapSettingsService.js?v=0.12.8";
 import { listPortalUsers } from "./services/portalUsersAdminService.js?v=0.12.8";
@@ -111,7 +112,22 @@ const BASE_NAV_ITEMS = Object.freeze([
   { route: ROUTES.RESOURCES, label: "RECURSOS" }
 ]);
 
+let currentShellNavItems = [];
+
 function getNavRoutes() {
+  if (currentShellNavItems.length && currentShellNavItems[0]?.route) {
+    const routes = currentShellNavItems.map((item) => ({
+      route: item.route,
+      label: item.label
+    }));
+
+    if (isSuperAdminSession() && !routes.some((item) => item.route === ROUTES.SETTINGS)) {
+      routes.push({ route: ROUTES.SETTINGS, label: "CONFIGURACOES" });
+    }
+
+    return routes;
+  }
+
   return isSuperAdminSession()
     ? [...BASE_NAV_ITEMS, { route: ROUTES.SETTINGS, label: "CONFIGURACOES" }]
     : [...BASE_NAV_ITEMS];
@@ -343,7 +359,9 @@ function buildNavItems(navItems = [], route = ROUTES.HOME) {
         : route === ROUTES.SETTINGS_LDAP
           ? ROUTES.SETTINGS
           : route;
-  const routes = getNavRoutes();
+  const routes = navItems.length && navItems[0]?.route
+    ? navItems
+    : getNavRoutes();
 
   return routes.map((item) => ({
     label: item.label,
@@ -358,6 +376,7 @@ function renderShell(data, route) {
   const rightSidebar = document.getElementById("right-sidebar");
   const hideDefaultSidebars = isSidebarlessRoute(route);
 
+  currentShellNavItems = Array.isArray(data.navItems) ? data.navItems : [];
   applyLayoutMode(route);
 
   header.innerHTML = renderHeaderShell({
@@ -373,19 +392,26 @@ function renderHomePage(data, route) {
   const centerContent = document.getElementById("center-content");
   renderShell(data, route);
 
+  const composer = {
+    ...data.composer,
+    enabled: data.composer?.enabled !== false && canInteractWithFeed()
+  };
+
   centerContent.innerHTML = [
     renderHero(data.hero),
     renderMoodCard(data.mood),
     renderHomePollCarousel(data.pollHomeCarousel),
     renderCarouselSection(data.carousel),
-    renderFeed(data.feed, data.composer)
+    renderFeed(data.feed, composer)
   ].join("");
 
   initCarousel();
   initPollHomeCarousel();
   bindPublicPollActions(route);
   bindFeedLikeActions();
-  bindFeedComposerActions();
+  if (composer.enabled) {
+    bindFeedComposerActions();
+  }
 }
 
 function renderCommunicationsPage(data, route) {
@@ -1663,7 +1689,9 @@ async function loadPageData(route, slug = "") {
     route === ROUTES.SETTINGS ||
     route === ROUTES.SETTINGS_LDAP ||
     route === ROUTES.ADMIN_USERS;
-  const shellData = isAdminRoute || isRhWorkspaceRoute(route)
+  const config = getRuntimeConfig();
+  const usesApiShell = config.dataMode === "api";
+  const shellData = isAdminRoute || isRhWorkspaceRoute(route) || usesApiShell
     ? baseShellData
     : applyAgendaToShellData(
         applyNotificationsToShellData(baseShellData, await getNotificationCenterData()),
@@ -1819,6 +1847,17 @@ async function loadPageData(route, slug = "") {
   return shellData;
 }
 
+async function ensureRoutePermission(route) {
+  const session = getStoredPortalSession();
+  if (!session || canViewRoute(session, route)) {
+    return true;
+  }
+
+  showToast("Voce nao possui permissao para acessar esta area do portal.", "danger");
+  window.location.hash = "#inicio";
+  return false;
+}
+
 async function renderCurrentRoute() {
   const { route, slug } = parseRoute();
   renderRuntimeBadge();
@@ -1837,6 +1876,11 @@ async function renderCurrentRoute() {
   } else {
     const hasPortalAccess = await ensurePortalAccess();
     if (!hasPortalAccess) {
+      return;
+    }
+
+    const hasRoutePermission = await ensureRoutePermission(route);
+    if (!hasRoutePermission) {
       return;
     }
   }

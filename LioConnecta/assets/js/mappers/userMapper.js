@@ -10,10 +10,12 @@ import {
 import { asArray, asBoolean, asString } from "./shared.js";
 
 function mapNavItem(item, index) {
-  const fallback = DEFAULT_NAV_ITEMS[index] ?? { label: `Item ${index + 1}`, active: false };
+  const fallback = DEFAULT_NAV_ITEMS[index] ?? { label: `Item ${index + 1}`, active: false, route: "", moduleKey: "" };
 
   return {
     label: asString(item?.label, fallback.label),
+    route: asString(item?.route, fallback.route || ""),
+    moduleKey: asString(item?.moduleKey, fallback.moduleKey || ""),
     active: asBoolean(item?.active, fallback.active)
   };
 }
@@ -54,6 +56,7 @@ export function mapUserHomeContextViewModel(raw = {}) {
         : DEFAULT_MOOD_ITEMS.map((item) => ({ ...item }))
     },
     composer: {
+      enabled: raw.composer?.enabled !== false,
       title: asString(raw.composer?.title, DEFAULT_COMPOSER.title),
       placeholder: asString(raw.composer?.placeholder, DEFAULT_COMPOSER.placeholder),
       actions: asArray(raw.composer?.actions).length
