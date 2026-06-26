@@ -58,7 +58,7 @@ import {
   votePoll
 } from "./polls/index.js?v=0.15.0";
 import { renderFeed } from "./feed/index.js?v=0.21.4";
-import { updateFeedLikeUi, createFeedPost, toggleFeedLike, uploadFeedAsset, deleteFeedPost } from "./services/feedService.js?v=0.21.8";
+import { updateFeedLikeUi, createFeedPost, toggleFeedLike, toggleFeedShare, uploadFeedAsset, deleteFeedPost, updateFeedShareUi } from "./services/feedService.js?v=0.21.9";
 import { bindFeedPhotoComposerActions, clearPendingFeedPhotos, getPendingFeedPhotos } from "./components/feedPhotoModal.js?v=0.21.4";
 import { bindFeedPhotoViewerActions } from "./components/feedPhotoViewerModal.js?v=0.21.4";
 import { bindFeedPostCommentActions } from "./components/feedPostCommentComposer.js?v=0.21.4";
@@ -415,6 +415,7 @@ function renderHomePage(data, route) {
   initPollHomeCarousel();
   bindPublicPollActions(route);
   bindFeedLikeActions();
+  bindFeedShareActions();
   bindFeedPostMenuActions();
   bindFeedPostCommentActions();
   if (composer.enabled) {
@@ -919,6 +920,59 @@ function bindFeedLikeActions() {
         const message = error instanceof Error && error.message.includes("HTTP 401")
           ? "Sua sessao expirou. Faca login novamente para curtir publicacoes."
           : "Nao foi possivel registrar a curtida nesta publicacao.";
+
+        showToast(message, "danger");
+
+        if (error instanceof Error && error.message.includes("HTTP 401")) {
+          window.setTimeout(() => {
+            redirectToPortalLogin(window.location.hash || "#inicio");
+          }, 700);
+        }
+      } finally {
+        button.disabled = false;
+      }
+    });
+  });
+}
+
+function bindFeedShareActions() {
+  const buttons = Array.from(document.querySelectorAll("[data-action='toggle-feed-share']"));
+
+  buttons.forEach((button) => {
+    if (button.dataset.bound === "true") {
+      return;
+    }
+
+    button.dataset.bound = "true";
+    button.addEventListener("click", async () => {
+      const itemId = button.getAttribute("data-feed-item-id") || "";
+      const source = button.getAttribute("data-feed-source") || "";
+      const scope = button.closest(".post");
+
+      if (!itemId || !source) {
+        showToast("Esta publicacao ainda nao esta disponivel para compartilhamento.", "info");
+        return;
+      }
+
+      if (button.disabled) {
+        return;
+      }
+
+      button.disabled = true;
+
+      try {
+        const result = await toggleFeedShare(itemId, source, {
+          headers: getPortalAuthHeaders()
+        });
+        updateFeedShareUi(scope, result);
+        showToast(result.hasShared ? "Compartilhamento registrado." : "Compartilhamento removido.", "success");
+      } catch (error) {
+        console.error("Falha ao registrar compartilhamento.", error);
+        const message = error instanceof Error && error.message.includes("HTTP 401")
+          ? "Sua sessao expirou. Faca login novamente para compartilhar publicacoes."
+          : error instanceof Error && error.message.includes("HTTP 403")
+            ? "Voce so pode compartilhar publicacoes de outros colaboradores."
+            : "Nao foi possivel registrar o compartilhamento nesta publicacao.";
 
         showToast(message, "danger");
 

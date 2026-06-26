@@ -83,7 +83,8 @@ function mapFeedItemToPost(item = {}) {
     reactions: Number(item.likeCount ?? 0),
     hasLiked: Boolean(item.hasLiked),
     commentsCount: Number(item.commentCount ?? item.commentsCount ?? 0),
-    sharesCount: 0,
+    sharesCount: Number(item.shareCount ?? item.sharesCount ?? 0),
+    hasShared: Boolean(item.hasShared),
     comments: Array.isArray(item.comments)
       ? item.comments.map(mapPostComment).filter((comment) => comment.text)
       : []
@@ -143,6 +144,10 @@ export async function toggleFeedLike(itemId, source, options = {}) {
   return postJson(`${resolveApiEndpoint("feed")}/${encodeURIComponent(itemId)}/like`, { source }, options);
 }
 
+export async function toggleFeedShare(itemId, source, options = {}) {
+  return postJson(`${resolveApiEndpoint("feed")}/${encodeURIComponent(itemId)}/share`, { source }, options);
+}
+
 export async function getFeedMediaComments(mediaId, options = {}) {
   return getJson(`${resolveApiEndpoint("feed")}/media/${encodeURIComponent(mediaId)}/comments`, options);
 }
@@ -200,6 +205,33 @@ function formatLikeLabel(count) {
     return "Nenhuma curtida ainda";
   }
   return total === 1 ? "1 curtida" : `${total} curtidas`;
+}
+
+function formatSharesLabel(count) {
+  const total = Number(count ?? 0);
+  return total === 1 ? "1 compartilhamento" : `${total} compartilhamentos`;
+}
+
+export function updateFeedShareUi(scope, result) {
+  if (!scope || !result) {
+    return;
+  }
+
+  const shareButton = scope.querySelector("[data-action='toggle-feed-share']");
+  const statsRow = scope.querySelector(".post-stats > div:last-child");
+  const shareCount = Number(result.shareCount ?? 0);
+
+  if (shareButton) {
+    shareButton.classList.toggle("is-active", Boolean(result.hasShared));
+    shareButton.setAttribute("aria-pressed", result.hasShared ? "true" : "false");
+  }
+
+  if (statsRow) {
+    const commentsCount = Number(statsRow.getAttribute("data-comments-count") ?? 0);
+    const commentsLabel = commentsCount === 1 ? "1 comentário" : `${commentsCount} comentários`;
+    statsRow.setAttribute("data-shares-count", String(shareCount));
+    statsRow.textContent = `${commentsLabel} • ${formatSharesLabel(shareCount)}`;
+  }
 }
 
 export function updatePostLikeState(post, result) {

@@ -161,11 +161,26 @@ function renderPostMoreMenu(post, currentUserId) {
   `;
 }
 
+function formatSharesLabel(count) {
+  const total = Number(count ?? 0);
+  return total === 1 ? "1 compartilhamento" : `${total} compartilhamentos`;
+}
+
+function canSharePost(post, currentUserId) {
+  return getRuntimeConfig().dataMode === DATA_MODES.API
+    && canInteractWithFeed()
+    && post.source === "UserPost"
+    && post.authorUserId
+    && currentUserId
+    && post.authorUserId !== currentUserId;
+}
+
 function renderPost(post, { currentUserId = "" } = {}) {
   const canLike = Boolean(post.postId && post.source);
+  const canShare = canSharePost(post, currentUserId);
   const postActions = [
     { label: "Curtir", action: canLike ? "toggle-feed-like" : "", active: post.hasLiked },
-    { label: "Compartilhar", action: "" },
+    { label: "Compartilhar", action: canShare ? "toggle-feed-share" : "", active: post.hasShared },
     { label: "Salvar", action: "" }
   ];
 
@@ -198,18 +213,19 @@ function renderPost(post, { currentUserId = "" } = {}) {
 
       <div class="post-stats">
         ${renderReactionSummary(post)}
-        <div>${escapeHtml(commentsLabel)} • ${escapeHtml(String(post.sharesCount ?? 0))} compartilhamentos</div>
+        <div data-post-stats-meta data-comments-count="${commentsCount}" data-shares-count="${Number(post.sharesCount ?? 0)}">${escapeHtml(commentsLabel)} • ${escapeHtml(formatSharesLabel(post.sharesCount))}</div>
       </div>
 
       <div class="post-actions">
         ${postActions.map((item) => `
           <button
             type="button"
-            class="${item.label === "Curtir" && item.active ? "is-active" : ""}"
+            class="${item.active ? "is-active" : ""}"
             data-post-author="${escapeHtml(post.author)}"
             ${item.action ? `data-action="${escapeHtml(item.action)}"` : ""}
             ${canLike && item.label === "Curtir" ? `data-feed-item-id="${escapeHtml(post.postId)}" data-feed-source="${escapeHtml(post.source)}"` : ""}
-            ${item.label === "Curtir" ? `aria-pressed="${item.active ? "true" : "false"}"` : ""}
+            ${canShare && item.label === "Compartilhar" ? `data-feed-item-id="${escapeHtml(post.postId)}" data-feed-source="${escapeHtml(post.source)}"` : ""}
+            ${item.label === "Curtir" || item.label === "Compartilhar" ? `aria-pressed="${item.active ? "true" : "false"}"` : ""}
             data-analytics="post.action"
             data-analytics-label="${escapeHtml(post.author)}:${escapeHtml(item.label)}"
           >${escapeHtml(item.label)}</button>
