@@ -1,4 +1,4 @@
-import { getJson, postJson } from "./apiClient.js";
+import { getJson, postFormData, postJson } from "./apiClient.js";
 import { unwrapDataEnvelope } from "./apiClient.js";
 import { mapFeedViewModel } from "../mappers/feedMapper.js";
 import { validateFeedContract } from "../validators/feedValidator.js";
@@ -37,6 +37,12 @@ function formatTimeAgo(value) {
 function mapFeedItemToPost(item = {}) {
   const source = String(item.source || "");
   const isCommunication = source === "Communication";
+  const media = Array.isArray(item.media) ? item.media : [];
+  const images = media.map((entry) => ({
+    url: String(entry.url || ""),
+    description: String(entry.description || ""),
+    aspectRatio: String(entry.aspectRatio || "free")
+  })).filter((entry) => entry.url);
 
   return {
     postId: String(item.id || ""),
@@ -49,8 +55,9 @@ function mapFeedItemToPost(item = {}) {
     text: String(item.text || ""),
     highlightTitle: String(item.highlightTitle || ""),
     highlightText: String(item.highlightText || ""),
-    image: String(item.imageUrl || ""),
-    imageAlt: String(item.highlightTitle || item.author || "Publicacao"),
+    image: String(item.imageUrl || images[0]?.url || ""),
+    imageAlt: String(item.highlightTitle || images[0]?.description || item.author || "Publicacao"),
+    images,
     reactions: Number(item.likeCount ?? 0),
     hasLiked: Boolean(item.hasLiked),
     commentsCount: 0,
@@ -64,7 +71,7 @@ function mapApiFeedPayload(payload = {}) {
 
   return {
     title: String(payload.title || DEFAULT_FEED_TITLE),
-    posts: items.map(mapFeedItemToPost).filter((post) => post.text || post.image)
+    posts: items.map(mapFeedItemToPost).filter((post) => post.text || post.image || post.images.length)
   };
 }
 
@@ -89,9 +96,22 @@ export async function getFeedData() {
   return mapFeedViewModel(raw);
 }
 
-export async function createFeedPost(text, options = {}) {
-  const payload = await postJson(resolveApiEndpoint("feed"), { text }, options);
-  return mapFeedItemToPost(payload?.item || payload);
+export async function uploadFeedAsset(file, options = {}) {
+  const formData = new FormData();
+  formData.append("file", file, file.name || "feed-photo.jpg");
+  return postFormData(resolveApiEndpoint("feedAssets"), formData, options);
+}
+
+export async function createFeedPost(payload, options = {}) {
+  const body = typeof payload === "string"
+    ? { text: payload, media: [] }
+    : {
+      text: String(payload?.text || ""),
+      media: Array.isArray(payload?.media) ? payload.media : []
+    };
+
+  const response = await postJson(resolveApiEndpoint("feed"), body, options);
+  return mapFeedItemToPost(response?.item || response);
 }
 
 export async function toggleFeedLike(itemId, source, options = {}) {

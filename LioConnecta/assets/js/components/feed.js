@@ -1,14 +1,11 @@
 import { renderEmptyState } from "./cards.js";
 import { escapeHtml } from "./html.js";
 
-const COMPOSER_ACTION_ICONS = {
-  Foto: "fa-regular fa-image",
-  Evento: "fa-regular fa-calendar",
-  Comunicado: "fa-solid fa-bullhorn",
-  Conquista: "fa-solid fa-trophy"
-};
+const PHOTO_ACTION_LABEL = "Adicionar fotos";
 
 function renderComposer(composer) {
+  const photoEnabled = Boolean(composer.photoEnabled);
+
   return `
     <form class="feed-composer-card feed-composer-form" data-action="submit-feed-post">
       <div class="feed-composer-head">
@@ -28,27 +25,53 @@ function renderComposer(composer) {
             rows="3"
             placeholder="${escapeHtml(composer.placeholder)}"
             aria-label="${escapeHtml(composer.placeholder)}"
-            required
           ></textarea>
-          <span class="feed-composer-helper">Posts de texto ficam visiveis para toda a companhia no mural da LIOCONNECTA.</span>
+          <div data-feed-attachments></div>
         </div>
       </div>
       <div class="feed-composer-actions">
-        ${composer.actions.map((action) => `
-          <button
-            class="feed-action-chip"
-            type="button"
-            data-analytics="composer.action"
-            data-analytics-label="${escapeHtml(action)}"
-            disabled
-            title="Disponivel em uma proxima versao"
-          >
-            <i class="${escapeHtml(COMPOSER_ACTION_ICONS[action] || "fa-solid fa-plus")}" aria-hidden="true"></i>
-            <span>${escapeHtml(action)}</span>
-          </button>
-        `).join("")}
+        <button
+          class="feed-action-chip ${photoEnabled ? "is-enabled" : ""}"
+          type="button"
+          data-analytics="composer.action"
+          data-analytics-label="${escapeHtml(PHOTO_ACTION_LABEL)}"
+          ${photoEnabled ? `data-action="open-feed-photo-modal"` : ""}
+          ${photoEnabled ? "" : "disabled"}
+          ${photoEnabled ? "" : `title="Disponivel em uma proxima versao"`}
+        >
+          <i class="fa-regular fa-image" aria-hidden="true"></i>
+          <span>${escapeHtml(PHOTO_ACTION_LABEL)}</span>
+        </button>
       </div>
     </form>
+  `;
+}
+
+function renderPostGallery(post) {
+  const images = Array.isArray(post.images) && post.images.length
+    ? post.images
+    : (post.image ? [{ url: post.image, description: post.imageAlt || "", aspectRatio: "free" }] : []);
+
+  if (!images.length) {
+    return "";
+  }
+
+  const total = images.length;
+  const visible = images.slice(0, 4);
+
+  return `
+    <div class="post-gallery post-gallery--${Math.min(total, 4)}" data-gallery-count="${total}">
+      ${visible.map((image, index) => `
+        <figure
+          class="post-gallery__item ${index === 3 && total > 4 ? "post-gallery__item--more" : ""}"
+          data-aspect="${escapeHtml(image.aspectRatio || "free")}"
+        >
+          <img src="${escapeHtml(image.url)}" alt="${escapeHtml(image.description || post.author)}" loading="lazy">
+          ${image.description ? `<figcaption>${escapeHtml(image.description)}</figcaption>` : ""}
+          ${index === 3 && total > 4 ? `<span class="post-gallery__more">+${total - 4}</span>` : ""}
+        </figure>
+      `).join("")}
+    </div>
   `;
 }
 
@@ -109,7 +132,8 @@ function renderPost(post) {
             <span>${escapeHtml(post.highlightText)}</span>
           </div>
         ` : ""}
-        ${post.image ? `
+        ${renderPostGallery(post)}
+        ${!Array.isArray(post.images) && post.image ? `
           <div class="post-image">
             <img src="${escapeHtml(post.image)}" alt="${escapeHtml(post.imageAlt ?? post.author)}">
           </div>

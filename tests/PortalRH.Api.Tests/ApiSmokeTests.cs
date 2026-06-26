@@ -220,6 +220,47 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
     }
 
     [Fact]
+    public async Task FeedEndpoint_CreatesPhotoPostWithMediaMetadata()
+    {
+        await EnsureLdapEnabledAsync();
+        var portalSession = await LoginPortalUserAsync();
+
+        _client.DefaultRequestHeaders.Authorization = null;
+        _client.DefaultRequestHeaders.Remove("X-Portal-Token");
+        _client.DefaultRequestHeaders.Add("X-Portal-Token", portalSession.Token);
+
+        var imageUploadUrl = await UploadFeedAssetAsync("feed-foto.png", "image/png", [137, 80, 78, 71, 13, 10, 26, 10]);
+
+        var createResponse = await _client.PostAsJsonAsync("/api/feed", new CreateFeedPostRequest
+        {
+            Text = "Publicacao com foto no feed interno.",
+            Media =
+            [
+                new CreateFeedPostMediaItem
+                {
+                    Url = imageUploadUrl,
+                    Description = "Foto do time",
+                    AspectRatio = "16:9"
+                }
+            ]
+        });
+
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+
+        var created = await createResponse.Content.ReadFromJsonAsync<CreateFeedPostResponse>();
+        Assert.NotNull(created);
+        Assert.Single(created.Item.Media);
+        Assert.Equal("Foto do time", created.Item.Media[0].Description);
+        Assert.Equal("16:9", created.Item.Media[0].AspectRatio);
+        Assert.Equal(imageUploadUrl, created.Item.Media[0].Url);
+        Assert.Equal(imageUploadUrl, created.Item.ImageUrl);
+
+        var feed = await _client.GetFromJsonAsync<FeedResponse>("/api/feed");
+        Assert.NotNull(feed);
+        Assert.Contains(feed.Items, item => item.Id == created.Item.Id && item.Media.Count == 1);
+    }
+
+    [Fact]
     public async Task FeedEndpoint_TogglesLikeOnUserPostWithAuditTrail()
     {
         await EnsureLdapEnabledAsync();
@@ -1151,6 +1192,22 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
     {
         _client.DefaultRequestHeaders.Authorization = null;
         _client.DefaultRequestHeaders.Remove("X-Portal-Token");
+    }
+
+    private async Task<string> UploadFeedAssetAsync(string fileName, string contentType, byte[] bytes)
+    {
+        using var formData = new MultipartFormDataContent();
+        using var fileContent = new ByteArrayContent(bytes);
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+        formData.Add(fileContent, "file", fileName);
+
+        var response = await _client.PostAsync("/api/feed/assets", formData);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<FeedAssetUploadResponse>();
+        Assert.NotNull(payload);
+        Assert.False(string.IsNullOrWhiteSpace(payload.Url));
+        return payload.Url;
     }
 
     private async Task<string> UploadPollAssetAsync(string assetType, string fileName, string contentType, byte[] bytes)

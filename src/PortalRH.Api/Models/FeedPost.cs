@@ -10,4 +10,5 @@ public class FeedPost
     public string? Origin { get; set; }
 
     public PortalUser? PortalUser { get; set; }
+    public ICollection<FeedPostMedia> Media { get; set; } = new List<FeedPostMedia>();
 }

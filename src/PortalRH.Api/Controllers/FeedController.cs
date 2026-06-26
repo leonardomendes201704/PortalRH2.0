@@ -45,6 +45,7 @@ public class FeedController : ControllerBase
             var item = await _feedService.CreatePostAsync(
                 session.PortalUserId,
                 request.Text,
+                request.Media ?? [],
                 BuildAuditContext(session.PortalUser.Login, session.PortalUser.DisplayName),
                 cancellationToken);
 

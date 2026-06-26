@@ -32,6 +32,7 @@ public class PortalRhDbContext : DbContext
     public DbSet<FeedPost> FeedPosts => Set<FeedPost>();
     public DbSet<FeedPostAuditLog> FeedPostAuditLogs => Set<FeedPostAuditLog>();
     public DbSet<FeedPostLike> FeedPostLikes => Set<FeedPostLike>();
+    public DbSet<FeedPostMedia> FeedPostMedia => Set<FeedPostMedia>();
     public DbSet<QuickLink> QuickLinks => Set<QuickLink>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
