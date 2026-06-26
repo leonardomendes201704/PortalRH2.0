@@ -34,20 +34,21 @@ function formatTimeAgo(value) {
   return `há ${days} dia${days > 1 ? "s" : ""}`;
 }
 
-function mapPostComment(item = {}) {
-  const mentions = Array.isArray(item.mentions)
-    ? item.mentions.map((mention) => ({
-      userId: String(mention.userId || mention.user_id || ""),
-      displayName: String(mention.displayName || mention.display_name || "")
-    })).filter((mention) => mention.userId && mention.displayName)
-    : [];
+function mapMentions(items = []) {
+  const list = Array.isArray(items) ? items : [];
+  return list.map((mention) => ({
+    userId: String(mention.userId || mention.UserId || mention.user_id || ""),
+    displayName: String(mention.displayName || mention.DisplayName || mention.display_name || "")
+  })).filter((mention) => mention.userId && mention.displayName);
+}
 
+function mapPostComment(item = {}) {
   return {
     id: String(item.id || ""),
     author: String(item.author || "Colaborador"),
     text: String(item.text || ""),
     createdAtUtc: item.createdAtUtc || item.created_at_utc || null,
-    mentions
+    mentions: mapMentions(item.mentions || item.Mentions)
   };
 }
 
@@ -72,6 +73,7 @@ function mapFeedItemToPost(item = {}) {
     area: String(item.area || "Companhia"),
     timeAgo: formatTimeAgo(item.publishedAtUtc),
     text: String(item.text || ""),
+    mentions: mapMentions(item.mentions || item.Mentions),
     highlightTitle: String(item.highlightTitle || ""),
     highlightText: String(item.highlightText || ""),
     image: String(item.imageUrl || images[0]?.url || ""),
@@ -125,10 +127,11 @@ export async function uploadFeedAsset(file, options = {}) {
 
 export async function createFeedPost(payload, options = {}) {
   const body = typeof payload === "string"
-    ? { text: payload, media: [] }
+    ? { text: payload, media: [], mentionedUserIds: [] }
     : {
       text: String(payload?.text || ""),
-      media: Array.isArray(payload?.media) ? payload.media : []
+      media: Array.isArray(payload?.media) ? payload.media : [],
+      mentionedUserIds: Array.isArray(payload?.mentionedUserIds) ? payload.mentionedUserIds : []
     };
 
   const response = await postJson(resolveApiEndpoint("feed"), body, options);

@@ -17,6 +17,7 @@ public class FeedService : IFeedService
     private const int MaxMediaCommentLength = 1000;
     private const int MaxPostCommentLength = 2000;
     private const int MaxMentionsPerComment = 20;
+    private const int MaxMentionsPerPost = 20;
 
     private static readonly HashSet<string> AllowedAspectRatios = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -63,6 +64,7 @@ public class FeedService : IFeedService
         var mediaIds = userPosts.SelectMany(item => item.Media).Select(item => item.Id).ToList();
         var mediaCommentCounts = await LoadMediaCommentCountsAsync(mediaIds, cancellationToken);
         var postComments = await LoadFeedPostCommentsAsync(userPostIds, cancellationToken);
+        var postMentions = await LoadFeedPostMentionsAsync(userPostIds, cancellationToken);
 
         var items = new List<FeedItemDto>();
 
@@ -70,6 +72,7 @@ public class FeedService : IFeedService
         {
             var media = MapMediaItems(item.Media, mediaCommentCounts);
             var comments = postComments.GetValueOrDefault(item.Id) ?? [];
+            var mentions = postMentions.GetValueOrDefault(item.Id) ?? [];
             return new FeedItemDto(
                 item.Id,
                 FeedItemSources.UserPost,
@@ -78,6 +81,7 @@ public class FeedService : IFeedService
                 item.PortalUser?.Department ?? "Companhia",
                 item.CreatedAtUtc,
                 item.Text,
+                mentions,
                 null,
                 null,
                 media.FirstOrDefault()?.Url,
@@ -96,6 +100,7 @@ public class FeedService : IFeedService
             item.Category,
             item.PublishedAt,
             item.Summary,
+            [],
             item.Title,
             item.Summary,
             item.ImageUrl,
@@ -116,6 +121,7 @@ public class FeedService : IFeedService
         Guid portalUserId,
         string text,
         IReadOnlyList<CreateFeedPostMediaItem> media,
+        IReadOnlyList<Guid> mentionedUserIds,
         FeedAuditContext auditContext,
         CancellationToken cancellationToken)
     {
@@ -137,6 +143,12 @@ public class FeedService : IFeedService
             throw new InvalidOperationException($"A publicacao pode ter no maximo {MaxMediaPerPost} fotos.");
         }
 
+        var mentionIds = await ResolveMentionedUserIdsAsync(mentionedUserIds, cancellationToken);
+        if (mentionIds.Count > MaxMentionsPerPost)
+        {
+            throw new InvalidOperationException($"A publicacao pode mencionar no maximo {MaxMentionsPerPost} usuarios.");
+        }
+
         var user = await _dbContext.PortalUsers
             .AsNoTracking()
             .FirstOrDefaultAsync(item => item.Id == portalUserId, cancellationToken);
@@ -156,6 +168,16 @@ public class FeedService : IFeedService
             IpAddress = auditContext.IpAddress,
             Origin = auditContext.Origin
         };
+
+        foreach (var mentionId in mentionIds)
+        {
+            entity.Mentions.Add(new FeedPostMention
+            {
+                Id = Guid.NewGuid(),
+                FeedPostId = entity.Id,
+                MentionedPortalUserId = mentionId
+            });
+        }
 
         for (var index = 0; index < normalizedMedia.Count; index++)
         {
@@ -190,6 +212,15 @@ public class FeedService : IFeedService
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         var mappedMedia = MapMediaItems(entity.Media, new Dictionary<Guid, int>());
+        var mentionedUsers = mentionIds.Count == 0
+            ? []
+            : await _dbContext.PortalUsers
+                .AsNoTracking()
+                .Where(item => mentionIds.Contains(item.Id))
+                .ToDictionaryAsync(item => item.Id, item => item.DisplayName, cancellationToken);
+        var mappedMentions = entity.Mentions
+            .Select(item => MapPostMention(item, mentionedUsers))
+            .ToList();
 
         return new FeedItemDto(
             entity.Id,
@@ -199,6 +230,7 @@ public class FeedService : IFeedService
             user.Department ?? "Companhia",
             entity.CreatedAtUtc,
             entity.Text,
+            mappedMentions,
             null,
             null,
             mappedMedia.FirstOrDefault()?.Url,
@@ -423,7 +455,7 @@ public class FeedService : IFeedService
             .Where(item =>
                 item.DisplayName.ToLower().Contains(lowered) ||
                 item.Login.ToLower().Contains(lowered) ||
-                item.Email.ToLower().Contains(lowered))
+                (item.Email != null && item.Email.ToLower().Contains(lowered)))
             .OrderBy(item => item.DisplayName)
             .Take(8)
             .ToListAsync(cancellationToken);
@@ -498,6 +530,39 @@ public class FeedService : IFeedService
             comment.Text,
             comment.CreatedAtUtc,
             mentions);
+    }
+
+    private async Task<Dictionary<Guid, List<FeedPostCommentMentionDto>>> LoadFeedPostMentionsAsync(
+        IReadOnlyCollection<Guid> feedPostIds,
+        CancellationToken cancellationToken)
+    {
+        if (feedPostIds.Count == 0)
+        {
+            return [];
+        }
+
+        var mentions = await _dbContext.FeedPostMentions
+            .AsNoTracking()
+            .Include(item => item.MentionedPortalUser)
+            .Where(item => feedPostIds.Contains(item.FeedPostId))
+            .ToListAsync(cancellationToken);
+
+        return mentions
+            .GroupBy(item => item.FeedPostId)
+            .ToDictionary(
+                group => group.Key,
+                group => group.Select(item => MapPostMention(item)).ToList());
+    }
+
+    private static FeedPostCommentMentionDto MapPostMention(
+        FeedPostMention mention,
+        IReadOnlyDictionary<Guid, string>? mentionedUsers = null)
+    {
+        return new FeedPostCommentMentionDto(
+            mention.MentionedPortalUserId,
+            mentionedUsers?.GetValueOrDefault(mention.MentionedPortalUserId)
+                ?? mention.MentionedPortalUser?.DisplayName
+                ?? "Colaborador");
     }
 
     private async Task<Dictionary<Guid, List<FeedPostCommentDto>>> LoadFeedPostCommentsAsync(

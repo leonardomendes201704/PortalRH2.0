@@ -47,6 +47,7 @@ public class FeedController : ControllerBase
                 session.PortalUserId,
                 request.Text,
                 request.Media ?? [],
+                request.MentionedUserIds ?? [],
                 BuildAuditContext(session.PortalUser.Login, session.PortalUser.DisplayName),
                 cancellationToken);
 

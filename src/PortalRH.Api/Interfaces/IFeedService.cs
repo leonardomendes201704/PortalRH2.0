@@ -9,6 +9,7 @@ public interface IFeedService
         Guid portalUserId,
         string text,
         IReadOnlyList<CreateFeedPostMediaItem> media,
+        IReadOnlyList<Guid> mentionedUserIds,
         FeedAuditContext auditContext,
         CancellationToken cancellationToken);
     Task<FeedLikeResponse?> ToggleLikeAsync(
