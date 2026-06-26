@@ -3014,18 +3014,22 @@ body.feed-photo-viewer-open {
 }
 
 .communication-admin-hero {
-  padding: 22px;
+  padding: 0;
   display: grid;
-  gap: 14px;
-  background:
-    radial-gradient(circle at top right, rgba(110, 214, 147, 0.12), transparent 22%),
-    linear-gradient(135deg, #15385f 0%, #1f4e82 62%, #f3f8fd 62.1%, #fbfdff 100%);
+  grid-template-columns: minmax(280px, 58%) minmax(0, 1fr);
+  align-items: stretch;
+  background: #f3f8fd;
 }
 
 .communication-admin-copy {
-  max-width: 760px;
+  max-width: none;
+  width: 100%;
+  padding: 22px;
   display: grid;
   gap: 10px;
+  background:
+    radial-gradient(circle at top right, rgba(110, 214, 147, 0.12), transparent 22%),
+    linear-gradient(160deg, #15385f 0%, #1f4e82 100%);
 }
 
 .communication-admin-copy h1 {
@@ -3047,6 +3051,9 @@ body.feed-photo-viewer-open {
   align-items: center;
   gap: 16px;
   flex-wrap: wrap;
+  padding: 22px;
+  align-self: center;
+  justify-self: end;
   font-size: 12px;
   font-weight: 600;
   color: rgba(17, 41, 68, 0.95);
@@ -3056,6 +3063,17 @@ body.feed-photo-viewer-open {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+}
+
+@media (max-width: 768px) {
+  .communication-admin-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .communication-admin-meta {
+    justify-self: start;
+    padding-top: 0;
+  }
 }
 
 .communication-admin-layout {
@@ -4037,8 +4055,55 @@ body.feed-photo-viewer-open {
   line-height: 1.6;
 }
 
+.poll-hero-card {
+  overflow: hidden;
+  background: #f3f8fd;
+}
+
+.comm-hero-copy {
+  display: grid;
+  gap: 10px;
+  padding: 22px;
+  max-width: 58%;
+}
+
+.comm-hero-copy h1 {
+  margin: 0;
+  color: #fff;
+  font-size: 30px;
+  line-height: 1.18;
+  text-shadow: 0 3px 14px rgba(6, 20, 40, 0.28);
+}
+
+.comm-hero-copy p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.92);
+  line-height: 1.6;
+}
+
+.comm-hero-eyebrow {
+  display: inline-flex;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #e8f2fc;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
 .poll-hero-card .comm-hero-copy {
-  background: linear-gradient(135deg, #173f70 0%, #214f82 58%, #edf5ff 58.1%, #f7fbff 100%);
+  background:
+    radial-gradient(circle at top right, rgba(110, 214, 147, 0.08), transparent 22%),
+    linear-gradient(160deg, #173f70 0%, #214f82 100%);
+}
+
+@media (max-width: 768px) {
+  .comm-hero-copy {
+    max-width: none;
+  }
 }
 
 .poll-hero-actions {
