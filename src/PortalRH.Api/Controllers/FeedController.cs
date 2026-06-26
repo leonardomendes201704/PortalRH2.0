@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using PortalRH.Api.Contracts.Feed;
+using PortalRH.Api.Domain;
 using PortalRH.Api.Interfaces;
 using PortalRH.Api.Security;
 
@@ -81,6 +82,63 @@ public class FeedController : ControllerBase
                 cancellationToken);
 
             return result is null ? NotFound() : Ok(result);
+        }
+        catch (InvalidOperationException exception)
+        {
+            return BadRequest(new { message = exception.Message });
+        }
+    }
+
+    [HttpGet("media/{mediaId:guid}/comments")]
+    [ProducesResponseType(typeof(FeedMediaCommentsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetMediaComments(Guid mediaId, CancellationToken cancellationToken)
+    {
+        var result = await _feedService.GetMediaCommentsAsync(mediaId, cancellationToken);
+        return result is null ? NotFound() : Ok(result);
+    }
+
+    [HttpPost("media/{mediaId:guid}/comments")]
+    [RequirePortalSession]
+    [ProducesResponseType(typeof(CreateFeedMediaCommentResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> CreateMediaComment(
+        Guid mediaId,
+        [FromBody] CreateFeedMediaCommentRequest request,
+        CancellationToken cancellationToken)
+    {
+        var session = PortalSessionHttpContext.Get(HttpContext);
+        if (session?.PortalUser is null)
+        {
+            return Unauthorized(new { message = "Sessao do portal nao encontrada." });
+        }
+
+        if (!PortalModuleAccess.HasModuleAccess(
+                session.PortalUser,
+                PortalModulePermissionCatalog.Feed,
+                PortalModulePermissionCatalog.Interact,
+                PortalModulePermissionCatalog.Manage))
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new
+            {
+                message = "Voce nao possui permissao para comentar fotos no feed."
+            });
+        }
+
+        try
+        {
+            var item = await _feedService.CreateMediaCommentAsync(
+                mediaId,
+                session.PortalUserId,
+                request.Text,
+                BuildAuditContext(session.PortalUser.Login, session.PortalUser.DisplayName),
+                cancellationToken);
+
+            return item is null
+                ? NotFound()
+                : Created($"/api/feed/media/{mediaId}/comments", new CreateFeedMediaCommentResponse(item));
         }
         catch (InvalidOperationException exception)
         {

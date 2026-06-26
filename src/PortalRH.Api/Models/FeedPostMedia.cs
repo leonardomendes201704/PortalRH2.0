@@ -11,4 +11,5 @@ public class FeedPostMedia
     public DateTime CreatedAtUtc { get; set; }
 
     public FeedPost? FeedPost { get; set; }
+    public ICollection<FeedPostMediaComment> Comments { get; set; } = new List<FeedPostMediaComment>();
 }

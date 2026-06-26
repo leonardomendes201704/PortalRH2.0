@@ -39,9 +39,11 @@ function mapFeedItemToPost(item = {}) {
   const isCommunication = source === "Communication";
   const media = Array.isArray(item.media) ? item.media : [];
   const images = media.map((entry) => ({
+    id: String(entry.id || ""),
     url: String(entry.url || ""),
     description: String(entry.description || ""),
-    aspectRatio: String(entry.aspectRatio || "free")
+    aspectRatio: String(entry.aspectRatio || "free"),
+    commentCount: Number(entry.commentCount ?? 0)
   })).filter((entry) => entry.url);
 
   return {
@@ -116,6 +118,28 @@ export async function createFeedPost(payload, options = {}) {
 
 export async function toggleFeedLike(itemId, source, options = {}) {
   return postJson(`${resolveApiEndpoint("feed")}/${encodeURIComponent(itemId)}/like`, { source }, options);
+}
+
+export async function getFeedMediaComments(mediaId, options = {}) {
+  return getJson(`${resolveApiEndpoint("feed")}/media/${encodeURIComponent(mediaId)}/comments`, options);
+}
+
+export async function createFeedMediaComment(mediaId, text, options = {}) {
+  const payload = await postJson(
+    `${resolveApiEndpoint("feed")}/media/${encodeURIComponent(mediaId)}/comments`,
+    { text },
+    options
+  );
+  return mapMediaComment(payload?.item || payload);
+}
+
+function mapMediaComment(item = {}) {
+  return {
+    id: String(item.id || ""),
+    author: String(item.author || "Colaborador"),
+    text: String(item.text || ""),
+    createdAtUtc: item.createdAtUtc || null
+  };
 }
 
 function formatLikeLabel(count) {
