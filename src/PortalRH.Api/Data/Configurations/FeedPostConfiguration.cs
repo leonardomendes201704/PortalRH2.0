@@ -27,6 +27,7 @@ public class FeedPostConfiguration : IEntityTypeConfiguration<FeedPost>
 
         builder.HasIndex(item => item.PortalUserId);
         builder.HasIndex(item => item.CreatedAtUtc);
+        builder.HasIndex(item => item.DeletedAtUtc);
 
         builder.HasOne(item => item.PortalUser)
             .WithMany()

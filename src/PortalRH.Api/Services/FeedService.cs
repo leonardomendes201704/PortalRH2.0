@@ -39,6 +39,7 @@ public class FeedService : IFeedService
             .AsNoTracking()
             .Include(item => item.PortalUser)
             .Include(item => item.Media)
+            .Where(item => item.DeletedAtUtc == null)
             .OrderByDescending(item => item.CreatedAtUtc)
             .ToListAsync(cancellationToken);
 
@@ -78,6 +79,7 @@ public class FeedService : IFeedService
                 FeedItemSources.UserPost,
                 null,
                 item.PortalUser?.DisplayName ?? "Colaborador",
+                item.PortalUserId,
                 item.PortalUser?.Department ?? "Companhia",
                 item.CreatedAtUtc,
                 item.Text,
@@ -97,6 +99,7 @@ public class FeedService : IFeedService
             FeedItemSources.Communication,
             item.Id,
             item.Owner,
+            null,
             item.Category,
             item.PublishedAt,
             item.Summary,
@@ -227,6 +230,7 @@ public class FeedService : IFeedService
             FeedItemSources.UserPost,
             null,
             user.DisplayName,
+            portalUserId,
             user.Department ?? "Companhia",
             entity.CreatedAtUtc,
             entity.Text,
@@ -275,9 +279,10 @@ public class FeedService : IFeedService
     {
         var media = await _dbContext.FeedPostMedia
             .AsNoTracking()
+            .Include(item => item.FeedPost)
             .FirstOrDefaultAsync(item => item.Id == mediaId, cancellationToken);
 
-        if (media is null)
+        if (media is null || media.FeedPost?.DeletedAtUtc is not null)
         {
             return null;
         }
@@ -314,9 +319,10 @@ public class FeedService : IFeedService
 
         var media = await _dbContext.FeedPostMedia
             .AsNoTracking()
+            .Include(item => item.FeedPost)
             .FirstOrDefaultAsync(item => item.Id == mediaId, cancellationToken);
 
-        if (media is null)
+        if (media is null || media.FeedPost?.DeletedAtUtc is not null)
         {
             return null;
         }
@@ -349,10 +355,7 @@ public class FeedService : IFeedService
 
     public async Task<FeedPostCommentsResponse?> GetPostCommentsAsync(Guid feedPostId, CancellationToken cancellationToken)
     {
-        var feedPost = await _dbContext.FeedPosts
-            .AsNoTracking()
-            .FirstOrDefaultAsync(item => item.Id == feedPostId, cancellationToken);
-
+        var feedPost = await FindActiveFeedPostAsync(feedPostId, cancellationToken);
         if (feedPost is null)
         {
             return null;
@@ -381,10 +384,7 @@ public class FeedService : IFeedService
             throw new InvalidOperationException($"O comentario pode ter no maximo {MaxPostCommentLength} caracteres.");
         }
 
-        var feedPost = await _dbContext.FeedPosts
-            .AsNoTracking()
-            .FirstOrDefaultAsync(item => item.Id == feedPostId, cancellationToken);
-
+        var feedPost = await FindActiveFeedPostAsync(feedPostId, cancellationToken);
         if (feedPost is null)
         {
             return null;
@@ -464,6 +464,60 @@ public class FeedService : IFeedService
             item.Id,
             item.DisplayName,
             item.Department ?? "Companhia")).ToList());
+    }
+
+    public async Task<bool> DeletePostAsync(
+        Guid feedPostId,
+        Guid portalUserId,
+        FeedAuditContext auditContext,
+        CancellationToken cancellationToken)
+    {
+        var feedPost = await _dbContext.FeedPosts
+            .FirstOrDefaultAsync(item => item.Id == feedPostId, cancellationToken);
+
+        if (feedPost is null || feedPost.DeletedAtUtc is not null)
+        {
+            return false;
+        }
+
+        if (feedPost.PortalUserId != portalUserId)
+        {
+            throw new InvalidOperationException("Voce so pode remover suas proprias publicacoes.");
+        }
+
+        var now = DateTime.UtcNow;
+        feedPost.DeletedAtUtc = now;
+
+        _dbContext.FeedPostAuditLogs.Add(new FeedPostAuditLog
+        {
+            Id = Guid.NewGuid(),
+            FeedPostId = feedPostId,
+            PortalUserId = portalUserId,
+            ActionType = FeedPostAuditActionTypes.PostDeleted,
+            ActorLogin = auditContext.ActorLogin,
+            ActorDisplayName = auditContext.ActorDisplayName,
+            IpAddress = auditContext.IpAddress,
+            Origin = auditContext.Origin,
+            UserAgent = auditContext.UserAgent,
+            CreatedAtUtc = now
+        });
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
+    private async Task<FeedPost?> FindActiveFeedPostAsync(
+        Guid feedPostId,
+        CancellationToken cancellationToken,
+        bool tracking = false)
+    {
+        var query = tracking
+            ? _dbContext.FeedPosts.AsQueryable()
+            : _dbContext.FeedPosts.AsNoTracking();
+
+        return await query.FirstOrDefaultAsync(
+            item => item.Id == feedPostId && item.DeletedAtUtc == null,
+            cancellationToken);
     }
 
     private static List<CreateFeedPostMediaItem> NormalizeMediaItems(IReadOnlyList<CreateFeedPostMediaItem>? media)
@@ -684,9 +738,7 @@ public class FeedService : IFeedService
         FeedAuditContext auditContext,
         CancellationToken cancellationToken)
     {
-        var feedPost = await _dbContext.FeedPosts
-            .AsNoTracking()
-            .FirstOrDefaultAsync(item => item.Id == feedPostId, cancellationToken);
+        var feedPost = await FindActiveFeedPostAsync(feedPostId, cancellationToken);
 
         if (feedPost is null)
         {

@@ -61,6 +61,7 @@ public record FeedItemDto(
     string Source,
     Guid? CommunicationId,
     string Author,
+    Guid? AuthorUserId,
     string Area,
     DateTime PublishedAtUtc,
     string Text,
@@ -73,6 +74,10 @@ public record FeedItemDto(
     IReadOnlyList<FeedMediaItemDto> Media,
     int CommentCount,
     IReadOnlyList<FeedPostCommentDto> Comments);
+
+public record DeleteFeedPostResponse(
+    Guid Id,
+    bool Deleted);
 
 public record FeedResponse(
     string Title,

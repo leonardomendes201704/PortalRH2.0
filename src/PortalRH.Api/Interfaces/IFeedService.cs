@@ -34,6 +34,11 @@ public interface IFeedService
         FeedAuditContext auditContext,
         CancellationToken cancellationToken);
     Task<FeedMentionSuggestionsResponse> SuggestMentionsAsync(string query, CancellationToken cancellationToken);
+    Task<bool> DeletePostAsync(
+        Guid feedPostId,
+        Guid portalUserId,
+        FeedAuditContext auditContext,
+        CancellationToken cancellationToken);
 }
 
 public sealed record FeedAuditContext(

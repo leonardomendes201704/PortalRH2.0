@@ -3,6 +3,8 @@ import { escapeHtml } from "./html.js";
 import { resolveFeedMediaUrl, serializeGalleryImages } from "../services/feedMedia.js?v=0.21.4";
 import { renderPostCommentComposer } from "./feedPostCommentComposer.js?v=0.21.4";
 import { renderMentionBody, renderMentionDropdownMarkup } from "./feedMentions.js?v=0.21.7";
+import { DATA_MODES, getRuntimeConfig } from "../core/runtimeConfig.js?v=0.21.4";
+import { canInteractWithFeed } from "../services/portalPermissionService.js?v=0.17.0";
 
 const PHOTO_ACTION_LABEL = "Adicionar fotos";
 
@@ -122,7 +124,44 @@ function renderReactionSummary(post) {
   `;
 }
 
-function renderPost(post) {
+function canShowPostMenu(post, currentUserId) {
+  return getRuntimeConfig().dataMode === DATA_MODES.API
+    && canInteractWithFeed()
+    && post.source === "UserPost"
+    && post.authorUserId
+    && currentUserId
+    && post.authorUserId === currentUserId;
+}
+
+function renderPostMoreMenu(post, currentUserId) {
+  if (!canShowPostMenu(post, currentUserId)) {
+    return "";
+  }
+
+  return `
+    <div class="post-more-menu">
+      <button
+        type="button"
+        class="post-more-trigger"
+        data-action="toggle-post-menu"
+        aria-label="Mais opcoes da publicacao"
+        aria-haspopup="menu"
+        aria-expanded="false"
+      >•••</button>
+      <div class="post-more-dropdown" hidden role="menu" aria-label="Acoes da publicacao">
+        <button
+          type="button"
+          class="post-more-option post-more-option--danger"
+          role="menuitem"
+          data-action="delete-feed-post"
+          data-post-id="${escapeHtml(post.postId)}"
+        >Excluir</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderPost(post, { currentUserId = "" } = {}) {
   const canLike = Boolean(post.postId && post.source);
   const postActions = [
     { label: "Curtir", action: canLike ? "toggle-feed-like" : "", active: post.hasLiked },
@@ -143,7 +182,7 @@ function renderPost(post) {
             <span>${escapeHtml(post.area)} • ${escapeHtml(post.timeAgo)}</span>
           </div>
         </div>
-        <div class="post-more" aria-hidden="true">•••</div>
+        ${renderPostMoreMenu(post, currentUserId)}
       </div>
 
       <div class="post-body">
@@ -196,7 +235,7 @@ function renderPost(post) {
   `;
 }
 
-export function renderFeed(feed, composer) {
+export function renderFeed(feed, composer, { currentUserId = "" } = {}) {
   const posts = Array.isArray(feed.posts) ? feed.posts : [];
   const showComposer = composer?.enabled !== false;
 
@@ -206,7 +245,7 @@ export function renderFeed(feed, composer) {
       ${showComposer ? renderComposer(composer) : ""}
       <div class="feed-list">
         ${posts.length
-          ? posts.map(renderPost).join("")
+          ? posts.map((post) => renderPost(post, { currentUserId })).join("")
           : renderEmptyState(
             "Ainda não há posts publicados.",
             "Assim que a comunicação interna ou os times compartilharem novidades, o mural aparecerá aqui."

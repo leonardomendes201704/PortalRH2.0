@@ -6,6 +6,7 @@ public class FeedPost
     public Guid PortalUserId { get; set; }
     public string Text { get; set; } = string.Empty;
     public DateTime CreatedAtUtc { get; set; }
+    public DateTime? DeletedAtUtc { get; set; }
     public string? IpAddress { get; set; }
     public string? Origin { get; set; }
 
