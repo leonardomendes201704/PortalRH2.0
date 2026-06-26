@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using PortalRH.Api.Data;
 using PortalRH.Api.Interfaces;
+using PortalRH.Api.Infrastructure;
 using PortalRH.Api.Models;
 using PortalRH.Api.Services;
 
@@ -79,8 +80,11 @@ if (string.IsNullOrWhiteSpace(webRootPath))
     webRootPath = Path.Combine(builder.Environment.ContentRootPath, "wwwroot");
 }
 
+var uploadsRoot = PortalUploadPaths.ResolveUploadsRoot(builder.Configuration, builder.Environment);
+
 Directory.CreateDirectory(webRootPath);
-Directory.CreateDirectory(Path.Combine(webRootPath, "uploads"));
+Directory.CreateDirectory(uploadsRoot);
+Directory.CreateDirectory(Path.Combine(uploadsRoot, PortalUploadPaths.FeedFolderName));
 
 if (app.Environment.IsDevelopment())
 {
@@ -107,6 +111,12 @@ app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(webRootPath),
     RequestPath = ""
+});
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(uploadsRoot),
+    RequestPath = "/uploads"
 });
 app.UseAuthorization();
 app.MapControllers();

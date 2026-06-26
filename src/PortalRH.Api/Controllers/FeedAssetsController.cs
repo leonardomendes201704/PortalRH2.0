@@ -2,6 +2,7 @@ using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
 using PortalRH.Api.Contracts.Feed;
 using PortalRH.Api.Domain;
+using PortalRH.Api.Infrastructure;
 using PortalRH.Api.Security;
 
 namespace PortalRH.Api.Controllers;
@@ -17,10 +18,12 @@ public class FeedAssetsController : ControllerBase
     ];
 
     private readonly IWebHostEnvironment _environment;
+    private readonly IConfiguration _configuration;
 
-    public FeedAssetsController(IWebHostEnvironment environment)
+    public FeedAssetsController(IWebHostEnvironment environment, IConfiguration configuration)
     {
         _environment = environment;
+        _configuration = configuration;
     }
 
     [HttpPost]
@@ -60,13 +63,8 @@ public class FeedAssetsController : ControllerBase
             return BadRequest(new { message = "Formato de imagem nao suportado. Use JPG, PNG, WEBP ou GIF." });
         }
 
-        var rootPath = _environment.WebRootPath;
-        if (string.IsNullOrWhiteSpace(rootPath))
-        {
-            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Diretorio de uploads indisponivel." });
-        }
-
-        var targetFolder = Path.Combine(rootPath, "uploads", "feed");
+        var uploadsRoot = PortalUploadPaths.ResolveUploadsRoot(_configuration, _environment);
+        var targetFolder = Path.Combine(uploadsRoot, PortalUploadPaths.FeedFolderName);
         Directory.CreateDirectory(targetFolder);
 
         var safeBaseName = BuildSafeFileName(Path.GetFileNameWithoutExtension(file.FileName));
@@ -78,7 +76,7 @@ public class FeedAssetsController : ControllerBase
             await file.CopyToAsync(stream, cancellationToken);
         }
 
-        var publicUrl = $"{Request.Scheme}://{Request.Host}/uploads/feed/{generatedFileName}";
+        var publicUrl = PortalUploadPaths.BuildFeedPublicUrl(generatedFileName);
 
         return Ok(new FeedAssetUploadResponse(
             generatedFileName,

@@ -1,6 +1,6 @@
 import { renderEmptyState } from "./cards.js";
 import { escapeHtml } from "./html.js";
-import { serializeGalleryImages } from "./feedPhotoViewerModal.js?v=0.20.1";
+import { resolveFeedMediaUrl, serializeGalleryImages } from "../services/feedMedia.js?v=0.20.2";
 
 const PHOTO_ACTION_LABEL = "Adicionar fotos";
 
@@ -58,7 +58,10 @@ function renderPostGallery(post) {
   }
 
   const total = images.length;
-  const visible = images.slice(0, 4);
+  const visible = images.map((image) => ({
+    ...image,
+    resolvedUrl: resolveFeedMediaUrl(image.url)
+  })).slice(0, 4);
 
   return `
     <div class="post-gallery post-gallery--${Math.min(total, 4)}" data-gallery-count="${total}" data-feed-gallery="${serializeGalleryImages(images)}">
@@ -69,9 +72,14 @@ function renderPostGallery(post) {
           data-aspect="${escapeHtml(image.aspectRatio || "free")}"
           data-action="open-feed-photo-viewer"
           data-photo-index="${index}"
+          data-photo-id="${escapeHtml(image.id || "")}"
+          data-photo-url="${escapeHtml(image.url || "")}"
+          data-photo-description="${escapeHtml(image.description || "")}"
+          data-photo-aspect="${escapeHtml(image.aspectRatio || "free")}"
+          data-photo-comment-count="${Number(image.commentCount || 0)}"
           aria-label="${escapeHtml(image.description || `Abrir foto ${index + 1}`)}"
         >
-          <img src="${escapeHtml(image.url)}" alt="${escapeHtml(image.description || post.author)}" loading="lazy">
+          <img src="${escapeHtml(image.resolvedUrl)}" alt="${escapeHtml(image.description || post.author)}" loading="lazy">
           ${image.description ? `<span class="post-gallery__caption">${escapeHtml(image.description)}</span>` : ""}
           ${Number(image.commentCount) > 0 ? `<span class="post-gallery__comment-badge">${escapeHtml(String(image.commentCount))}</span>` : ""}
           ${index === 3 && total > 4 ? `<span class="post-gallery__more">+${total - 4}</span>` : ""}
