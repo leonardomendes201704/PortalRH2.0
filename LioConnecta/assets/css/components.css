@@ -103,7 +103,11 @@
   padding: 18px 16px;
   border-radius: 14px;
   border: 1px solid #cfe0f2;
-  background: linear-gradient(180deg, #f8fbff, #eef5fc);
+  background-color: #f8fbff;
+  background-image: url("../img/bg_pesquisa_satisfacao.png");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
   text-align: center;
 }
 
@@ -1158,6 +1162,88 @@
   color: #64748b;
 }
 
+.feed-mention-editor {
+  width: 100%;
+  outline: none;
+  white-space: pre-wrap;
+  word-break: break-word;
+  cursor: text;
+}
+
+.feed-mention-editor:empty::before {
+  content: attr(data-placeholder);
+  color: #7a8a9c;
+  pointer-events: none;
+}
+
+.feed-mention-editor:focus {
+  outline: none;
+}
+
+.feed-mention-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: calc(100% - 4px);
+  margin: 0 2px;
+  padding: 1px 4px 1px 8px;
+  border-radius: 999px;
+  background: #e8f2ff;
+  border: 1px solid #b9d6ff;
+  color: #1677ff;
+  font-size: inherit;
+  font-weight: 600;
+  vertical-align: baseline;
+  line-height: 1.35;
+  user-select: none;
+}
+
+.feed-mention-chip__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.feed-mention-chip__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #1677ff;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.feed-mention-chip__remove:hover {
+  background: rgba(22, 119, 255, 0.14);
+}
+
+.feed-composer-input.feed-mention-editor {
+  display: block;
+  align-items: stretch;
+  color: #173154;
+}
+
+.feed-composer-textarea.feed-mention-editor {
+  resize: none;
+  overflow-y: auto;
+}
+
+.post-comment-input.feed-mention-editor {
+  overflow-y: auto;
+}
+
+.post-comment-input.feed-mention-editor:focus {
+  border-color: #9ec5ef;
+  box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.12);
+}
+
 .post-comment-box {
   flex: 1;
   min-height: 42px;
@@ -1393,7 +1479,7 @@
 
 .post-gallery__item img {
   display: block;
-  max-height: 180px;
+  max-height: 450px;
   width: auto;
   max-width: 100%;
   height: auto;

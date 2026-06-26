@@ -22,17 +22,15 @@ function renderComposer(composer) {
         <div class="avatar" aria-hidden="true"><i class="fa-solid fa-user"></i></div>
         <div>
           <div class="feed-composer-mention-field feed-mention-field">
-            <textarea
-              class="feed-composer-input feed-composer-textarea"
-              name="text"
-              maxlength="2000"
-              rows="3"
-              placeholder="${escapeHtml(composer.placeholder)}"
-              aria-label="${escapeHtml(composer.placeholder)}"
-              autocomplete="off"
-              autocorrect="off"
+            <div
+              class="feed-mention-editor feed-composer-input feed-composer-textarea"
+              contenteditable="true"
+              role="textbox"
+              aria-multiline="true"
               spellcheck="true"
-            ></textarea>
+              data-placeholder="${escapeHtml(composer.placeholder)}"
+              aria-label="${escapeHtml(composer.placeholder)}"
+            ></div>
             ${renderMentionDropdownMarkup()}
           </div>
           <div data-feed-attachments></div>

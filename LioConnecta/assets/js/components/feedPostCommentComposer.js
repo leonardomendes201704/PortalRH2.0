@@ -1,4 +1,4 @@
-import { escapeHtml } from "./html.js";
+﻿import { escapeHtml } from "./html.js";
 import { DATA_MODES, getRuntimeConfig } from "../core/runtimeConfig.js?v=0.21.4";
 import { createFeedPostComment } from "../services/feedService.js?v=0.21.4";
 import { getPortalAuthHeaders } from "../services/portalAuthService.js?v=0.17.0";
@@ -18,7 +18,7 @@ function canCommentOnPosts() {
 
 function formatCommentsLabel(count) {
   const total = Number(count ?? 0);
-  return total === 1 ? "1 comentário" : `${total} comentários`;
+  return total === 1 ? "1 coment?rio" : `${total} coment?rios`;
 }
 
 export function renderCommentBody(comment = {}) {
@@ -34,7 +34,7 @@ export function renderPostCommentComposer(post) {
     return `
       <div class="post-comment post-comment--readonly">
         <div class="avatar avatar--comment" aria-hidden="true"><i class="fa-solid fa-user"></i></div>
-        <div class="post-comment-box" aria-hidden="true">Adicione um comentário...</div>
+        <div class="post-comment-box" aria-hidden="true">Adicione um coment?rio...</div>
       </div>
     `;
   }
@@ -48,17 +48,15 @@ export function renderPostCommentComposer(post) {
       <div class="avatar avatar--comment" aria-hidden="true"><i class="fa-solid fa-user"></i></div>
       <div class="post-comment-composer__main">
         <div class="post-comment-composer__field feed-mention-field">
-          <textarea
-            class="post-comment-input"
-            name="text"
-            rows="1"
-            maxlength="2000"
-            placeholder="Adicione um comentário..."
-            aria-label="Adicione um comentário"
-            autocomplete="off"
-            autocorrect="off"
+          <div
+            class="feed-mention-editor post-comment-input"
+            contenteditable="true"
+            role="textbox"
+            aria-multiline="true"
             spellcheck="true"
-          ></textarea>
+            data-placeholder="Adicione um coment?rio..."
+            aria-label="Adicione um coment?rio"
+          ></div>
           ${renderMentionDropdownMarkup()}
         </div>
         <button type="submit" class="post-comment-submit" disabled>Comentar</button>
@@ -67,9 +65,9 @@ export function renderPostCommentComposer(post) {
   `;
 }
 
-function resizeTextarea(textarea) {
-  textarea.style.height = "auto";
-  textarea.style.height = `${Math.min(textarea.scrollHeight, 160)}px`;
+function resizeEditor(editor) {
+  editor.style.height = "auto";
+  editor.style.height = `${Math.min(editor.scrollHeight, 160)}px`;
 }
 
 function renderCommentItem(comment) {
@@ -92,7 +90,7 @@ function updatePostCommentCount(postEl, count) {
 
   const sharesMatch = statsRow.textContent?.match(/(\d+)\s+compartilhamentos/);
   const shares = sharesMatch ? sharesMatch[1] : "0";
-  statsRow.textContent = `${formatCommentsLabel(count)} • ${shares} compartilhamentos`;
+  statsRow.textContent = `${formatCommentsLabel(count)} \u2022 ${shares} compartilhamentos`;
 }
 
 function appendCommentToPost(postEl, comment) {
@@ -110,16 +108,14 @@ function appendCommentToPost(postEl, comment) {
 }
 
 function resetComposerForm(form) {
-  const textarea = form.querySelector(".post-comment-input");
+  const editor = form.querySelector(".feed-mention-editor");
   const submitButton = form.querySelector(".post-comment-submit");
   const mentionControl = mentionControls.get(form);
 
-  if (textarea) {
-    textarea.value = "";
-    resizeTextarea(textarea);
+  if (editor) {
+    mentionControl?.resetMentions();
+    resizeEditor(editor);
   }
-
-  mentionControl?.resetMentions();
 
   if (submitButton) {
     submitButton.disabled = true;
@@ -127,21 +123,22 @@ function resetComposerForm(form) {
 }
 
 function bindComposerForm(form) {
-  const textarea = form.querySelector(".post-comment-input");
+  const editor = form.querySelector(".feed-mention-editor");
   const submitButton = form.querySelector(".post-comment-submit");
   const fieldRoot = form.querySelector(".post-comment-composer__field");
-  if (!textarea || !submitButton || !fieldRoot) {
+  if (!editor || !submitButton || !fieldRoot) {
     return;
   }
 
-  resizeTextarea(textarea);
+  resizeEditor(editor);
 
-  const mentionControl = bindMentionField({
+  let mentionControl;
+  mentionControl = bindMentionField({
     fieldRoot,
-    textarea,
+    editor,
     onSync: () => {
-      resizeTextarea(textarea);
-      submitButton.disabled = !textarea.value.trim();
+      resizeEditor(editor);
+      submitButton.disabled = !mentionControl.getText().trim();
     }
   });
   mentionControls.set(form, mentionControl);
@@ -150,7 +147,7 @@ function bindComposerForm(form) {
     event.preventDefault();
 
     const postId = form.getAttribute("data-post-id") || "";
-    const text = textarea.value.trim();
+    const text = mentionControl.getText().trim();
     if (!postId || !text) {
       return;
     }
@@ -180,7 +177,7 @@ function bindComposerForm(form) {
         ? "Sua sessao expirou. Faca login novamente para comentar."
         : "Nao foi possivel publicar o comentario agora.";
       showToast(message, "error");
-      submitButton.disabled = !textarea.value.trim();
+      submitButton.disabled = !mentionControl.getText().trim();
     }
   });
 }
