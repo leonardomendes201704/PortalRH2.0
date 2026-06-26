@@ -28,6 +28,16 @@ public interface IHrProfileService
     Task<HrProfileResponse> GetProfileAsync(PortalUser user, CancellationToken cancellationToken);
 }
 
+public interface IHrWorkspaceService
+{
+    Task<HrVacationResponse> GetVacationAsync(PortalUser user, CancellationToken cancellationToken);
+    Task<HrPayslipResponse> GetPayslipsAsync(PortalUser user, CancellationToken cancellationToken);
+    Task<HrBenefitsResponse> GetBenefitsAsync(PortalUser user, CancellationToken cancellationToken);
+    Task<HrEvaluationResponse> GetEvaluationAsync(PortalUser user, CancellationToken cancellationToken);
+    Task<HrPersonalDataResponse> GetPersonalDataAsync(PortalUser user, CancellationToken cancellationToken);
+    Task<HrTimesheetResponse> GetTimesheetAsync(PortalUser user, CancellationToken cancellationToken);
+}
+
 public interface ICorporateSystemsService
 {
     Task<CorporateSystemsResponse> GetSystemsAsync(PortalUser user, CancellationToken cancellationToken);

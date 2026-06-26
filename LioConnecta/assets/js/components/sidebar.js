@@ -22,9 +22,13 @@ const NOTIFICATION_ICONS = {
 
 const PROFILE_ICONS = {
   "Férias (Consultar/Solicitar)": "fa-solid fa-umbrella-beach",
+  "Ferias (Consultar/Solicitar)": "fa-solid fa-umbrella-beach",
   "Holerite (Maio 2024)": "fa-solid fa-file-invoice-dollar",
+  Holerite: "fa-solid fa-file-invoice-dollar",
   "Benefícios (Seguro/VT)": "fa-solid fa-heart-pulse",
+  "Beneficios (VR/VT)": "fa-solid fa-heart-pulse",
   "Minha Avaliação": "fa-solid fa-star",
+  "Minha Avaliacao": "fa-solid fa-star",
   "Dados Cadastrais": "fa-solid fa-id-card",
   Ponto: "fa-solid fa-clock",
   Treinamentos: "fa-solid fa-graduation-cap",
@@ -168,6 +172,7 @@ export function renderProfileCard(panel) {
             const label = typeof item === "string" ? item : item.label;
             const url = typeof item === "object" ? item.url : "";
             const iconClass = PROFILE_ICONS[label] || "fa-solid fa-angle-right";
+            const isExternal = Boolean(url && /^https?:/i.test(url));
             const rowContent = `
               <span class="profile-link-icon" aria-hidden="true">
                 <i class="${escapeHtml(iconClass)}"></i>
@@ -176,7 +181,7 @@ export function renderProfileCard(panel) {
             `;
 
             return url
-              ? `<a class="profile-link-row profile-link-row--link" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${rowContent}</a>`
+              ? `<a class="profile-link-row profile-link-row--link" href="${escapeHtml(url)}" ${isExternal ? 'target="_blank" rel="noopener noreferrer"' : ""}>${rowContent}</a>`
               : `<div class="profile-link-row">${rowContent}</div>`;
           }).join("") : renderEmptyState("Perfil sem serviços", "Os atalhos de RH deste colaborador serão exibidos aqui.")}
         </div>

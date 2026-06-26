@@ -784,7 +784,41 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
         Assert.NotNull(hrProfile);
         Assert.True(hrProfile.IsSimulated);
         Assert.Equal(portalSession.User.DisplayName, hrProfile.Name);
-        Assert.Contains(hrProfile.Items, item => item.Url.Contains("rh/holerite", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(hrProfile.Items, item => item.Url.Contains("perfil-rh/holerite", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task HrWorkspaceEndpoints_ReturnSimulatedDataForPortalSession()
+    {
+        await EnsureLdapEnabledAsync();
+        var portalSession = await LoginPortalUserAsync();
+        UsePortalAuth(portalSession);
+
+        var ferias = await _client.GetFromJsonAsync<HrVacationResponse>("/api/hr/ferias");
+        var holerite = await _client.GetFromJsonAsync<HrPayslipResponse>("/api/hr/holerite");
+        var beneficios = await _client.GetFromJsonAsync<HrBenefitsResponse>("/api/hr/beneficios");
+        var avaliacao = await _client.GetFromJsonAsync<HrEvaluationResponse>("/api/hr/avaliacao");
+        var cadastro = await _client.GetFromJsonAsync<HrPersonalDataResponse>("/api/hr/cadastro");
+        var ponto = await _client.GetFromJsonAsync<HrTimesheetResponse>("/api/hr/ponto");
+
+        Assert.NotNull(ferias);
+        Assert.True(ferias.IsSimulated);
+        Assert.NotEmpty(ferias.Requests);
+        Assert.NotNull(holerite);
+        Assert.True(holerite.IsSimulated);
+        Assert.NotEmpty(holerite.Items);
+        Assert.NotNull(beneficios);
+        Assert.True(beneficios.IsSimulated);
+        Assert.NotEmpty(beneficios.Items);
+        Assert.NotNull(avaliacao);
+        Assert.True(avaliacao.IsSimulated);
+        Assert.NotEmpty(avaliacao.Competencies);
+        Assert.NotNull(cadastro);
+        Assert.True(cadastro.IsSimulated);
+        Assert.NotEmpty(cadastro.Sections);
+        Assert.NotNull(ponto);
+        Assert.True(ponto.IsSimulated);
+        Assert.NotEmpty(ponto.Entries);
     }
 
     [Fact]

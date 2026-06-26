@@ -40,6 +40,12 @@ export function canViewRoute(session, route, minimumLevel = "View") {
 export const ROUTE_MODULE_ACCESS = Object.freeze({
   inicio: { moduleKey: "home", minimumLevel: "View" },
   "inicio/salvos": { moduleKey: "home", minimumLevel: "View" },
+  "perfil-rh/ferias": { moduleKey: "hr-profile", minimumLevel: "View" },
+  "perfil-rh/holerite": { moduleKey: "hr-profile", minimumLevel: "View" },
+  "perfil-rh/beneficios": { moduleKey: "hr-profile", minimumLevel: "View" },
+  "perfil-rh/avaliacao": { moduleKey: "hr-profile", minimumLevel: "View" },
+  "perfil-rh/cadastro": { moduleKey: "hr-profile", minimumLevel: "View" },
+  "perfil-rh/ponto": { moduleKey: "hr-profile", minimumLevel: "View" },
   comunicacao: { moduleKey: "communications", minimumLevel: "View" },
   "comunicacao/leitura": { moduleKey: "communications", minimumLevel: "View" },
   enquetes: { moduleKey: "polls", minimumLevel: "View" },
