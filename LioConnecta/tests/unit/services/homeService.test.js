@@ -9,10 +9,11 @@ test("homeService compõe a home a partir dos services de domínio", async () =>
     ["./assets/data/user.json", { brand: { name: "LIO" }, user: { name: "Leo" } }],
     ["http://localhost:3030/api/communications", [{ slug: "slide-api", title: "Slide API", imageUrl: "./slide.png", publishedAt: "2026-06-19T09:00:00Z" }]],
     ["http://localhost:3030/api/polls", []],
-    ["http://localhost:3030/api/notifications", { items: [], summary: { totalCount: 0, unreadCount: 0, readCount: 0, categoryCounts: {} } }],
-    ["http://localhost:3030/api/agenda", { date: "2026-06-24", totalCount: 1, items: [{ id: "1", title: "Daily RH", timeLabel: "09:00", location: "Teams" }] }],
     ["./assets/data/feed.json", { posts: [{ author: "Ana", text: "Feed ok" }] }],
-    ["./assets/data/panels.json", { leftPanels: [{ title: "L" }], rightPanels: [{ title: "AGENDA DO DIA", items: [] }] }]
+    ["./assets/data/panels.json", {
+      leftPanels: [{ title: "L" }],
+      rightPanels: [{ title: "AGENDA DO DIA", items: [{ label: "09:00 • Daily RH" }] }]
+    }]
   ]);
 
   global.fetch = async (url) => ({

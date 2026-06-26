@@ -1,4 +1,4 @@
-export const APP_VERSION = "v0.16.2";
+export const APP_VERSION = "v0.18.0";
 
 export const DATA_MODES = Object.freeze({
   MOCK: "mock",
@@ -6,7 +6,7 @@ export const DATA_MODES = Object.freeze({
   API: "api"
 });
 
-const MOCK_SHELL_DOMAINS = new Set(["user", "panels", "carousel"]);
+const MOCK_SHELL_DOMAINS = new Set(["carousel"]);
 
 function resolveDefaultApiBaseUrl() {
   const currentWindow = getWindowObject();
@@ -67,6 +67,10 @@ const DEFAULT_RUNTIME_CONFIG = Object.freeze({
     notifications: "/notifications",
     agenda: "/agenda",
     polls: "/polls",
+    quickLinks: "/quick-links",
+    journey: "/journey/summary",
+    kpis: "/kpis/summary",
+    hrProfile: "/hr/profile",
     portalLdapLogin: "/auth/ldap/login",
     portalSession: "/auth/session",
     portalLogout: "/auth/logout",

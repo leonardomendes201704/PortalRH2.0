@@ -43,13 +43,19 @@ export function renderMenuCard(panel) {
       <div class="card-header">${escapeHtml(panel.title)}</div>
       ${items.length ? `
         <div class="menu-list">
-          ${items.map((item) => `
-            <div class="menu-item">
-              <span>${escapeHtml(item.label)}</span>
-              ${item.badge ? `<span class="menu-badge">${escapeHtml(item.badge)}</span>` : ""}
-              ${item.value ? `<strong>${escapeHtml(item.value)}</strong>` : ""}
-            </div>
-          `).join("")}
+          ${items.map((item) => {
+            const label = typeof item === "string" ? item : item.label;
+            const url = typeof item === "object" ? item.url : "";
+            const content = `
+              <span>${escapeHtml(label)}</span>
+              ${typeof item === "object" && item.badge ? `<span class="menu-badge">${escapeHtml(item.badge)}</span>` : ""}
+              ${typeof item === "object" && item.value ? `<strong>${escapeHtml(item.value)}</strong>` : ""}
+            `;
+
+            return url
+              ? `<a class="menu-item menu-item--link" href="${escapeHtml(url)}" ${url.startsWith("http") ? 'target="_blank" rel="noopener noreferrer"' : ""}>${content}</a>`
+              : `<div class="menu-item">${content}</div>`;
+          }).join("")}
         </div>
       ` : renderEmptyState("Sem itens por enquanto", "Este painel será preenchido quando os dados do módulo estiverem disponíveis.")}
     </section>
@@ -99,10 +105,15 @@ export function renderQuickLinksCard(panel) {
       <div class="card-header">${escapeHtml(panel.title)}</div>
       ${items.length ? `
         <div class="quick-grid">
-          ${items.map((item) => `
+          ${items.map((item) => {
+            const href = item.url || "#";
+            const isExternal = href.startsWith("http");
+
+            return `
             <a
               class="quick-item ${escapeHtml(item.className)}"
-              href="#"
+              href="${escapeHtml(href)}"
+              ${isExternal ? 'target="_blank" rel="noopener noreferrer"' : ""}
               data-analytics="quick-link.open"
               data-analytics-label="${escapeHtml(item.label)}"
               aria-label="${escapeHtml(item.label)}"
@@ -112,7 +123,8 @@ export function renderQuickLinksCard(panel) {
                 <span class="quick-item-label">${escapeHtml(item.label)}</span>
               </div>
             </a>
-          `).join("")}
+          `;
+          }).join("")}
         </div>
       ` : renderEmptyState("Sem atalhos configurados", "Os serviços rápidos serão exibidos aqui quando o catálogo estiver disponível.")}
     </section>
@@ -140,14 +152,21 @@ export function renderProfileCard(panel) {
           </div>
         </div>
         <div class="profile-links">
-          ${items.length ? items.map((item) => `
-            <div class="profile-link-row">
+          ${items.length ? items.map((item) => {
+            const label = typeof item === "string" ? item : item.label;
+            const url = typeof item === "object" ? item.url : "";
+            const iconClass = PROFILE_ICONS[label] || "fa-solid fa-angle-right";
+            const rowContent = `
               <span class="profile-link-icon" aria-hidden="true">
-                <i class="${escapeHtml(PROFILE_ICONS[item] || "fa-solid fa-angle-right")}"></i>
+                <i class="${escapeHtml(iconClass)}"></i>
               </span>
-              <span>${escapeHtml(item)}</span>
-            </div>
-          `).join("") : renderEmptyState("Perfil sem serviços", "Os atalhos de RH deste colaborador serão exibidos aqui.")}
+              <span>${escapeHtml(label)}</span>
+            `;
+
+            return url
+              ? `<a class="profile-link-row profile-link-row--link" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${rowContent}</a>`
+              : `<div class="profile-link-row">${rowContent}</div>`;
+          }).join("") : renderEmptyState("Perfil sem serviços", "Os atalhos de RH deste colaborador serão exibidos aqui.")}
         </div>
       </div>
     </section>
