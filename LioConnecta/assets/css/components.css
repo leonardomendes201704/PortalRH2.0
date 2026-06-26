@@ -93,21 +93,28 @@
 }
 
 .mood-card--completed {
-  background: linear-gradient(180deg, #ffffff, #f4f9ff);
+  padding: 0;
+  gap: 0;
+  background: transparent;
+}
+
+.mood-card--completed h2 {
+  padding: 16px 18px 12px;
 }
 
 .mood-thankyou {
   display: grid;
   justify-items: center;
   gap: 10px;
-  padding: 18px 16px;
-  border-radius: 14px;
-  border: 1px solid #cfe0f2;
-  background-color: #f8fbff;
+  padding: 22px 18px 20px;
+  border: none;
+  border-radius: 0;
+  background-color: transparent;
   background-image: url("../img/bg_pesquisa_satisfacao.png");
   background-repeat: no-repeat;
   background-position: center;
-  background-size: cover;
+  background-size: 100% 100%;
+  overflow: hidden;
   text-align: center;
 }
 
