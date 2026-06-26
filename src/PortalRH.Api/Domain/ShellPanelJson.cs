@@ -29,7 +29,8 @@ internal static class ShellPanelJson
         string? location,
         string source,
         DateTime startAtUtc,
-        DateTime endAtUtc) =>
+        DateTime endAtUtc,
+        string? joinUrl = null) =>
         Serialize(new
         {
             type = "agenda-event",
@@ -41,6 +42,7 @@ internal static class ShellPanelJson
             detailDescription = description ?? string.Empty,
             location = location ?? string.Empty,
             source,
+            joinUrl = joinUrl ?? string.Empty,
             startAtUtc = startAtUtc.ToUniversalTime().ToString("O"),
             endAtUtc = endAtUtc.ToUniversalTime().ToString("O")
         });

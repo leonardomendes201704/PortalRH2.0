@@ -180,7 +180,8 @@ public class PortalPanelsComposer : IPortalPanelsComposer
                 item.Location,
                 item.Source,
                 item.StartAtUtc,
-                item.EndAtUtc))
+                item.EndAtUtc,
+                item.JoinUrl))
             .Cast<JsonNode>()
             .ToList();
 

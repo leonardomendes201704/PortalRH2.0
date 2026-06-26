@@ -25,6 +25,7 @@ function mapPanelItem(item) {
       timeLabel: asString(item?.timeLabel, ""),
       detailDescription: asString(item?.detailDescription, ""),
       location: asString(item?.location, ""),
+      joinUrl: asString(item?.joinUrl, ""),
       source: asString(item?.source, ""),
       audience: asString(item?.audience, ""),
       startAtUtc: asString(item?.startAtUtc, ""),

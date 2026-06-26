@@ -2526,6 +2526,21 @@ body.agenda-event-modal-open {
   white-space: pre-wrap;
 }
 
+.agenda-event-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+
+.agenda-event-modal__join {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  min-width: 148px;
+  justify-content: center;
+}
+
 .mood-option,
 .feed-action-chip,
 .feed-composer-submit,

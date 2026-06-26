@@ -185,6 +185,7 @@ public class MicrosoftGraphCalendarService : IMicrosoftGraphCalendarService
                        locationElement.TryGetProperty("displayName", out var locationNameElement)
             ? locationNameElement.GetString()
             : null;
+        var joinUrl = ReadJoinUrl(item);
         var isAllDay = item.TryGetProperty("isAllDay", out var allDayElement) && allDayElement.GetBoolean();
 
         return new MicrosoftGraphCalendarEvent(
@@ -192,9 +193,34 @@ public class MicrosoftGraphCalendarService : IMicrosoftGraphCalendarService
             title.Trim(),
             string.IsNullOrWhiteSpace(description) ? null : description.Trim(),
             string.IsNullOrWhiteSpace(location) ? null : location.Trim(),
+            joinUrl,
             startAtUtc,
             endAtUtc,
             isAllDay);
+    }
+
+    private static string? ReadJoinUrl(JsonElement item)
+    {
+        if (item.TryGetProperty("onlineMeeting", out var onlineMeetingElement) &&
+            onlineMeetingElement.TryGetProperty("joinUrl", out var joinUrlElement))
+        {
+            var joinUrl = joinUrlElement.GetString();
+            if (!string.IsNullOrWhiteSpace(joinUrl))
+            {
+                return joinUrl.Trim();
+            }
+        }
+
+        if (item.TryGetProperty("webLink", out var webLinkElement))
+        {
+            var webLink = webLinkElement.GetString();
+            if (!string.IsNullOrWhiteSpace(webLink))
+            {
+                return webLink.Trim();
+            }
+        }
+
+        return null;
     }
 
     private static bool TryReadDateTimeOffset(JsonElement item, string propertyName, out DateTime utcDateTime)

@@ -8,5 +8,6 @@ public record AgendaItemDto(
     string TimeLabel,
     string Source,
     string Audience,
+    string? JoinUrl,
     DateTime StartAtUtc,
     DateTime EndAtUtc);
