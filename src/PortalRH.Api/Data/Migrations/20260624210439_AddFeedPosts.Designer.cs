@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PortalRH.Api.Data;
@@ -11,9 +12,11 @@ using PortalRH.Api.Data;
 namespace PortalRH.Api.Data.Migrations
 {
     [DbContext(typeof(PortalRhDbContext))]
-    partial class PortalRhDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260624210439_AddFeedPosts")]
+    partial class AddFeedPosts
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -416,41 +419,6 @@ namespace PortalRH.Api.Data.Migrations
                     b.HasIndex("PortalUserId");
 
                     b.ToTable("feed_post_audit_logs", (string)null);
-                });
-
-            modelBuilder.Entity("PortalRH.Api.Models.FeedPostLike", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("FeedPostId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("IpAddress")
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
-                    b.Property<string>("Origin")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<Guid>("PortalUserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedAtUtc");
-
-                    b.HasIndex("PortalUserId");
-
-                    b.HasIndex("FeedPostId", "PortalUserId")
-                        .IsUnique();
-
-                    b.ToTable("feed_post_likes", (string)null);
                 });
 
             modelBuilder.Entity("PortalRH.Api.Models.LdapConfiguration", b =>
@@ -1219,25 +1187,6 @@ namespace PortalRH.Api.Data.Migrations
                 });
 
             modelBuilder.Entity("PortalRH.Api.Models.FeedPostAuditLog", b =>
-                {
-                    b.HasOne("PortalRH.Api.Models.FeedPost", "FeedPost")
-                        .WithMany()
-                        .HasForeignKey("FeedPostId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("PortalRH.Api.Models.PortalUser", "PortalUser")
-                        .WithMany()
-                        .HasForeignKey("PortalUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("FeedPost");
-
-                    b.Navigation("PortalUser");
-                });
-
-            modelBuilder.Entity("PortalRH.Api.Models.FeedPostLike", b =>
                 {
                     b.HasOne("PortalRH.Api.Models.FeedPost", "FeedPost")
                         .WithMany()

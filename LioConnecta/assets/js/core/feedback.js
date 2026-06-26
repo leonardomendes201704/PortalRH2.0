@@ -6,6 +6,7 @@ import { collectLdapWizardPayload } from "../settings/ldapWizard.js";
 import { updatePortalUserPermission, updatePortalUserRole, updatePortalUserStatus } from "../services/portalUsersAdminService.js";
 import { replaceMoodCardElement, submitMoodSurveyVote } from "../services/moodSurveyService.js";
 import { redirectToPortalLogin } from "../services/portalAuthService.js";
+import { DATA_MODES, getRuntimeConfig } from "./runtimeConfig.js";
 
 let feedbackBound = false;
 let selectedImageDataUrl = "";
@@ -487,6 +488,7 @@ export function bindInteractionFeedback(root = document) {
         publishButton.closest("#communication-admin-modal") ||
         publishButton.closest("#mood-feedback-admin") ||
         publishButton.closest(".poll-vote-form") ||
+        publishButton.closest(".feed-composer-form") ||
         publishButton.tagName === "A"
       );
 
@@ -513,6 +515,13 @@ export function bindInteractionFeedback(root = document) {
 
     const postAction = event.target.closest(".post-actions button");
     if (postAction) {
+      if (
+        postAction.getAttribute("data-action") ||
+        getRuntimeConfig().dataMode === DATA_MODES.API
+      ) {
+        return;
+      }
+
       const action = postAction.textContent?.trim() || "Acao";
       const author = postAction.dataset.postAuthor || "post";
       showToast(`${action} registrado no conteudo de ${author}.`, "success");

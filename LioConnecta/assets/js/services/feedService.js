@@ -1,18 +1,10 @@
-import { getJson } from "./apiClient.js";
+import { getJson, postJson } from "./apiClient.js";
 import { unwrapDataEnvelope } from "./apiClient.js";
 import { mapFeedViewModel } from "../mappers/feedMapper.js";
 import { validateFeedContract } from "../validators/feedValidator.js";
-import { DATA_MODES, getRuntimeConfig, resolveDataSource, usesEnvelope } from "../core/runtimeConfig.js";
-import { listCommunications } from "./communicationService.js";
+import { DATA_MODES, getRuntimeConfig, resolveApiEndpoint, resolveDataSource, usesEnvelope } from "../core/runtimeConfig.js";
 import { getPortalAuthHeaders } from "./portalAuthService.js";
 import { DEFAULT_FEED_TITLE } from "../view-models/defaults.js";
-
-function normalizeKey(value = "") {
-  return String(value)
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
-}
 
 function formatTimeAgo(value) {
   if (!value) {
@@ -42,27 +34,23 @@ function formatTimeAgo(value) {
   return `há ${days} dia${days > 1 ? "s" : ""}`;
 }
 
-function mapCommunicationToFeedPost(item = {}) {
-  const status = normalizeKey(item.status);
-  if (!status.includes("publicado")) {
-    return null;
-  }
-
-  const title = String(item.title || "").trim();
-  const summary = String(item.summary || "").trim();
-  const body = String(item.body || "").trim();
+function mapFeedItemToPost(item = {}) {
+  const source = String(item.source || "");
+  const isCommunication = source === "Communication";
 
   return {
-    communicationId: String(item.id || ""),
-    slug: String(item.slug || ""),
-    author: String(item.owner || "Comunicação Corporativa"),
-    area: String(item.category || "Corporativo"),
-    timeAgo: formatTimeAgo(item.publishedAt),
-    text: summary || body,
-    highlightTitle: title,
-    highlightText: summary,
+    postId: String(item.id || ""),
+    source,
+    communicationId: isCommunication ? String(item.communicationId || item.id || "") : "",
+    slug: "",
+    author: String(item.author || "Colaborador"),
+    area: String(item.area || "Companhia"),
+    timeAgo: formatTimeAgo(item.publishedAtUtc),
+    text: String(item.text || ""),
+    highlightTitle: String(item.highlightTitle || ""),
+    highlightText: String(item.highlightText || ""),
     image: String(item.imageUrl || ""),
-    imageAlt: title || "Comunicado oficial",
+    imageAlt: String(item.highlightTitle || item.author || "Publicacao"),
     reactions: Number(item.likeCount ?? 0),
     hasLiked: Boolean(item.hasLiked),
     commentsCount: 0,
@@ -71,14 +59,12 @@ function mapCommunicationToFeedPost(item = {}) {
   };
 }
 
-function buildFeedFromCommunications(items = []) {
-  const posts = items
-    .map(mapCommunicationToFeedPost)
-    .filter(Boolean);
+function mapApiFeedPayload(payload = {}) {
+  const items = Array.isArray(payload.items) ? payload.items : [];
 
   return {
-    title: DEFAULT_FEED_TITLE,
-    posts
+    title: String(payload.title || DEFAULT_FEED_TITLE),
+    posts: items.map(mapFeedItemToPost).filter((post) => post.text || post.image)
   };
 }
 
@@ -87,11 +73,13 @@ export async function getFeedData() {
 
   if (config.dataMode === DATA_MODES.API) {
     try {
-      const items = await listCommunications({ headers: getPortalAuthHeaders() });
-      return mapFeedViewModel(buildFeedFromCommunications(items));
+      const payload = await getJson(resolveApiEndpoint("feed"), {
+        headers: getPortalAuthHeaders()
+      });
+      return mapFeedViewModel(mapApiFeedPayload(payload), { allowDefaults: false });
     } catch (error) {
-      console.error("Falha ao carregar feed de comunicados.", error);
-      return mapFeedViewModel({ title: DEFAULT_FEED_TITLE, posts: [] });
+      console.error("Falha ao carregar feed do portal.", error);
+      return mapFeedViewModel({ title: DEFAULT_FEED_TITLE, posts: [] }, { allowDefaults: false });
     }
   }
 
@@ -101,17 +89,40 @@ export async function getFeedData() {
   return mapFeedViewModel(raw);
 }
 
+export async function createFeedPost(text, options = {}) {
+  const payload = await postJson(resolveApiEndpoint("feed"), { text }, options);
+  return mapFeedItemToPost(payload?.item || payload);
+}
+
+export async function toggleFeedLike(itemId, source, options = {}) {
+  return postJson(`${resolveApiEndpoint("feed")}/${encodeURIComponent(itemId)}/like`, { source }, options);
+}
+
+function formatLikeLabel(count) {
+  const total = Number(count ?? 0);
+  if (total <= 0) {
+    return "Nenhuma curtida ainda";
+  }
+  return total === 1 ? "1 curtida" : `${total} curtidas`;
+}
+
 export function updatePostLikeState(post, result) {
-  updateCommunicationLikeUi(post, result);
+  updateFeedLikeUi(post, result);
 }
 
 export function updateCommunicationLikeUi(scope, result) {
+  updateFeedLikeUi(scope, result);
+}
+
+export function updateFeedLikeUi(scope, result) {
   if (!scope || !result) {
     return;
   }
 
-  const likeButton = scope.querySelector("[data-action='toggle-communication-like']");
+  const likeButton = scope.querySelector("[data-action='toggle-feed-like'], [data-action='toggle-communication-like']");
   const reactionsLabel = scope.querySelector("[data-post-reactions-count], [data-communication-like-count]");
+  const reactionsRow = scope.querySelector(".post-reactions");
+  const likeCount = Number(result.likeCount ?? 0);
 
   if (likeButton) {
     likeButton.classList.toggle("is-active", Boolean(result.hasLiked));
@@ -120,7 +131,21 @@ export function updateCommunicationLikeUi(scope, result) {
 
   if (reactionsLabel) {
     reactionsLabel.textContent = scope.classList.contains("communication-detail-card")
-      ? String(Number(result.likeCount ?? 0))
-      : `${Number(result.likeCount ?? 0)} reações`;
+      ? String(likeCount)
+      : formatLikeLabel(likeCount);
+  }
+
+  if (reactionsRow) {
+    const existingBubble = reactionsRow.querySelector(".reaction-bubble.like");
+    if (likeCount > 0 && !existingBubble) {
+      reactionsRow.insertAdjacentHTML("afterbegin", `
+        <span class="reaction-bubble like" aria-label="Curtir">
+          <i class="fa-solid fa-thumbs-up" aria-hidden="true"></i>
+        </span>
+      `);
+    }
+    if (likeCount <= 0 && existingBubble) {
+      existingBubble.remove();
+    }
   }
 }

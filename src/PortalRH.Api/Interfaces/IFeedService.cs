@@ -1,0 +1,26 @@
+using PortalRH.Api.Contracts.Feed;
+
+namespace PortalRH.Api.Interfaces;
+
+public interface IFeedService
+{
+    Task<FeedResponse> GetFeedAsync(Guid? portalUserId, CancellationToken cancellationToken);
+    Task<FeedItemDto> CreatePostAsync(
+        Guid portalUserId,
+        string text,
+        FeedAuditContext auditContext,
+        CancellationToken cancellationToken);
+    Task<FeedLikeResponse?> ToggleLikeAsync(
+        Guid itemId,
+        string source,
+        Guid portalUserId,
+        FeedAuditContext auditContext,
+        CancellationToken cancellationToken);
+}
+
+public sealed record FeedAuditContext(
+    string ActorLogin,
+    string ActorDisplayName,
+    string? IpAddress,
+    string? Origin,
+    string? UserAgent);

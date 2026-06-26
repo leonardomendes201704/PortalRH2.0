@@ -10,6 +10,8 @@ function mapComment(comment) {
 
 function mapPost(post) {
   return {
+    postId: asString(post?.postId, ""),
+    source: asString(post?.source, ""),
     communicationId: asString(post?.communicationId, ""),
     slug: asString(post?.slug, ""),
     author: asString(post?.author, "Autor não informado"),
@@ -28,11 +30,17 @@ function mapPost(post) {
   };
 }
 
-export function mapFeedViewModel(raw = {}) {
+export function mapFeedViewModel(raw = {}, { allowDefaults = true } = {}) {
+  const posts = asArray(raw.posts)
+    .map(mapPost)
+    .filter((post) => post.text || post.image);
+
   return {
     title: asString(raw.title, DEFAULT_FEED_TITLE),
-    posts: asArray(raw.posts).length
-      ? asArray(raw.posts).map(mapPost).filter((post) => post.text || post.image)
-      : [...DEFAULT_POSTS]
+    posts: posts.length > 0
+      ? posts
+      : allowDefaults
+        ? [...DEFAULT_POSTS]
+        : []
   };
 }

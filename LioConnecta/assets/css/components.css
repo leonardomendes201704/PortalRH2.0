@@ -1086,6 +1086,24 @@
   color: var(--color-text-muted);
 }
 
+.feed-composer-textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 88px;
+  font-family: inherit;
+  line-height: 1.5;
+  color: #173154;
+}
+
+.feed-composer-textarea::placeholder {
+  color: #7a8a9c;
+}
+
+.feed-action-chip:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .feed-composer-head {
   display: flex;
   align-items: flex-start;
