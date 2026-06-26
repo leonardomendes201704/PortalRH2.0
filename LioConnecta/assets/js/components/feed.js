@@ -1,6 +1,7 @@
 import { renderEmptyState } from "./cards.js";
 import { escapeHtml } from "./html.js";
-import { resolveFeedMediaUrl, serializeGalleryImages } from "../services/feedMedia.js?v=0.20.2";
+import { resolveFeedMediaUrl, serializeGalleryImages } from "../services/feedMedia.js?v=0.21.0";
+import { renderCommentBody, renderPostCommentComposer } from "./feedPostCommentComposer.js?v=0.21.0";
 
 const PHOTO_ACTION_LABEL = "Adicionar fotos";
 
@@ -120,10 +121,12 @@ function renderPost(post) {
   const canLike = Boolean(post.postId && post.source);
   const postActions = [
     { label: "Curtir", action: canLike ? "toggle-feed-like" : "", active: post.hasLiked },
-    { label: "Comentar", action: "" },
     { label: "Compartilhar", action: "" },
     { label: "Salvar", action: "" }
   ];
+
+  const commentsCount = Number(post.commentsCount ?? 0);
+  const commentsLabel = commentsCount === 1 ? "1 comentário" : `${commentsCount} comentários`;
 
   return `
     <article class="post" data-post-id="${escapeHtml(post.postId)}" data-communication-id="${escapeHtml(post.communicationId)}">
@@ -151,7 +154,7 @@ function renderPost(post) {
 
       <div class="post-stats">
         ${renderReactionSummary(post)}
-        <div>${escapeHtml(post.commentsCount)} comentários • ${escapeHtml(post.sharesCount)} compartilhamentos</div>
+        <div>${escapeHtml(commentsLabel)} • ${escapeHtml(String(post.sharesCount ?? 0))} compartilhamentos</div>
       </div>
 
       <div class="post-actions">
@@ -169,22 +172,21 @@ function renderPost(post) {
         `).join("")}
       </div>
 
-      <div class="post-comments">
-        ${post.comments.map((comment) => `
-          <div class="post-comment-item">
-            <div class="avatar avatar--small" aria-hidden="true"><i class="fa-solid fa-user"></i></div>
-            <div class="post-comment-bubble">
-              <strong>${escapeHtml(comment.author)}</strong>
-              <span>${escapeHtml(comment.text)}</span>
+      ${post.comments.length ? `
+        <div class="post-comments">
+          ${post.comments.map((comment) => `
+            <div class="post-comment-item" data-comment-id="${escapeHtml(comment.id || "")}">
+              <div class="avatar avatar--small" aria-hidden="true"><i class="fa-solid fa-user"></i></div>
+              <div class="post-comment-bubble">
+                <strong>${escapeHtml(comment.author)}</strong>
+                <span class="post-comment-text">${renderCommentBody(comment)}</span>
+              </div>
             </div>
-          </div>
-        `).join("")}
-      </div>
+          `).join("")}
+        </div>
+      ` : ""}
 
-      <div class="post-comment">
-        <div class="avatar avatar--comment" aria-hidden="true"><i class="fa-solid fa-user"></i></div>
-        <div class="post-comment-box">Adicione um comentário...</div>
-      </div>
+      ${renderPostCommentComposer(post)}
     </article>
   `;
 }

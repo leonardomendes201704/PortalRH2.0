@@ -24,6 +24,15 @@ public interface IFeedService
         string text,
         FeedAuditContext auditContext,
         CancellationToken cancellationToken);
+    Task<FeedPostCommentsResponse?> GetPostCommentsAsync(Guid feedPostId, CancellationToken cancellationToken);
+    Task<FeedPostCommentDto?> CreatePostCommentAsync(
+        Guid feedPostId,
+        Guid portalUserId,
+        string text,
+        IReadOnlyList<Guid> mentionedUserIds,
+        FeedAuditContext auditContext,
+        CancellationToken cancellationToken);
+    Task<FeedMentionSuggestionsResponse> SuggestMentionsAsync(string query, CancellationToken cancellationToken);
 }
 
 public sealed record FeedAuditContext(

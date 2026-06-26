@@ -1,5 +1,36 @@
 namespace PortalRH.Api.Contracts.Feed;
 
+public record FeedPostCommentMentionDto(
+    Guid UserId,
+    string DisplayName);
+
+public record FeedPostCommentDto(
+    Guid Id,
+    string Author,
+    string Text,
+    DateTime CreatedAtUtc,
+    IReadOnlyList<FeedPostCommentMentionDto> Mentions);
+
+public record FeedPostCommentsResponse(
+    Guid FeedPostId,
+    IReadOnlyList<FeedPostCommentDto> Items);
+
+public record CreateFeedPostCommentRequest
+{
+    public string Text { get; set; } = string.Empty;
+    public List<Guid> MentionedUserIds { get; set; } = [];
+}
+
+public record CreateFeedPostCommentResponse(FeedPostCommentDto Item);
+
+public record FeedMentionSuggestionDto(
+    Guid UserId,
+    string DisplayName,
+    string Department);
+
+public record FeedMentionSuggestionsResponse(
+    IReadOnlyList<FeedMentionSuggestionDto> Items);
+
 public record FeedMediaItemDto(
     Guid Id,
     string Url,
@@ -38,7 +69,9 @@ public record FeedItemDto(
     string? ImageUrl,
     int LikeCount,
     bool HasLiked,
-    IReadOnlyList<FeedMediaItemDto> Media);
+    IReadOnlyList<FeedMediaItemDto> Media,
+    int CommentCount,
+    IReadOnlyList<FeedPostCommentDto> Comments);
 
 public record FeedResponse(
     string Title,

@@ -15,6 +15,8 @@ public class FeedService : IFeedService
     private const int MaxMediaDescriptionLength = 500;
 
     private const int MaxMediaCommentLength = 1000;
+    private const int MaxPostCommentLength = 2000;
+    private const int MaxMentionsPerComment = 20;
 
     private static readonly HashSet<string> AllowedAspectRatios = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -60,12 +62,14 @@ public class FeedService : IFeedService
 
         var mediaIds = userPosts.SelectMany(item => item.Media).Select(item => item.Id).ToList();
         var mediaCommentCounts = await LoadMediaCommentCountsAsync(mediaIds, cancellationToken);
+        var postComments = await LoadFeedPostCommentsAsync(userPostIds, cancellationToken);
 
         var items = new List<FeedItemDto>();
 
         items.AddRange(userPosts.Select(item =>
         {
             var media = MapMediaItems(item.Media, mediaCommentCounts);
+            var comments = postComments.GetValueOrDefault(item.Id) ?? [];
             return new FeedItemDto(
                 item.Id,
                 FeedItemSources.UserPost,
@@ -79,7 +83,9 @@ public class FeedService : IFeedService
                 media.FirstOrDefault()?.Url,
                 userPostLikeCounts.GetValueOrDefault(item.Id),
                 likedUserPostIds.Contains(item.Id),
-                media);
+                media,
+                comments.Count,
+                comments);
         }));
 
         items.AddRange(communications.Select(item => new FeedItemDto(
@@ -95,6 +101,8 @@ public class FeedService : IFeedService
             item.ImageUrl,
             communicationLikeCounts.GetValueOrDefault(item.Id),
             likedCommunicationIds.Contains(item.Id),
+            [],
+            0,
             [])));
 
         return new FeedResponse(
@@ -196,7 +204,9 @@ public class FeedService : IFeedService
             mappedMedia.FirstOrDefault()?.Url,
             0,
             false,
-            mappedMedia);
+            mappedMedia,
+            0,
+            []);
     }
 
     public async Task<FeedLikeResponse?> ToggleLikeAsync(
@@ -305,6 +315,125 @@ public class FeedService : IFeedService
         return MapMediaComment(entity, user.DisplayName);
     }
 
+    public async Task<FeedPostCommentsResponse?> GetPostCommentsAsync(Guid feedPostId, CancellationToken cancellationToken)
+    {
+        var feedPost = await _dbContext.FeedPosts
+            .AsNoTracking()
+            .FirstOrDefaultAsync(item => item.Id == feedPostId, cancellationToken);
+
+        if (feedPost is null)
+        {
+            return null;
+        }
+
+        var comments = await LoadFeedPostCommentsAsync([feedPostId], cancellationToken);
+        return new FeedPostCommentsResponse(feedPostId, comments.GetValueOrDefault(feedPostId) ?? []);
+    }
+
+    public async Task<FeedPostCommentDto?> CreatePostCommentAsync(
+        Guid feedPostId,
+        Guid portalUserId,
+        string text,
+        IReadOnlyList<Guid> mentionedUserIds,
+        FeedAuditContext auditContext,
+        CancellationToken cancellationToken)
+    {
+        var normalizedText = text?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(normalizedText))
+        {
+            throw new InvalidOperationException("Informe um comentario para publicar no post.");
+        }
+
+        if (normalizedText.Length > MaxPostCommentLength)
+        {
+            throw new InvalidOperationException($"O comentario pode ter no maximo {MaxPostCommentLength} caracteres.");
+        }
+
+        var feedPost = await _dbContext.FeedPosts
+            .AsNoTracking()
+            .FirstOrDefaultAsync(item => item.Id == feedPostId, cancellationToken);
+
+        if (feedPost is null)
+        {
+            return null;
+        }
+
+        var user = await _dbContext.PortalUsers
+            .AsNoTracking()
+            .FirstOrDefaultAsync(item => item.Id == portalUserId, cancellationToken);
+
+        if (user is null)
+        {
+            throw new InvalidOperationException("Usuario do portal nao encontrado.");
+        }
+
+        var mentionIds = await ResolveMentionedUserIdsAsync(mentionedUserIds, cancellationToken);
+        if (mentionIds.Count > MaxMentionsPerComment)
+        {
+            throw new InvalidOperationException($"O comentario pode mencionar no maximo {MaxMentionsPerComment} usuarios.");
+        }
+
+        var now = DateTime.UtcNow;
+        var entity = new FeedPostComment
+        {
+            Id = Guid.NewGuid(),
+            FeedPostId = feedPostId,
+            PortalUserId = portalUserId,
+            Text = normalizedText,
+            CreatedAtUtc = now,
+            IpAddress = auditContext.IpAddress,
+            Origin = auditContext.Origin
+        };
+
+        foreach (var mentionId in mentionIds)
+        {
+            entity.Mentions.Add(new FeedPostCommentMention
+            {
+                Id = Guid.NewGuid(),
+                FeedPostCommentId = entity.Id,
+                MentionedPortalUserId = mentionId
+            });
+        }
+
+        _dbContext.FeedPostComments.Add(entity);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        var mentionedUsers = mentionIds.Count == 0
+            ? []
+            : await _dbContext.PortalUsers
+                .AsNoTracking()
+                .Where(item => mentionIds.Contains(item.Id))
+                .ToDictionaryAsync(item => item.Id, item => item.DisplayName, cancellationToken);
+
+        return MapPostComment(entity, user.DisplayName, mentionedUsers);
+    }
+
+    public async Task<FeedMentionSuggestionsResponse> SuggestMentionsAsync(string query, CancellationToken cancellationToken)
+    {
+        var normalizedQuery = query?.Trim() ?? string.Empty;
+        if (normalizedQuery.Length < 2)
+        {
+            return new FeedMentionSuggestionsResponse([]);
+        }
+
+        var lowered = normalizedQuery.ToLowerInvariant();
+        var users = await _dbContext.PortalUsers
+            .AsNoTracking()
+            .Where(item => item.IsActive)
+            .Where(item =>
+                item.DisplayName.ToLower().Contains(lowered) ||
+                item.Login.ToLower().Contains(lowered) ||
+                item.Email.ToLower().Contains(lowered))
+            .OrderBy(item => item.DisplayName)
+            .Take(8)
+            .ToListAsync(cancellationToken);
+
+        return new FeedMentionSuggestionsResponse(users.Select(item => new FeedMentionSuggestionDto(
+            item.Id,
+            item.DisplayName,
+            item.Department ?? "Companhia")).ToList());
+    }
+
     private static List<CreateFeedPostMediaItem> NormalizeMediaItems(IReadOnlyList<CreateFeedPostMediaItem>? media)
     {
         if (media is null || media.Count == 0)
@@ -348,6 +477,80 @@ public class FeedService : IFeedService
         }
 
         return normalized;
+    }
+
+    private static FeedPostCommentDto MapPostComment(
+        FeedPostComment comment,
+        string? authorOverride = null,
+        IReadOnlyDictionary<Guid, string>? mentionedUsers = null)
+    {
+        var mentions = comment.Mentions
+            .Select(item => new FeedPostCommentMentionDto(
+                item.MentionedPortalUserId,
+                mentionedUsers?.GetValueOrDefault(item.MentionedPortalUserId)
+                    ?? item.MentionedPortalUser?.DisplayName
+                    ?? "Colaborador"))
+            .ToList();
+
+        return new FeedPostCommentDto(
+            comment.Id,
+            authorOverride ?? comment.PortalUser?.DisplayName ?? "Colaborador",
+            comment.Text,
+            comment.CreatedAtUtc,
+            mentions);
+    }
+
+    private async Task<Dictionary<Guid, List<FeedPostCommentDto>>> LoadFeedPostCommentsAsync(
+        IReadOnlyCollection<Guid> feedPostIds,
+        CancellationToken cancellationToken)
+    {
+        if (feedPostIds.Count == 0)
+        {
+            return [];
+        }
+
+        var comments = await _dbContext.FeedPostComments
+            .AsNoTracking()
+            .Include(item => item.PortalUser)
+            .Include(item => item.Mentions)
+            .ThenInclude(item => item.MentionedPortalUser)
+            .Where(item => feedPostIds.Contains(item.FeedPostId))
+            .OrderBy(item => item.CreatedAtUtc)
+            .ToListAsync(cancellationToken);
+
+        return comments
+            .GroupBy(item => item.FeedPostId)
+            .ToDictionary(
+                group => group.Key,
+                group => group.Select(item => MapPostComment(item)).ToList());
+    }
+
+    private async Task<List<Guid>> ResolveMentionedUserIdsAsync(
+        IReadOnlyList<Guid>? mentionedUserIds,
+        CancellationToken cancellationToken)
+    {
+        if (mentionedUserIds is null || mentionedUserIds.Count == 0)
+        {
+            return [];
+        }
+
+        var uniqueIds = mentionedUserIds
+            .Where(item => item != Guid.Empty)
+            .Distinct()
+            .ToList();
+
+        if (uniqueIds.Count == 0)
+        {
+            return [];
+        }
+
+        var activeIds = await _dbContext.PortalUsers
+            .AsNoTracking()
+            .Where(item => item.IsActive && uniqueIds.Contains(item.Id))
+            .Select(item => item.Id)
+            .ToListAsync(cancellationToken);
+
+        return activeIds;
     }
 
     private static FeedMediaCommentDto MapMediaComment(FeedPostMediaComment comment, string? authorOverride = null)

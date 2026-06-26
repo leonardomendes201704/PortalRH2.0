@@ -58,6 +58,80 @@ public class FeedController : ControllerBase
         }
     }
 
+    [HttpGet("mentions/suggest")]
+    [RequirePortalSession]
+    [ProducesResponseType(typeof(FeedMentionSuggestionsResponse), StatusCodes.Status200OK)]
+    public async Task<IActionResult> SuggestMentions([FromQuery] string? q, CancellationToken cancellationToken)
+    {
+        var session = PortalSessionHttpContext.Get(HttpContext);
+        if (session?.PortalUser is null)
+        {
+            return Unauthorized(new { message = "Sessao do portal nao encontrada." });
+        }
+
+        var result = await _feedService.SuggestMentionsAsync(q ?? string.Empty, cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpGet("{id:guid}/comments")]
+    [ProducesResponseType(typeof(FeedPostCommentsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetPostComments(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await _feedService.GetPostCommentsAsync(id, cancellationToken);
+        return result is null ? NotFound() : Ok(result);
+    }
+
+    [HttpPost("{id:guid}/comments")]
+    [RequirePortalSession]
+    [ProducesResponseType(typeof(CreateFeedPostCommentResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> CreatePostComment(
+        Guid id,
+        [FromBody] CreateFeedPostCommentRequest request,
+        CancellationToken cancellationToken)
+    {
+        var session = PortalSessionHttpContext.Get(HttpContext);
+        if (session?.PortalUser is null)
+        {
+            return Unauthorized(new { message = "Sessao do portal nao encontrada." });
+        }
+
+        if (!PortalModuleAccess.HasModuleAccess(
+                session.PortalUser,
+                PortalModulePermissionCatalog.Feed,
+                PortalModulePermissionCatalog.Interact,
+                PortalModulePermissionCatalog.Manage))
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new
+            {
+                message = "Voce nao possui permissao para comentar no feed."
+            });
+        }
+
+        try
+        {
+            var item = await _feedService.CreatePostCommentAsync(
+                id,
+                session.PortalUserId,
+                request.Text,
+                request.MentionedUserIds ?? [],
+                BuildAuditContext(session.PortalUser.Login, session.PortalUser.DisplayName),
+                cancellationToken);
+
+            return item is null
+                ? NotFound()
+                : Created($"/api/feed/{id}/comments", new CreateFeedPostCommentResponse(item));
+        }
+        catch (InvalidOperationException exception)
+        {
+            return BadRequest(new { message = exception.Message });
+        }
+    }
+
     [HttpPost("{id:guid}/like")]
     [RequirePortalSession]
     [ProducesResponseType(typeof(FeedLikeResponse), StatusCodes.Status200OK)]
