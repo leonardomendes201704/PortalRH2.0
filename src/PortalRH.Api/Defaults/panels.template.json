@@ -82,7 +82,7 @@
       ]
     },
     {
-      "title": "AGENDA DO DIA",
+      "title": "AGENDA",
       "moduleKey": "agenda",
       "items": [
         { "label": "09:00 • Daily RH" },

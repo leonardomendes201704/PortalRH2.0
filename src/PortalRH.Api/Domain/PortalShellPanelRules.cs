@@ -21,7 +21,7 @@ public static class PortalShellPanelRules
 
         return descriptor.Title.ToUpperInvariant() switch
         {
-            "AGENDA DO DIA" => PortalModulePermissionCatalog.Agenda,
+            "AGENDA" or "AGENDA DO DIA" => PortalModulePermissionCatalog.Agenda,
             "COMUNICADOS" => PortalModulePermissionCatalog.Communications,
             _ => PortalModulePermissionCatalog.Home
         };

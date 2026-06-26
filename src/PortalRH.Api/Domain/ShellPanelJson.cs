@@ -16,6 +16,11 @@ internal static class ShellPanelJson
     public static JsonNode LabelOnly(string label, string? url = null) =>
         url is null ? Serialize(new { label }) : Serialize(new { label, url });
 
+    public static JsonNode LabelDescription(string label, string? description = null) =>
+        string.IsNullOrWhiteSpace(description)
+            ? Serialize(new { label })
+            : Serialize(new { label, description });
+
     public static JsonNode LabelLink(string label, string url, string? badge = null) =>
         badge is null ? Serialize(new { label, url }) : Serialize(new { label, url, badge });
 

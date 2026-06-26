@@ -30,21 +30,26 @@ export async function getAgendaDayData() {
   return normalizeAgendaPayload(payload);
 }
 
+function isAgendaPanelTitle(title) {
+  return title === "AGENDA" || title === "AGENDA DO DIA";
+}
+
 export function applyAgendaToShellData(data, agenda) {
   const normalized = normalizeAgendaPayload(agenda);
 
   return {
     ...data,
     rightPanels: (data.rightPanels || []).map((panel) => {
-      if (panel.title !== "AGENDA DO DIA") {
+      if (!isAgendaPanelTitle(panel.title)) {
         return panel;
       }
 
       return {
         ...panel,
+        title: "AGENDA",
         items: normalized.items.map((item) => ({
           label: `${item.timeLabel} • ${item.title}`,
-          description: item.location || item.description || "Compromisso corporativo"
+          description: item.location || item.description || ""
         }))
       };
     }),

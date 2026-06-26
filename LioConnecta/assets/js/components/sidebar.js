@@ -190,12 +190,16 @@ export function renderProfileCard(panel) {
   `;
 }
 
+function isAgendaPanelTitle(title) {
+  return title === "AGENDA" || title === "AGENDA DO DIA";
+}
+
 export function renderAgendaCard(panel) {
   const items = Array.isArray(panel.items) ? panel.items : [];
 
   return `
     <section class="card agenda-card">
-      <div class="card-header">${escapeHtml(panel.title)}</div>
+      <div class="card-header">${escapeHtml(isAgendaPanelTitle(panel.title) ? "AGENDA" : panel.title)}</div>
       <div class="agenda-list">
         ${items.length ? items.map((item) => {
           const raw = typeof item === "string" ? item : item.label;
@@ -208,11 +212,13 @@ export function renderAgendaCard(panel) {
               <div class="agenda-dot" aria-hidden="true"></div>
               <div class="agenda-copy">
                 <strong>${escapeHtml(title)}</strong>
-                <span>${escapeHtml(typeof item === "object" && item.description ? item.description : "Compromisso corporativo")}</span>
+                ${typeof item === "object" && item.description
+    ? `<span>${escapeHtml(item.description)}</span>`
+    : ""}
               </div>
             </div>
           `;
-        }).join("") : renderEmptyState("Agenda livre", "Nenhum compromisso programado para hoje.")}
+        }).join("") : renderEmptyState("Agenda livre", "Nenhum compromisso programado nos proximos dias.")}
       </div>
     </section>
   `;
@@ -232,7 +238,7 @@ export function renderSidebarPanels(panels) {
       return renderNotificationsCard(panel);
     }
 
-    if (panel.title === "AGENDA DO DIA") {
+    if (isAgendaPanelTitle(panel.title)) {
       return renderAgendaCard(panel);
     }
 

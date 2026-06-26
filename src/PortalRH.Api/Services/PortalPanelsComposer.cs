@@ -177,11 +177,13 @@ public class PortalPanelsComposer : IPortalPanelsComposer
     private static PanelDto BuildAgendaPanel(Contracts.Agenda.AgendaDayResponse agenda)
     {
         var items = agenda.Items
-            .Select(item => ShellPanelJson.LabelOnly($"{item.TimeLabel} • {item.Title}", null))
+            .Select(item => ShellPanelJson.LabelDescription(
+                $"{item.TimeLabel} • {item.Title}",
+                item.Location ?? item.Description))
             .Cast<JsonNode>()
             .ToList();
 
-        return new PanelDto(string.Empty, "AGENDA DO DIA", string.Empty, string.Empty, string.Empty, string.Empty, PortalModulePermissionCatalog.Agenda, items);
+        return new PanelDto(string.Empty, "AGENDA", string.Empty, string.Empty, string.Empty, string.Empty, PortalModulePermissionCatalog.Agenda, items);
     }
 
     private static PanelDto BuildCommunicationsPanel(IReadOnlyList<Contracts.Communications.CommunicationDto> communications)

@@ -12,7 +12,7 @@ test("homeService compõe a home a partir dos services de domínio", async () =>
     ["./assets/data/feed.json", { posts: [{ author: "Ana", text: "Feed ok" }] }],
     ["./assets/data/panels.json", {
       leftPanels: [{ title: "L" }],
-      rightPanels: [{ title: "AGENDA DO DIA", items: [{ label: "09:00 • Daily RH" }] }]
+      rightPanels: [{ title: "AGENDA", items: [{ label: "09:00 • Daily RH" }] }]
     }]
   ]);
 
@@ -31,7 +31,7 @@ test("homeService compõe a home a partir dos services de domínio", async () =>
     assert.equal(result.carousel.slides.length, 1);
     assert.equal(result.feed.posts.length, 1);
     assert.equal(result.leftPanels[0].title, "L");
-    assert.equal(result.rightPanels[0].title, "AGENDA DO DIA");
+    assert.equal(result.rightPanels[0].title, "AGENDA");
     assert.equal(result.rightPanels[0].items[0].label, "09:00 • Daily RH");
   } finally {
     global.fetch = originalFetch;

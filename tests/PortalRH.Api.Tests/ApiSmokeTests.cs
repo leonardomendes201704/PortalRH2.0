@@ -1649,7 +1649,7 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
 
         Assert.NotNull(agenda);
         Assert.Equal(2, agenda.TotalCount);
-        Assert.Contains(agenda.Items, item => item.Title == "Daily RH" && item.TimeLabel == "09:00");
+        Assert.Contains(agenda.Items, item => item.Title == "Daily RH");
         Assert.Contains(agenda.Items, item => item.Title == "Comite de Pessoas" && item.Location == "Microsoft Teams");
         Assert.DoesNotContain(agenda.Items, item => item.Title == "Evento de outro colaborador");
     }
@@ -1810,13 +1810,20 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<PortalRhDbContext>();
         var timeZone = ResolveSaoPauloTimeZoneForTests();
-        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timeZone));
+        var nowLocal = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timeZone);
 
-        DateTime ToUtc(int hour, int minute = 0)
+        (DateTime StartAtUtc, DateTime EndAtUtc) ToUtcFromNow(double addHours, double durationHours)
         {
-            var localDate = today.ToDateTime(new TimeOnly(hour, minute), DateTimeKind.Unspecified);
-            return TimeZoneInfo.ConvertTimeToUtc(localDate, timeZone);
+            var startLocal = nowLocal.AddHours(addHours);
+            var endLocal = startLocal.AddHours(durationHours);
+            return (
+                TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(startLocal, DateTimeKind.Unspecified), timeZone),
+                TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(endLocal, DateTimeKind.Unspecified), timeZone));
         }
+
+        var daily = ToUtcFromNow(1, 0.5);
+        var comite = ToUtcFromNow(2, 1);
+        var otherUser = ToUtcFromNow(3, 1);
 
         dbContext.AgendaEvents.AddRange(
             new AgendaEvent
@@ -1829,8 +1836,8 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
                 Source = "Manual",
                 Audience = "Toda a companhia",
                 IsActive = true,
-                StartAtUtc = ToUtc(9),
-                EndAtUtc = ToUtc(9, 30),
+                StartAtUtc = daily.StartAtUtc,
+                EndAtUtc = daily.EndAtUtc,
                 CreatedAtUtc = DateTime.UtcNow
             },
             new AgendaEvent
@@ -1843,8 +1850,8 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
                 Source = "Manual",
                 Audience = "Usuario autenticado",
                 IsActive = true,
-                StartAtUtc = ToUtc(10),
-                EndAtUtc = ToUtc(11),
+                StartAtUtc = comite.StartAtUtc,
+                EndAtUtc = comite.EndAtUtc,
                 CreatedAtUtc = DateTime.UtcNow
             },
             new AgendaEvent
@@ -1857,8 +1864,8 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
                 Source = "Manual",
                 Audience = "Outro usuario",
                 IsActive = true,
-                StartAtUtc = ToUtc(14),
-                EndAtUtc = ToUtc(15),
+                StartAtUtc = otherUser.StartAtUtc,
+                EndAtUtc = otherUser.EndAtUtc,
                 CreatedAtUtc = DateTime.UtcNow
             });
 
