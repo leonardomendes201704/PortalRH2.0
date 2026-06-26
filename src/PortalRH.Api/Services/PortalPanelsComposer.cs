@@ -177,9 +177,15 @@ public class PortalPanelsComposer : IPortalPanelsComposer
     private static PanelDto BuildAgendaPanel(Contracts.Agenda.AgendaDayResponse agenda)
     {
         var items = agenda.Items
-            .Select(item => ShellPanelJson.LabelDescription(
-                $"{item.TimeLabel} • {item.Title}",
-                item.Location ?? item.Description))
+            .Select(item => ShellPanelJson.AgendaPanelItem(
+                item.Id,
+                item.Title,
+                item.TimeLabel,
+                item.Description,
+                item.Location,
+                item.Source,
+                item.StartAtUtc,
+                item.EndAtUtc))
             .Cast<JsonNode>()
             .ToList();
 

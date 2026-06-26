@@ -1,5 +1,6 @@
 import { renderEmptyState } from "./cards.js";
 import { escapeHtml } from "./html.js";
+import { normalizeAgendaPanelItem } from "../services/agendaService.js";
 
 const NOTIFICATION_ICONS = {
   "Notificações Totais": "fa-solid fa-bell",
@@ -201,22 +202,25 @@ export function renderAgendaCard(panel) {
     <section class="card agenda-card">
       <div class="card-header">${escapeHtml(isAgendaPanelTitle(panel.title) ? "AGENDA" : panel.title)}</div>
       <div class="agenda-list">
-        ${items.length ? items.map((item) => {
-          const raw = typeof item === "string" ? item : item.label;
-          const [time, ...titleParts] = String(raw).split("•");
-          const title = titleParts.join("•").trim() || String(raw).trim();
+        ${items.length ? items.map((item, index) => {
+          const event = normalizeAgendaPanelItem(item, `agenda-item-${index}`);
+          const preview = event.location || event.description || "";
 
           return `
-            <div class="agenda-item">
-              <div class="agenda-time">${escapeHtml(time.trim())}</div>
+            <button
+              type="button"
+              class="agenda-item agenda-item--interactive"
+              data-action="open-agenda-event-modal"
+              data-agenda-id="${escapeHtml(event.id || `agenda-item-${index}`)}"
+              aria-label="Ver detalhes de ${escapeHtml(event.title)}"
+            >
+              <div class="agenda-time">${escapeHtml(event.timeLabel)}</div>
               <div class="agenda-dot" aria-hidden="true"></div>
               <div class="agenda-copy">
-                <strong>${escapeHtml(title)}</strong>
-                ${typeof item === "object" && item.description
-    ? `<span>${escapeHtml(item.description)}</span>`
-    : ""}
+                <strong>${escapeHtml(event.title)}</strong>
+                ${preview ? `<span>${escapeHtml(preview)}</span>` : ""}
               </div>
-            </div>
+            </button>
           `;
         }).join("") : renderEmptyState("Agenda livre", "Nenhum compromisso programado nos proximos dias.")}
       </div>

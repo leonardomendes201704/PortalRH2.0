@@ -2286,6 +2286,28 @@ body.feed-photo-viewer-open {
   grid-template-columns: 48px 10px 1fr;
   align-items: start;
   gap: 10px;
+  width: 100%;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+}
+
+.agenda-item--interactive {
+  cursor: pointer;
+  border-radius: 12px;
+  transition: background-color 0.18s ease, transform 0.18s ease;
+}
+
+.agenda-item--interactive:hover,
+.agenda-item--interactive:focus-visible {
+  background: #f3f8fd;
+  outline: none;
+}
+
+.agenda-item--interactive:active {
+  transform: translateY(1px);
 }
 
 .agenda-time {
@@ -2317,6 +2339,172 @@ body.feed-photo-viewer-open {
 .agenda-copy span {
   font-size: 11px;
   color: #6b7f93;
+}
+
+body.agenda-event-modal-open {
+  overflow: hidden;
+}
+
+.agenda-event-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.agenda-event-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 24, 40, 0.46);
+}
+
+.agenda-event-modal__dialog {
+  position: relative;
+  width: min(560px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.agenda-event-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.agenda-event-modal__title-block {
+  display: grid;
+  gap: 4px;
+}
+
+.agenda-event-modal__title-block strong {
+  color: #173154;
+  font-size: 18px;
+}
+
+.agenda-event-modal__title-block span {
+  color: #5f7489;
+  font-size: 13px;
+}
+
+.agenda-event-modal__close {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+}
+
+.agenda-event-modal__body {
+  padding: 20px;
+  overflow: auto;
+}
+
+.agenda-event-modal__content {
+  display: grid;
+  gap: 16px;
+}
+
+.agenda-event-modal__hero,
+.agenda-event-modal__details {
+  padding: 18px;
+  border: 1px solid #dbe6f0;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+}
+
+.agenda-event-modal__hero {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.agenda-event-modal__hero-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: #eaf3fb;
+  color: #173f70;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.agenda-event-modal__hero-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.agenda-event-modal__hero-copy strong {
+  color: #173154;
+  font-size: 18px;
+}
+
+.agenda-event-modal__hero-copy span {
+  color: #5f7489;
+  font-size: 13px;
+}
+
+.agenda-event-modal__details {
+  display: grid;
+  gap: 14px;
+}
+
+.agenda-event-modal__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.agenda-event-modal__row-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: #f3f8fd;
+  color: #173f70;
+  flex-shrink: 0;
+}
+
+.agenda-event-modal__row-copy {
+  display: grid;
+  gap: 2px;
+}
+
+.agenda-event-modal__row-copy span {
+  color: #6b7f93;
+  font-size: 12px;
+}
+
+.agenda-event-modal__row-copy strong {
+  color: #1c3046;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: pre-wrap;
+}
+
+.agenda-event-modal__description {
+  display: grid;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px solid #e3ebf3;
+}
+
+.agenda-event-modal__description span {
+  color: #6b7f93;
+  font-size: 12px;
+}
+
+.agenda-event-modal__description p {
+  margin: 0;
+  color: #1c3046;
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
 }
 
 .mood-option,

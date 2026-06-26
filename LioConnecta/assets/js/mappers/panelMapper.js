@@ -6,7 +6,7 @@ function mapPanelItem(item) {
     return item;
   }
 
-  return {
+  const mapped = {
     label: asString(item?.label, ""),
     badge: asString(item?.badge, ""),
     value: asString(item?.value, ""),
@@ -15,6 +15,24 @@ function mapPanelItem(item) {
     url: asString(item?.url, ""),
     provider: asString(item?.provider, "")
   };
+
+  if (asString(item?.type, "") === "agenda-event" || item?.startAtUtc || item?.title) {
+    return {
+      ...mapped,
+      type: asString(item?.type, "agenda-event"),
+      id: asString(item?.id, ""),
+      title: asString(item?.title, ""),
+      timeLabel: asString(item?.timeLabel, ""),
+      detailDescription: asString(item?.detailDescription, ""),
+      location: asString(item?.location, ""),
+      source: asString(item?.source, ""),
+      audience: asString(item?.audience, ""),
+      startAtUtc: asString(item?.startAtUtc, ""),
+      endAtUtc: asString(item?.endAtUtc, "")
+    };
+  }
+
+  return mapped;
 }
 
 function mapGenericPanel(panel) {
