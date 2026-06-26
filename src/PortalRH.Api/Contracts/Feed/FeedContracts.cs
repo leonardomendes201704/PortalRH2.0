@@ -64,6 +64,7 @@ public record FeedItemDto(
     string Area,
     DateTime PublishedAtUtc,
     string Text,
+    IReadOnlyList<FeedPostCommentMentionDto> Mentions,
     string? HighlightTitle,
     string? HighlightText,
     string? ImageUrl,
@@ -88,6 +89,7 @@ public record CreateFeedPostRequest
 {
     public string Text { get; set; } = string.Empty;
     public List<CreateFeedPostMediaItem> Media { get; set; } = [];
+    public List<Guid> MentionedUserIds { get; set; } = [];
 }
 
 public record CreateFeedPostResponse(FeedItemDto Item);

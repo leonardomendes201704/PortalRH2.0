@@ -57,13 +57,14 @@ import {
   uploadPollAsset,
   votePoll
 } from "./polls/index.js?v=0.15.0";
-import { renderFeed } from "./feed/index.js?v=0.21.1";
-import { updateFeedLikeUi, createFeedPost, toggleFeedLike, uploadFeedAsset } from "./services/feedService.js?v=0.21.1";
-import { bindFeedPhotoComposerActions, clearPendingFeedPhotos, getPendingFeedPhotos } from "./components/feedPhotoModal.js?v=0.21.1";
-import { bindFeedPhotoViewerActions } from "./components/feedPhotoViewerModal.js?v=0.21.1";
-import { bindFeedPostCommentActions } from "./components/feedPostCommentComposer.js?v=0.21.1";
+import { renderFeed } from "./feed/index.js?v=0.21.3";
+import { updateFeedLikeUi, createFeedPost, toggleFeedLike, uploadFeedAsset } from "./services/feedService.js?v=0.21.3";
+import { bindFeedPhotoComposerActions, clearPendingFeedPhotos, getPendingFeedPhotos } from "./components/feedPhotoModal.js?v=0.21.3";
+import { bindFeedPhotoViewerActions } from "./components/feedPhotoViewerModal.js?v=0.21.3";
+import { bindFeedPostCommentActions } from "./components/feedPostCommentComposer.js?v=0.21.3";
+import { bindMentionField } from "./components/feedMentions.js?v=0.21.3";
 import { bindInteractionFeedback, showToast } from "./core/feedback.js?v=0.16.0";
-import { DATA_MODES, getRuntimeConfig } from "./core/runtimeConfig.js?v=0.21.1";
+import { DATA_MODES, getRuntimeConfig } from "./core/runtimeConfig.js?v=0.21.3";
 import { getPanelData } from "./services/panelService.js?v=0.12.8";
 import { getUserHomeContext } from "./services/userService.js?v=0.12.8";
 import { applyAgendaToShellData, getAgendaDayData } from "./services/agendaService.js?v=0.13.1";
@@ -792,6 +793,8 @@ async function refreshAdminPollsRoute(feedbackMessage = "", feedbackTone = "succ
   }
 }
 
+const feedComposerMentions = new WeakMap();
+
 function bindFeedComposerActions() {
   const forms = Array.from(document.querySelectorAll("[data-action='submit-feed-post']"));
 
@@ -801,6 +804,13 @@ function bindFeedComposerActions() {
     }
 
     form.dataset.bound = "true";
+
+    const textarea = form.querySelector("textarea[name='text']");
+    const fieldRoot = form.querySelector(".feed-composer-mention-field");
+    if (textarea && fieldRoot) {
+      feedComposerMentions.set(form, bindMentionField({ fieldRoot, textarea }));
+    }
+
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
 
@@ -835,7 +845,12 @@ function bindFeedComposerActions() {
           });
         }
 
-        await createFeedPost({ text, media }, { headers });
+        await createFeedPost({
+          text,
+          media,
+          mentionedUserIds: feedComposerMentions.get(form)?.getMentionedUserIds() ?? []
+        }, { headers });
+        feedComposerMentions.get(form)?.resetMentions();
         clearPendingFeedPhotos();
         showToast("Publicacao enviada ao feed.", "success");
         await renderCurrentRoute();

@@ -1,7 +1,8 @@
 import { renderEmptyState } from "./cards.js";
 import { escapeHtml } from "./html.js";
-import { resolveFeedMediaUrl, serializeGalleryImages } from "../services/feedMedia.js?v=0.21.1";
-import { renderCommentBody, renderPostCommentComposer } from "./feedPostCommentComposer.js?v=0.21.1";
+import { resolveFeedMediaUrl, serializeGalleryImages } from "../services/feedMedia.js?v=0.21.3";
+import { renderPostCommentComposer } from "./feedPostCommentComposer.js?v=0.21.3";
+import { renderMentionBody, renderMentionDropdownMarkup } from "./feedMentions.js?v=0.21.3";
 
 const PHOTO_ACTION_LABEL = "Adicionar fotos";
 
@@ -20,14 +21,20 @@ function renderComposer(composer) {
       <div class="feed-composer-box" data-analytics="composer.focus">
         <div class="avatar" aria-hidden="true"><i class="fa-solid fa-user"></i></div>
         <div>
-          <textarea
-            class="feed-composer-input feed-composer-textarea"
-            name="text"
-            maxlength="2000"
-            rows="3"
-            placeholder="${escapeHtml(composer.placeholder)}"
-            aria-label="${escapeHtml(composer.placeholder)}"
-          ></textarea>
+          <div class="feed-composer-mention-field feed-mention-field">
+            <textarea
+              class="feed-composer-input feed-composer-textarea"
+              name="text"
+              maxlength="2000"
+              rows="3"
+              placeholder="${escapeHtml(composer.placeholder)}"
+              aria-label="${escapeHtml(composer.placeholder)}"
+              autocomplete="off"
+              autocorrect="off"
+              spellcheck="true"
+            ></textarea>
+            ${renderMentionDropdownMarkup()}
+          </div>
           <div data-feed-attachments></div>
         </div>
       </div>
@@ -142,7 +149,7 @@ function renderPost(post) {
       </div>
 
       <div class="post-body">
-        <p>${escapeHtml(post.text)}</p>
+        ${post.text ? `<p class="post-text">${renderMentionBody({ text: post.text, mentions: post.mentions })}</p>` : ""}
         ${post.highlightTitle ? `
           <div class="post-highlight">
             <strong>${escapeHtml(post.highlightTitle)}</strong>
@@ -179,7 +186,7 @@ function renderPost(post) {
               <div class="avatar avatar--small" aria-hidden="true"><i class="fa-solid fa-user"></i></div>
               <div class="post-comment-bubble">
                 <strong>${escapeHtml(comment.author)}</strong>
-                <span class="post-comment-text">${renderCommentBody(comment)}</span>
+                <span class="post-comment-text">${renderMentionBody(comment)}</span>
               </div>
             </div>
           `).join("")}

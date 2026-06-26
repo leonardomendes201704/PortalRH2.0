@@ -1,20 +1,22 @@
 import { DEFAULT_FEED_TITLE, DEFAULT_POSTS } from "../view-models/defaults.js";
 import { asArray, asNumber, asString } from "./shared.js";
 
-function mapComment(comment) {
-  const mentions = asArray(comment?.mentions)
+function mapMentions(mentions = []) {
+  return asArray(mentions)
     .map((mention) => ({
-      userId: asString(mention?.userId ?? mention?.user_id, ""),
-      displayName: asString(mention?.displayName ?? mention?.display_name, "")
+      userId: asString(mention?.userId ?? mention?.UserId ?? mention?.user_id, ""),
+      displayName: asString(mention?.displayName ?? mention?.DisplayName ?? mention?.display_name, "")
     }))
     .filter((mention) => mention.userId && mention.displayName);
+}
 
+function mapComment(comment) {
   return {
     id: asString(comment?.id, ""),
     author: asString(comment?.author, "Colaborador"),
     text: asString(comment?.text, ""),
     createdAtUtc: comment?.createdAtUtc || comment?.created_at_utc || null,
-    mentions
+    mentions: mapMentions(comment?.mentions)
   };
 }
 
@@ -40,6 +42,7 @@ function mapPost(post) {
     area: asString(post?.area, "Área não informada"),
     timeAgo: asString(post?.timeAgo, "agora"),
     text: asString(post?.text, ""),
+    mentions: mapMentions(post?.mentions),
     highlightTitle: asString(post?.highlightTitle, ""),
     highlightText: asString(post?.highlightText, ""),
     image,

@@ -359,6 +359,33 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
     }
 
     [Fact]
+    public async Task FeedEndpoint_CreatesPostWithMentionsInBody()
+    {
+        await EnsureLdapEnabledAsync();
+        var portalSession = await LoginPortalUserAsync();
+
+        _client.DefaultRequestHeaders.Authorization = null;
+        _client.DefaultRequestHeaders.Remove("X-Portal-Token");
+        _client.DefaultRequestHeaders.Add("X-Portal-Token", portalSession.Token);
+
+        var createResponse = await _client.PostAsJsonAsync("/api/feed", new CreateFeedPostRequest
+        {
+            Text = "Post com mencao @Portal User no texto.",
+            MentionedUserIds = [portalSession.User.Id]
+        });
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+
+        var created = await createResponse.Content.ReadFromJsonAsync<CreateFeedPostResponse>();
+        Assert.NotNull(created);
+        Assert.Single(created.Item.Mentions);
+        Assert.Equal("Post com mencao @Portal User no texto.", created.Item.Text);
+
+        var feed = await _client.GetFromJsonAsync<FeedResponse>("/api/feed");
+        Assert.NotNull(feed);
+        Assert.Contains(feed.Items, item => item.Id == created.Item.Id && item.Mentions.Count == 1);
+    }
+
+    [Fact]
     public async Task FeedEndpoint_TogglesLikeOnUserPostWithAuditTrail()
     {
         await EnsureLdapEnabledAsync();

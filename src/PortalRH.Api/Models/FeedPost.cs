@@ -12,4 +12,5 @@ public class FeedPost
     public PortalUser? PortalUser { get; set; }
     public ICollection<FeedPostMedia> Media { get; set; } = new List<FeedPostMedia>();
     public ICollection<FeedPostComment> Comments { get; set; } = new List<FeedPostComment>();
+    public ICollection<FeedPostMention> Mentions { get; set; } = new List<FeedPostMention>();
 }

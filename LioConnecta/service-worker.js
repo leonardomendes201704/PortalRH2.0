@@ -1,4 +1,4 @@
-const CACHE_NAME = "lioconnecta-static-v28";
+const CACHE_NAME = "lioconnecta-static-v30";
 const ASSETS = [
   "./",
   "./index.html",
@@ -21,6 +21,7 @@ const ASSETS = [
   "./assets/js/components/feed.js",
   "./assets/js/components/feedPhotoModal.js",
     "./assets/js/components/feedPhotoViewerModal.js",
+    "./assets/js/components/feedMentions.js",
     "./assets/js/components/feedPostCommentComposer.js",
   "./assets/js/components/header.js",
   "./assets/js/components/html.js",
