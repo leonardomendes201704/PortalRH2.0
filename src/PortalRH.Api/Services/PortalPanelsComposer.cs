@@ -52,39 +52,33 @@ public class PortalPanelsComposer : IPortalPanelsComposer
 
     public async Task<PanelsResponse> BuildAsync(PortalUser user, CancellationToken cancellationToken)
     {
+        // DbContext nao e thread-safe: consultas ao banco devem ser sequenciais no mesmo request.
+        var notifications = await _notificationService.GetForUserAsync(user.Id, cancellationToken);
+        var quickLinks = await _quickLinkService.GetActiveAsync(cancellationToken);
+        var agenda = await _agendaService.GetTodayAsync(user.Id, cancellationToken);
+        var communications = await _communicationService.GetAllAsync(user.Id, cancellationToken);
+
         var journeyTask = _journeyService.GetSummaryAsync(user, cancellationToken);
-        var notificationsTask = _notificationService.GetForUserAsync(user.Id, cancellationToken);
         var systemsTask = _corporateSystemsService.GetSystemsAsync(user, cancellationToken);
         var kpisTask = _kpiService.GetSummaryAsync(user, cancellationToken);
-        var quickLinksTask = _quickLinkService.GetActiveAsync(cancellationToken);
         var hrProfileTask = _hrProfileService.GetProfileAsync(user, cancellationToken);
-        var agendaTask = _agendaService.GetTodayAsync(user.Id, cancellationToken);
-        var communicationsTask = _communicationService.GetAllAsync(user.Id, cancellationToken);
 
-        await Task.WhenAll(
-            journeyTask,
-            notificationsTask,
-            systemsTask,
-            kpisTask,
-            quickLinksTask,
-            hrProfileTask,
-            agendaTask,
-            communicationsTask);
+        await Task.WhenAll(journeyTask, systemsTask, kpisTask, hrProfileTask);
 
         var leftPanels = new List<PanelDto>
         {
             BuildJourneyPanel(await journeyTask),
-            BuildNotificationsPanel(await notificationsTask),
+            BuildNotificationsPanel(notifications),
             BuildCorporateSystemsPanel(await systemsTask),
             BuildKpiPanel(await kpisTask)
         };
 
         var rightPanels = new List<PanelDto>
         {
-            BuildQuickLinksPanel(await quickLinksTask),
+            BuildQuickLinksPanel(quickLinks),
             BuildProfilePanel(await hrProfileTask),
-            BuildAgendaPanel(await agendaTask),
-            BuildCommunicationsPanel(await communicationsTask)
+            BuildAgendaPanel(agenda),
+            BuildCommunicationsPanel(communications)
         };
 
         return new PanelsResponse(
