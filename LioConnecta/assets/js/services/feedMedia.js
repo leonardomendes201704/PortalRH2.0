@@ -1,4 +1,4 @@
-import { DATA_MODES, getRuntimeConfig } from "../core/runtimeConfig.js?v=0.21.3";
+import { DATA_MODES, getRuntimeConfig } from "../core/runtimeConfig.js?v=0.21.4";
 
 function resolveUploadsOrigin() {
   const config = getRuntimeConfig();
