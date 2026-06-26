@@ -1,0 +1,336 @@
+using Microsoft.EntityFrameworkCore;
+using PortalRH.Api.Contracts.Feed;
+using PortalRH.Api.Data;
+using PortalRH.Api.Domain;
+using PortalRH.Api.Interfaces;
+using PortalRH.Api.Models;
+
+namespace PortalRH.Api.Services;
+
+public class FeedService : IFeedService
+{
+    private const string FeedTitle = "FEED LIOCONNECTA";
+    private const int MaxPostLength = 2000;
+
+    private readonly PortalRhDbContext _dbContext;
+    private readonly ICommunicationService _communicationService;
+
+    public FeedService(PortalRhDbContext dbContext, ICommunicationService communicationService)
+    {
+        _dbContext = dbContext;
+        _communicationService = communicationService;
+    }
+
+    public async Task<FeedResponse> GetFeedAsync(Guid? portalUserId, CancellationToken cancellationToken)
+    {
+        var userPosts = await _dbContext.FeedPosts
+            .AsNoTracking()
+            .Include(item => item.PortalUser)
+            .OrderByDescending(item => item.CreatedAtUtc)
+            .ToListAsync(cancellationToken);
+
+        var communications = await _dbContext.Communications
+            .AsNoTracking()
+            .Where(item => item.Status.ToLower() == "publicado")
+            .OrderByDescending(item => item.PublishedAt)
+            .ThenByDescending(item => item.CreatedAtUtc)
+            .ToListAsync(cancellationToken);
+
+        var userPostIds = userPosts.Select(item => item.Id).ToList();
+        var communicationIds = communications.Select(item => item.Id).ToList();
+
+        var userPostLikeCounts = await LoadFeedPostLikeCountsAsync(userPostIds, cancellationToken);
+        var communicationLikeCounts = await LoadCommunicationLikeCountsAsync(communicationIds, cancellationToken);
+        var likedUserPostIds = portalUserId.HasValue
+            ? await LoadLikedFeedPostIdsAsync(userPostIds, portalUserId.Value, cancellationToken)
+            : [];
+        var likedCommunicationIds = portalUserId.HasValue
+            ? await LoadLikedCommunicationIdsAsync(communicationIds, portalUserId.Value, cancellationToken)
+            : [];
+
+        var items = new List<FeedItemDto>();
+
+        items.AddRange(userPosts.Select(item => new FeedItemDto(
+            item.Id,
+            FeedItemSources.UserPost,
+            null,
+            item.PortalUser?.DisplayName ?? "Colaborador",
+            item.PortalUser?.Department ?? "Companhia",
+            item.CreatedAtUtc,
+            item.Text,
+            null,
+            null,
+            null,
+            userPostLikeCounts.GetValueOrDefault(item.Id),
+            likedUserPostIds.Contains(item.Id))));
+
+        items.AddRange(communications.Select(item => new FeedItemDto(
+            item.Id,
+            FeedItemSources.Communication,
+            item.Id,
+            item.Owner,
+            item.Category,
+            item.PublishedAt,
+            item.Summary,
+            item.Title,
+            item.Summary,
+            item.ImageUrl,
+            communicationLikeCounts.GetValueOrDefault(item.Id),
+            likedCommunicationIds.Contains(item.Id))));
+
+        return new FeedResponse(
+            FeedTitle,
+            items
+                .OrderByDescending(item => item.PublishedAtUtc)
+                .ToList());
+    }
+
+    public async Task<FeedItemDto> CreatePostAsync(
+        Guid portalUserId,
+        string text,
+        FeedAuditContext auditContext,
+        CancellationToken cancellationToken)
+    {
+        var normalizedText = text?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(normalizedText))
+        {
+            throw new InvalidOperationException("Informe um texto para publicar no feed.");
+        }
+
+        if (normalizedText.Length > MaxPostLength)
+        {
+            throw new InvalidOperationException($"A publicacao pode ter no maximo {MaxPostLength} caracteres.");
+        }
+
+        var user = await _dbContext.PortalUsers
+            .AsNoTracking()
+            .FirstOrDefaultAsync(item => item.Id == portalUserId, cancellationToken);
+
+        if (user is null)
+        {
+            throw new InvalidOperationException("Usuario do portal nao encontrado.");
+        }
+
+        var now = DateTime.UtcNow;
+        var entity = new FeedPost
+        {
+            Id = Guid.NewGuid(),
+            PortalUserId = portalUserId,
+            Text = normalizedText,
+            CreatedAtUtc = now,
+            IpAddress = auditContext.IpAddress,
+            Origin = auditContext.Origin
+        };
+
+        _dbContext.FeedPosts.Add(entity);
+        _dbContext.FeedPostAuditLogs.Add(new FeedPostAuditLog
+        {
+            Id = Guid.NewGuid(),
+            FeedPostId = entity.Id,
+            PortalUserId = portalUserId,
+            ActionType = FeedPostAuditActionTypes.PostCreated,
+            ActorLogin = auditContext.ActorLogin,
+            ActorDisplayName = auditContext.ActorDisplayName,
+            IpAddress = auditContext.IpAddress,
+            Origin = auditContext.Origin,
+            UserAgent = auditContext.UserAgent,
+            CreatedAtUtc = now
+        });
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return new FeedItemDto(
+            entity.Id,
+            FeedItemSources.UserPost,
+            null,
+            user.DisplayName,
+            user.Department ?? "Companhia",
+            entity.CreatedAtUtc,
+            entity.Text,
+            null,
+            null,
+            null,
+            0,
+            false);
+    }
+
+    public async Task<FeedLikeResponse?> ToggleLikeAsync(
+        Guid itemId,
+        string source,
+        Guid portalUserId,
+        FeedAuditContext auditContext,
+        CancellationToken cancellationToken)
+    {
+        var normalizedSource = source?.Trim() ?? string.Empty;
+
+        if (string.Equals(normalizedSource, FeedItemSources.Communication, StringComparison.OrdinalIgnoreCase))
+        {
+            var communicationResult = await _communicationService.ToggleLikeAsync(
+                itemId,
+                portalUserId,
+                MapAuditContext(auditContext),
+                cancellationToken);
+
+            return communicationResult is null
+                ? null
+                : new FeedLikeResponse(itemId, FeedItemSources.Communication, communicationResult.LikeCount, communicationResult.HasLiked);
+        }
+
+        if (string.Equals(normalizedSource, FeedItemSources.UserPost, StringComparison.OrdinalIgnoreCase))
+        {
+            return await ToggleUserPostLikeAsync(itemId, portalUserId, auditContext, cancellationToken);
+        }
+
+        throw new InvalidOperationException("Origem da publicacao invalida para curtida.");
+    }
+
+    private async Task<FeedLikeResponse?> ToggleUserPostLikeAsync(
+        Guid feedPostId,
+        Guid portalUserId,
+        FeedAuditContext auditContext,
+        CancellationToken cancellationToken)
+    {
+        var feedPost = await _dbContext.FeedPosts
+            .AsNoTracking()
+            .FirstOrDefaultAsync(item => item.Id == feedPostId, cancellationToken);
+
+        if (feedPost is null)
+        {
+            return null;
+        }
+
+        var existingLike = await _dbContext.FeedPostLikes
+            .FirstOrDefaultAsync(
+                item => item.FeedPostId == feedPostId && item.PortalUserId == portalUserId,
+                cancellationToken);
+
+        var now = DateTime.UtcNow;
+        string actionType;
+        bool hasLiked;
+
+        if (existingLike is not null)
+        {
+            _dbContext.FeedPostLikes.Remove(existingLike);
+            actionType = FeedPostAuditActionTypes.LikeRemoved;
+            hasLiked = false;
+        }
+        else
+        {
+            _dbContext.FeedPostLikes.Add(new FeedPostLike
+            {
+                Id = Guid.NewGuid(),
+                FeedPostId = feedPostId,
+                PortalUserId = portalUserId,
+                CreatedAtUtc = now,
+                IpAddress = auditContext.IpAddress,
+                Origin = auditContext.Origin
+            });
+            actionType = FeedPostAuditActionTypes.LikeRegistered;
+            hasLiked = true;
+        }
+
+        _dbContext.FeedPostAuditLogs.Add(new FeedPostAuditLog
+        {
+            Id = Guid.NewGuid(),
+            FeedPostId = feedPostId,
+            PortalUserId = portalUserId,
+            ActionType = actionType,
+            ActorLogin = auditContext.ActorLogin,
+            ActorDisplayName = auditContext.ActorDisplayName,
+            IpAddress = auditContext.IpAddress,
+            Origin = auditContext.Origin,
+            UserAgent = auditContext.UserAgent,
+            CreatedAtUtc = now
+        });
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        var likeCount = await _dbContext.FeedPostLikes
+            .AsNoTracking()
+            .CountAsync(item => item.FeedPostId == feedPostId, cancellationToken);
+
+        return new FeedLikeResponse(feedPostId, FeedItemSources.UserPost, likeCount, hasLiked);
+    }
+
+    private static CommunicationAuditContext MapAuditContext(FeedAuditContext auditContext)
+    {
+        return new CommunicationAuditContext(
+            auditContext.ActorLogin,
+            auditContext.ActorDisplayName,
+            auditContext.IpAddress,
+            auditContext.Origin,
+            auditContext.UserAgent);
+    }
+
+    private async Task<Dictionary<Guid, int>> LoadFeedPostLikeCountsAsync(
+        IReadOnlyCollection<Guid> feedPostIds,
+        CancellationToken cancellationToken)
+    {
+        if (feedPostIds.Count == 0)
+        {
+            return [];
+        }
+
+        return await _dbContext.FeedPostLikes
+            .AsNoTracking()
+            .Where(item => feedPostIds.Contains(item.FeedPostId))
+            .GroupBy(item => item.FeedPostId)
+            .Select(group => new { FeedPostId = group.Key, Count = group.Count() })
+            .ToDictionaryAsync(item => item.FeedPostId, item => item.Count, cancellationToken);
+    }
+
+    private async Task<HashSet<Guid>> LoadLikedFeedPostIdsAsync(
+        IReadOnlyCollection<Guid> feedPostIds,
+        Guid portalUserId,
+        CancellationToken cancellationToken)
+    {
+        if (feedPostIds.Count == 0)
+        {
+            return [];
+        }
+
+        var ids = await _dbContext.FeedPostLikes
+            .AsNoTracking()
+            .Where(item => item.PortalUserId == portalUserId && feedPostIds.Contains(item.FeedPostId))
+            .Select(item => item.FeedPostId)
+            .ToListAsync(cancellationToken);
+
+        return ids.ToHashSet();
+    }
+
+    private async Task<Dictionary<Guid, int>> LoadCommunicationLikeCountsAsync(
+        IReadOnlyCollection<Guid> communicationIds,
+        CancellationToken cancellationToken)
+    {
+        if (communicationIds.Count == 0)
+        {
+            return [];
+        }
+
+        return await _dbContext.CommunicationLikes
+            .AsNoTracking()
+            .Where(item => communicationIds.Contains(item.CommunicationId))
+            .GroupBy(item => item.CommunicationId)
+            .Select(group => new { CommunicationId = group.Key, Count = group.Count() })
+            .ToDictionaryAsync(item => item.CommunicationId, item => item.Count, cancellationToken);
+    }
+
+    private async Task<HashSet<Guid>> LoadLikedCommunicationIdsAsync(
+        IReadOnlyCollection<Guid> communicationIds,
+        Guid portalUserId,
+        CancellationToken cancellationToken)
+    {
+        if (communicationIds.Count == 0)
+        {
+            return [];
+        }
+
+        var ids = await _dbContext.CommunicationLikes
+            .AsNoTracking()
+            .Where(item => item.PortalUserId == portalUserId && communicationIds.Contains(item.CommunicationId))
+            .Select(item => item.CommunicationId)
+            .ToListAsync(cancellationToken);
+
+        return ids.ToHashSet();
+    }
+}

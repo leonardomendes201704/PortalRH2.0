@@ -1,4 +1,4 @@
-export const APP_VERSION = "v0.13.1";
+export const APP_VERSION = "v0.16.1";
 
 export const DATA_MODES = Object.freeze({
   MOCK: "mock",
@@ -18,6 +18,17 @@ function resolveDefaultApiBaseUrl() {
 
 function isLoopbackHost(hostname) {
   return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+}
+
+function resolveDefaultDataMode() {
+  const currentWindow = getWindowObject();
+  const hostname = currentWindow?.location?.hostname;
+
+  if (!hostname) {
+    return DATA_MODES.MOCK;
+  }
+
+  return isLoopbackHost(hostname) ? DATA_MODES.MOCK : DATA_MODES.API;
 }
 
 function normalizeApiBaseUrl(candidate) {
@@ -42,7 +53,7 @@ function normalizeApiBaseUrl(candidate) {
 }
 
 const DEFAULT_RUNTIME_CONFIG = Object.freeze({
-  dataMode: DATA_MODES.MOCK,
+  dataMode: resolveDefaultDataMode(),
   localBasePath: "./local-api",
   apiBaseUrl: "",
   endpoints: {
@@ -118,11 +129,17 @@ function joinUrl(base, path) {
 export function getRuntimeConfig() {
   const stored = readStoredConfig();
   const params = getUrlParams();
+  const hostname = getWindowObject()?.location?.hostname;
+  const prefersApiHost = Boolean(hostname && !isLoopbackHost(hostname));
+  const storedMode = stored.dataMode;
+  const effectiveStoredMode = prefersApiHost && storedMode === DATA_MODES.MOCK
+    ? undefined
+    : storedMode;
 
   const dataMode = normalizeMode(
     params.get("dataMode") ??
-    stored.dataMode ??
-    DEFAULT_RUNTIME_CONFIG.dataMode
+    effectiveStoredMode ??
+    resolveDefaultDataMode()
   );
 
   const localBasePath = params.get("localBasePath") ?? stored.localBasePath ?? DEFAULT_RUNTIME_CONFIG.localBasePath;

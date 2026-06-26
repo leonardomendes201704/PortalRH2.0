@@ -35,8 +35,7 @@ import {
   createCommunication,
   updateCommunication,
   deleteCommunication,
-  getCommunicationEditorHeaders,
-  toggleCommunicationLike
+  getCommunicationEditorHeaders
 } from "./services/communicationService.js?v=0.15.4";
 import {
   renderHomePollCarousel,
@@ -59,8 +58,8 @@ import {
   votePoll
 } from "./polls/index.js?v=0.15.0";
 import { renderFeed } from "./feed/index.js?v=0.12.8";
-import { updateCommunicationLikeUi } from "./services/feedService.js?v=0.15.4";
-import { bindInteractionFeedback, showToast } from "./core/feedback.js?v=0.15.2";
+import { updateFeedLikeUi, createFeedPost, toggleFeedLike } from "./services/feedService.js?v=0.16.1";
+import { bindInteractionFeedback, showToast } from "./core/feedback.js?v=0.16.0";
 import { getRuntimeConfig } from "./core/runtimeConfig.js?v=0.13.1";
 import { getPanelData } from "./services/panelService.js?v=0.12.8";
 import { getUserHomeContext } from "./services/userService.js?v=0.12.8";
@@ -385,7 +384,8 @@ function renderHomePage(data, route) {
   initCarousel();
   initPollHomeCarousel();
   bindPublicPollActions(route);
-  bindCommunicationLikeActions();
+  bindFeedLikeActions();
+  bindFeedComposerActions();
 }
 
 function renderCommunicationsPage(data, route) {
@@ -411,7 +411,7 @@ function renderCommunicationReadPage(data, route, slug) {
   const currentCommunication = allCommunications.find((item) => item?.slug === slug);
 
   centerContent.innerHTML = renderCommunicationDetailPage(currentCommunication);
-  bindCommunicationLikeActions();
+  bindFeedLikeActions();
 }
 
 function renderPollReadPage(data, route) {
@@ -758,8 +758,63 @@ async function refreshAdminPollsRoute(feedbackMessage = "", feedbackTone = "succ
   }
 }
 
-function bindCommunicationLikeActions() {
-  const buttons = Array.from(document.querySelectorAll("[data-action='toggle-communication-like']"));
+function bindFeedComposerActions() {
+  const forms = Array.from(document.querySelectorAll("[data-action='submit-feed-post']"));
+
+  forms.forEach((form) => {
+    if (form.dataset.bound === "true") {
+      return;
+    }
+
+    form.dataset.bound = "true";
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      const textarea = form.querySelector("textarea[name='text']");
+      const text = String(textarea?.value || "").trim();
+      const submitButton = form.querySelector(".feed-composer-submit");
+
+      if (!text) {
+        showToast("Escreva algo antes de publicar no feed.", "danger");
+        return;
+      }
+
+      if (submitButton) {
+        submitButton.disabled = true;
+      }
+
+      try {
+        await createFeedPost(text, {
+          headers: getPortalAuthHeaders()
+        });
+        showToast("Publicacao enviada ao feed.", "success");
+        await renderCurrentRoute();
+      } catch (error) {
+        console.error("Falha ao publicar no feed.", error);
+        const message = error instanceof Error && error.message.includes("HTTP 401")
+          ? "Sua sessao expirou. Faca login novamente para publicar no feed."
+          : error instanceof Error && error.message.includes("HTTP 400")
+            ? "Nao foi possivel publicar. Verifique o texto informado."
+            : "Nao foi possivel publicar no feed agora.";
+
+        showToast(message, "danger");
+
+        if (error instanceof Error && error.message.includes("HTTP 401")) {
+          window.setTimeout(() => {
+            redirectToPortalLogin(window.location.hash || "#inicio");
+          }, 700);
+        }
+      } finally {
+        if (submitButton) {
+          submitButton.disabled = false;
+        }
+      }
+    });
+  });
+}
+
+function bindFeedLikeActions() {
+  const buttons = Array.from(document.querySelectorAll("[data-action='toggle-feed-like'], [data-action='toggle-communication-like']"));
 
   buttons.forEach((button) => {
     if (button.dataset.bound === "true") {
@@ -768,11 +823,15 @@ function bindCommunicationLikeActions() {
 
     button.dataset.bound = "true";
     button.addEventListener("click", async () => {
-      const communicationId = button.getAttribute("data-communication-id") || "";
+      const itemId = button.getAttribute("data-feed-item-id")
+        || button.getAttribute("data-communication-id")
+        || "";
+      const source = button.getAttribute("data-feed-source")
+        || (button.getAttribute("data-communication-id") ? "Communication" : "");
       const scope = button.closest(".post, .communication-detail-card");
 
-      if (!communicationId) {
-        showToast("Esta publicacao ainda nao esta vinculada a um comunicado persistido.", "info");
+      if (!itemId || !source) {
+        showToast("Esta publicacao ainda nao esta disponivel para curtidas.", "info");
         return;
       }
 
@@ -783,18 +842,18 @@ function bindCommunicationLikeActions() {
       button.disabled = true;
 
       try {
-        const result = await toggleCommunicationLike(communicationId, {
+        const result = await toggleFeedLike(itemId, source, {
           headers: getPortalAuthHeaders()
         });
-        updateCommunicationLikeUi(scope, result);
+        updateFeedLikeUi(scope, result);
         showToast(result.hasLiked ? "Curtida registrada." : "Curtida removida.", "success");
       } catch (error) {
-        console.error("Falha ao registrar curtida no comunicado.", error);
+        console.error("Falha ao registrar curtida.", error);
         const message = error instanceof Error && error.message.includes("HTTP 401")
           ? "Sua sessao expirou. Faca login novamente para curtir publicacoes."
-          : "Nao foi possivel registrar a curtida neste comunicado.";
+          : "Nao foi possivel registrar a curtida nesta publicacao.";
 
-        showToast(message, error instanceof Error && error.message.includes("HTTP 401") ? "danger" : "danger");
+        showToast(message, "danger");
 
         if (error instanceof Error && error.message.includes("HTTP 401")) {
           window.setTimeout(() => {

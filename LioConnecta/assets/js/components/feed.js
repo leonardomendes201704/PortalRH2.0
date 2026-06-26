@@ -10,21 +10,27 @@ const COMPOSER_ACTION_ICONS = {
 
 function renderComposer(composer) {
   return `
-    <div class="feed-composer-card">
+    <form class="feed-composer-card feed-composer-form" data-action="submit-feed-post">
       <div class="feed-composer-head">
         <div>
           <h2>${escapeHtml(composer.title)}</h2>
           <p>Compartilhe uma atualização com colegas, times e lideranças.</p>
         </div>
-        <button class="feed-composer-submit" type="button" data-analytics="composer.publish">Publicar</button>
+        <button class="feed-composer-submit" type="submit" data-action="submit-feed-post">Publicar</button>
       </div>
       <div class="feed-composer-box" data-analytics="composer.focus">
         <div class="avatar" aria-hidden="true"><i class="fa-solid fa-user"></i></div>
         <div>
-          <div class="feed-composer-input" role="textbox" aria-label="${escapeHtml(composer.placeholder)}">
-            ${escapeHtml(composer.placeholder)}
-          </div>
-          <span class="feed-composer-helper">Posts institucionais e sociais aparecem no mural da LIOCONNECTA.</span>
+          <textarea
+            class="feed-composer-input feed-composer-textarea"
+            name="text"
+            maxlength="2000"
+            rows="3"
+            placeholder="${escapeHtml(composer.placeholder)}"
+            aria-label="${escapeHtml(composer.placeholder)}"
+            required
+          ></textarea>
+          <span class="feed-composer-helper">Posts de texto ficam visiveis para toda a companhia no mural da LIOCONNECTA.</span>
         </div>
       </div>
       <div class="feed-composer-actions">
@@ -34,13 +40,15 @@ function renderComposer(composer) {
             type="button"
             data-analytics="composer.action"
             data-analytics-label="${escapeHtml(action)}"
+            disabled
+            title="Disponivel em uma proxima versao"
           >
             <i class="${escapeHtml(COMPOSER_ACTION_ICONS[action] || "fa-solid fa-plus")}" aria-hidden="true"></i>
             <span>${escapeHtml(action)}</span>
           </button>
         `).join("")}
       </div>
-    </div>
+    </form>
   `;
 }
 
@@ -52,17 +60,36 @@ function renderReactionBubble(type, iconClass, label) {
   `;
 }
 
+function formatLikeLabel(count) {
+  const total = Number(count ?? 0);
+  if (total <= 0) {
+    return "Nenhuma curtida ainda";
+  }
+  return total === 1 ? "1 curtida" : `${total} curtidas`;
+}
+
+function renderReactionSummary(post) {
+  const count = Number(post.reactions ?? 0);
+
+  return `
+    <div class="post-reactions">
+      ${count > 0 ? renderReactionBubble("like", "fa-solid fa-thumbs-up", "Curtir") : ""}
+      <span data-post-reactions-count>${escapeHtml(formatLikeLabel(count))}</span>
+    </div>
+  `;
+}
+
 function renderPost(post) {
-  const canLike = Boolean(post.communicationId);
+  const canLike = Boolean(post.postId && post.source);
   const postActions = [
-    { label: "Curtir", action: canLike ? "toggle-communication-like" : "", active: post.hasLiked },
+    { label: "Curtir", action: canLike ? "toggle-feed-like" : "", active: post.hasLiked },
     { label: "Comentar", action: "" },
     { label: "Compartilhar", action: "" },
     { label: "Salvar", action: "" }
   ];
 
   return `
-    <article class="post" data-communication-id="${escapeHtml(post.communicationId)}">
+    <article class="post" data-post-id="${escapeHtml(post.postId)}" data-communication-id="${escapeHtml(post.communicationId)}">
       <div class="post-head">
         <div class="post-author">
           <div class="avatar" aria-hidden="true"><i class="fa-solid fa-user"></i></div>
@@ -90,12 +117,7 @@ function renderPost(post) {
       </div>
 
       <div class="post-stats">
-        <div class="post-reactions">
-          ${renderReactionBubble("like", "fa-solid fa-thumbs-up", "Curtir")}
-          ${renderReactionBubble("clap", "fa-solid fa-hands-clapping", "Aplaudir")}
-          ${renderReactionBubble("love", "fa-solid fa-heart", "Amei")}
-          <span data-post-reactions-count>${escapeHtml(String(post.reactions))} reações</span>
-        </div>
+        ${renderReactionSummary(post)}
         <div>${escapeHtml(post.commentsCount)} comentários • ${escapeHtml(post.sharesCount)} compartilhamentos</div>
       </div>
 
@@ -106,7 +128,7 @@ function renderPost(post) {
             class="${item.label === "Curtir" && item.active ? "is-active" : ""}"
             data-post-author="${escapeHtml(post.author)}"
             ${item.action ? `data-action="${escapeHtml(item.action)}"` : ""}
-            ${canLike && item.label === "Curtir" ? `data-communication-id="${escapeHtml(post.communicationId)}"` : ""}
+            ${canLike && item.label === "Curtir" ? `data-feed-item-id="${escapeHtml(post.postId)}" data-feed-source="${escapeHtml(post.source)}"` : ""}
             ${item.label === "Curtir" ? `aria-pressed="${item.active ? "true" : "false"}"` : ""}
             data-analytics="post.action"
             data-analytics-label="${escapeHtml(post.author)}:${escapeHtml(item.label)}"

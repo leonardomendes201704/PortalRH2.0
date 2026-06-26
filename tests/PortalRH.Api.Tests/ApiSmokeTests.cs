@@ -10,6 +10,7 @@ using PortalRH.Api.Contracts.Admin.PortalUsers;
 using PortalRH.Api.Contracts.Agenda;
 using PortalRH.Api.Contracts.Auth;
 using PortalRH.Api.Contracts.Communications;
+using PortalRH.Api.Contracts.Feed;
 using PortalRH.Api.Contracts.MoodSurvey;
 using PortalRH.Api.Contracts.Notifications;
 using PortalRH.Api.Contracts.Polls;
@@ -169,6 +170,91 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
         Assert.Equal("CurtidaRemovida", auditEntries[1].ActionType);
         Assert.Equal("10.30.40.51", auditEntries[0].IpAddress);
         Assert.Equal("http://127.0.0.1:3020", auditEntries[0].Origin);
+    }
+
+    [Fact]
+    public async Task FeedEndpoint_CreatesTextPostWithAuditTrailForAnyPortalUser()
+    {
+        await EnsureLdapEnabledAsync();
+        var portalSession = await LoginPortalUserAsync();
+
+        _client.DefaultRequestHeaders.Authorization = null;
+        _client.DefaultRequestHeaders.Remove("X-Portal-Token");
+        _client.DefaultRequestHeaders.Remove("X-Forwarded-For");
+        _client.DefaultRequestHeaders.Remove("Origin");
+        _client.DefaultRequestHeaders.Add("X-Portal-Token", portalSession.Token);
+        _client.DefaultRequestHeaders.Add("X-Forwarded-For", "10.30.40.52");
+        _client.DefaultRequestHeaders.Add("Origin", "http://127.0.0.1:3020");
+
+        var createResponse = await _client.PostAsJsonAsync("/api/feed", new CreateFeedPostRequest
+        {
+            Text = "Primeira publicacao de texto no feed interno."
+        });
+
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+
+        var created = await createResponse.Content.ReadFromJsonAsync<CreateFeedPostResponse>();
+        Assert.NotNull(created);
+        Assert.Equal("UserPost", created.Item.Source);
+        Assert.Equal("Primeira publicacao de texto no feed interno.", created.Item.Text);
+        Assert.False(string.IsNullOrWhiteSpace(created.Item.Author));
+
+        var feed = await _client.GetFromJsonAsync<FeedResponse>("/api/feed");
+        Assert.NotNull(feed);
+        Assert.Contains(feed.Items, item => item.Id == created.Item.Id && item.Text.Contains("Primeira publicacao"));
+
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<PortalRhDbContext>();
+        var auditEntries = await dbContext.FeedPostAuditLogs
+            .Where(item => item.FeedPostId == created.Item.Id && item.PortalUserId == portalSession.User.Id)
+            .ToListAsync();
+
+        Assert.Single(auditEntries);
+        Assert.Equal("PublicacaoRegistrada", auditEntries[0].ActionType);
+        Assert.Equal("10.30.40.52", auditEntries[0].IpAddress);
+    }
+
+    [Fact]
+    public async Task FeedEndpoint_TogglesLikeOnUserPostWithAuditTrail()
+    {
+        await EnsureLdapEnabledAsync();
+        var portalSession = await LoginPortalUserAsync();
+
+        _client.DefaultRequestHeaders.Authorization = null;
+        _client.DefaultRequestHeaders.Remove("X-Portal-Token");
+        _client.DefaultRequestHeaders.Add("X-Portal-Token", portalSession.Token);
+
+        var createResponse = await _client.PostAsJsonAsync("/api/feed", new CreateFeedPostRequest
+        {
+            Text = "Post para validar curtidas reais."
+        });
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+
+        var created = await createResponse.Content.ReadFromJsonAsync<CreateFeedPostResponse>();
+        Assert.NotNull(created);
+
+        var likeResponse = await _client.PostAsJsonAsync($"/api/feed/{created.Item.Id}/like", new ToggleFeedLikeRequest
+        {
+            Source = "UserPost"
+        });
+        Assert.Equal(HttpStatusCode.OK, likeResponse.StatusCode);
+
+        var liked = await likeResponse.Content.ReadFromJsonAsync<FeedLikeResponse>();
+        Assert.NotNull(liked);
+        Assert.Equal(1, liked.LikeCount);
+        Assert.True(liked.HasLiked);
+
+        var feed = await _client.GetFromJsonAsync<FeedResponse>("/api/feed");
+        Assert.NotNull(feed);
+        Assert.Contains(feed.Items, item => item.Id == created.Item.Id && item.LikeCount == 1 && item.HasLiked);
+
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<PortalRhDbContext>();
+        var auditEntries = await dbContext.FeedPostAuditLogs
+            .Where(item => item.FeedPostId == created.Item.Id && item.ActionType == "CurtidaRegistrada")
+            .ToListAsync();
+
+        Assert.Single(auditEntries);
     }
 
     [Fact]

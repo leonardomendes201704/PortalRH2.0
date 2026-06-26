@@ -18,6 +18,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IFeedService, FeedService>();
 builder.Services.AddScoped<ICommunicationService, CommunicationService>();
 builder.Services.AddScoped<IAdminAuthService, AdminAuthService>();
 builder.Services.AddScoped<ILdapConfigurationService, LdapConfigurationService>();

@@ -824,8 +824,9 @@ export function renderCommunicationDetailPage(communication) {
             <button
               type="button"
               class="comm-secondary-button ${communication.hasLiked ? "is-active" : ""}"
-              data-action="toggle-communication-like"
-              data-communication-id="${escapeHtml(communication.id)}"
+              data-action="toggle-feed-like"
+              data-feed-item-id="${escapeHtml(communication.id)}"
+              data-feed-source="Communication"
               aria-pressed="${communication.hasLiked ? "true" : "false"}"
             >
               <i class="fa-solid fa-thumbs-up" aria-hidden="true"></i>
