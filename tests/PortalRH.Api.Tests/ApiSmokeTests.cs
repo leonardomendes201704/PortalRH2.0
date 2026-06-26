@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using PortalRH.Api.Contracts.Admin.Auth;
 using PortalRH.Api.Contracts.Admin.Ldap;
+using PortalRH.Api.Contracts.Admin.MicrosoftGraph;
 using PortalRH.Api.Contracts.Admin.Polls;
 using PortalRH.Api.Contracts.Admin.PortalUsers;
 using PortalRH.Api.Contracts.Agenda;
@@ -982,6 +983,62 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
         Assert.Equal("LIOTECNICA", getResponse.NetbiosDomain);
         Assert.Equal("displayName", getResponse.DisplayNameAttribute);
         Assert.True(getResponse.HasServiceAccountPassword);
+    }
+
+    [Fact]
+    public async Task AdminMicrosoftGraphEndpoint_ReturnsSeededDefaultConfiguration()
+    {
+        var loginResponse = await _client.PostAsJsonAsync("/api/admin/auth/login", new AdminLoginRequest("super-admin", "Liotec@2026"));
+        Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
+
+        var adminSession = await loginResponse.Content.ReadFromJsonAsync<AdminLoginResponse>();
+        Assert.NotNull(adminSession);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminSession.Token);
+
+        var configuration = await _client.GetFromJsonAsync<MicrosoftGraphConfigurationDto>("/api/admin/microsoft-graph");
+
+        Assert.NotNull(configuration);
+        Assert.False(configuration.IsEnabled);
+        Assert.Equal(string.Empty, configuration.TenantId);
+        Assert.Equal(string.Empty, configuration.ClientId);
+        Assert.Equal("userPrincipalName", configuration.UserIdentifier);
+        Assert.False(configuration.HasClientSecret);
+    }
+
+    [Fact]
+    public async Task AdminMicrosoftGraphEndpoint_SavesAndReadsConfiguration()
+    {
+        var loginResponse = await _client.PostAsJsonAsync("/api/admin/auth/login", new AdminLoginRequest("super-admin", "Liotec@2026"));
+        Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
+
+        var adminSession = await loginResponse.Content.ReadFromJsonAsync<AdminLoginResponse>();
+        Assert.NotNull(adminSession);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminSession.Token);
+
+        var request = new UpsertMicrosoftGraphConfigurationRequest
+        {
+            IsEnabled = true,
+            TenantId = "b95b38fc-0302-4cf4-8c95-d45754f48411",
+            ClientId = "3e73d586-06c1-455c-86a7-07c2a89c383d",
+            ClientSecret = "HzW8Q~sample-secret-value",
+            UserIdentifier = "mail"
+        };
+
+        var saveResponse = await _client.PutAsJsonAsync("/api/admin/microsoft-graph", request);
+        Assert.Equal(HttpStatusCode.OK, saveResponse.StatusCode);
+
+        var saved = await saveResponse.Content.ReadFromJsonAsync<MicrosoftGraphConfigurationDto>();
+        Assert.NotNull(saved);
+        Assert.True(saved.IsEnabled);
+        Assert.Equal("b95b38fc-0302-4cf4-8c95-d45754f48411", saved.TenantId);
+        Assert.Equal("3e73d586-06c1-455c-86a7-07c2a89c383d", saved.ClientId);
+        Assert.Equal("mail", saved.UserIdentifier);
+        Assert.True(saved.HasClientSecret);
+
+        var getResponse = await _client.GetFromJsonAsync<MicrosoftGraphConfigurationDto>("/api/admin/microsoft-graph");
+        Assert.NotNull(getResponse);
+        Assert.True(getResponse.HasClientSecret);
+        Assert.Equal("mail", getResponse.UserIdentifier);
     }
 
     [Fact]

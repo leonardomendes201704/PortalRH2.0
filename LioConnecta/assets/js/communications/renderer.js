@@ -106,6 +106,24 @@ function renderLdapSettingsCard() {
   `;
 }
 
+function renderMicrosoftGraphSettingsCard() {
+  return `
+    <section class="card communication-form-card ldap-settings-card">
+      <div class="card-header">Microsoft 365 / Graph</div>
+      <div class="communication-section-intro">
+        <strong>Configure a agenda corporativa</strong>
+        <p>Informe Tenant ID, Client ID e Client Secret para habilitar a leitura da agenda do dia via Microsoft Graph.</p>
+      </div>
+      <div class="comm-item-actions">
+        <a href="#configuracoes/microsoft-graph" class="feed-composer-submit">
+          <i class="fa-regular fa-calendar-days" aria-hidden="true"></i>
+          Configurar Microsoft Graph
+        </a>
+      </div>
+    </section>
+  `;
+}
+
 function renderPortalUserStatCard(label, value, detail, tone = "brand") {
   return `
     <article class="comm-kpi comm-kpi--${escapeHtml(tone)}">
@@ -1003,6 +1021,7 @@ export function renderAdminSettingsPage() {
           </div>
         </section>
         ${renderLdapSettingsCard()}
+        ${renderMicrosoftGraphSettingsCard()}
       </div>
     </section>
   `;

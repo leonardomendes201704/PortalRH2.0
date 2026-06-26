@@ -23,6 +23,7 @@ builder.Services.AddScoped<IFeedService, FeedService>();
 builder.Services.AddScoped<ICommunicationService, CommunicationService>();
 builder.Services.AddScoped<IAdminAuthService, AdminAuthService>();
 builder.Services.AddScoped<ILdapConfigurationService, LdapConfigurationService>();
+builder.Services.AddScoped<IMicrosoftGraphConfigurationService, MicrosoftGraphConfigurationService>();
 builder.Services.AddScoped<IPortalAuthService, PortalAuthService>();
 builder.Services.AddScoped<IPortalUserAdminService, PortalUserAdminService>();
 builder.Services.AddScoped<IPollService, PollService>();

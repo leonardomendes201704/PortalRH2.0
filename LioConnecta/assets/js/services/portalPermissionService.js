@@ -58,5 +58,6 @@ export const ROUTE_MODULE_ACCESS = Object.freeze({
   recursos: { moduleKey: "home", minimumLevel: "View" },
   configuracoes: { moduleKey: "settings", minimumLevel: "Manage" },
   "configuracoes/ldap": { moduleKey: "settings", minimumLevel: "Manage" },
+  "configuracoes/microsoft-graph": { moduleKey: "settings", minimumLevel: "Manage" },
   "admin/usuarios": { moduleKey: "user-admin", minimumLevel: "Manage" }
 });
