@@ -1,9 +1,9 @@
 import { escapeHtml } from "./html.js";
-import { DATA_MODES, getRuntimeConfig } from "../core/runtimeConfig.js";
-import { createFeedMediaComment, getFeedMediaComments } from "../services/feedService.js";
-import { getPortalAuthHeaders } from "../services/portalAuthService.js";
-import { showToast } from "../core/feedback.js";
-import { canInteractWithFeed } from "../services/portalPermissionService.js";
+import { DATA_MODES, getRuntimeConfig } from "../core/runtimeConfig.js?v=0.20.1";
+import { createFeedMediaComment, getFeedMediaComments } from "../services/feedService.js?v=0.20.1";
+import { getPortalAuthHeaders } from "../services/portalAuthService.js?v=0.13.0";
+import { showToast } from "../core/feedback.js?v=0.16.0";
+import { canInteractWithFeed } from "../services/portalPermissionService.js?v=0.17.0";
 
 let modalRoot = null;
 let viewerState = null;

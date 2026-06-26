@@ -1,6 +1,6 @@
 import { renderEmptyState } from "./cards.js";
 import { escapeHtml } from "./html.js";
-import { serializeGalleryImages } from "./feedPhotoViewerModal.js";
+import { serializeGalleryImages } from "./feedPhotoViewerModal.js?v=0.20.1";
 
 const PHOTO_ACTION_LABEL = "Adicionar fotos";
 
