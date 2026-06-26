@@ -87,7 +87,7 @@ import {
   isHrProfileModuleSlug,
   getHrProfileModuleData,
   renderHrProfileModulePage
-} from "./hrProfile/index.js?v=0.23.1";
+} from "./hrProfile/index.js?v=0.23.3";
 import {
   canManageMoodSurveyFeedback,
   listMoodFeedbackMessages,
@@ -320,8 +320,44 @@ async function setupServiceWorker() {
   await navigator.serviceWorker.register("./service-worker.js");
 }
 
+function normalizeHashRoute(rawHash = "") {
+  return String(rawHash).replace(/^#/, "").replace(/^\/+/, "").trim();
+}
+
+function createAdminShellContext() {
+  return {
+    brand: { name: "LIOCONNECTA", tagline: "" },
+    user: { greeting: "", name: "", area: "", notificationCount: 0 },
+    navItems: getNavRoutes().map((item) => ({ ...item, active: false, moduleKey: "" })),
+    hero: { title: "", subtitle: "" },
+    mood: { title: "", items: [] },
+    composer: { enabled: false, title: "", placeholder: "", actions: [] },
+    leftPanels: [],
+    rightPanels: []
+  };
+}
+
+async function loadShellContext() {
+  const config = getRuntimeConfig();
+  const hasPortalSession = Boolean(getStoredPortalSession()?.token);
+
+  if (config.dataMode === DATA_MODES.API && !hasPortalSession) {
+    return createAdminShellContext();
+  }
+
+  const [userContext, panels] = await Promise.all([
+    getUserHomeContext(),
+    getPanelData()
+  ]);
+
+  return {
+    ...userContext,
+    ...panels
+  };
+}
+
 function parseRoute() {
-  const hash = window.location.hash.replace(/^#/, "").trim();
+  const hash = normalizeHashRoute(window.location.hash);
 
   if (!hash) {
     return { route: ROUTES.HOME, slug: "" };
@@ -2038,10 +2074,13 @@ function renderLoadingApp(route = parseRoute().route) {
   ].join("");
 }
 
-function renderBootstrapError() {
+function renderBootstrapError(error) {
+  console.error("Falha ao iniciar a LIOCONNECTA.", error);
   document.getElementById("center-content").innerHTML = renderErrorCard(
     "Erro ao carregar o prototipo",
-    "Nao conseguimos montar o mock tecnico neste momento. Revise os arquivos de dados, o modo ativo da aplicacao e tente novamente."
+    getRuntimeConfig().dataMode === DATA_MODES.API
+      ? "Nao foi possivel carregar os dados da API. Verifique se a API esta ativa, se a sessao e valida e tente novamente."
+      : "Nao conseguimos montar o mock tecnico neste momento. Revise os arquivos de dados, o modo ativo da aplicacao e tente novamente."
   );
 }
 
@@ -2062,26 +2101,18 @@ async function loadPageData(route, slug = "") {
   }
 
   if (route === ROUTES.SAVED) {
-    const [userContext, panels, feed] = await Promise.all([
-      getUserHomeContext(),
-      getPanelData(),
-      getSavedFeedData()
-    ]);
+    const shellContext = await loadShellContext();
+    const feed = await getSavedFeedData();
 
     return {
-      ...userContext,
-      ...panels,
+      ...shellContext,
       feed
     };
   }
 
-  const [userContext, panels] = await Promise.all([
-    getUserHomeContext(),
-    getPanelData()
-  ]);
+  const shellContext = await loadShellContext();
   const baseShellData = {
-    ...userContext,
-    ...panels
+    ...shellContext
   };
   const isAdminRoute =
     route === ROUTES.SETTINGS ||
@@ -2369,7 +2400,7 @@ async function bootstrap() {
     window.addEventListener("hashchange", () => {
       renderCurrentRoute().catch((error) => {
         console.error("Falha ao trocar de rota na LIOCONNECTA.", error);
-        renderBootstrapError();
+        renderBootstrapError(error);
       });
     });
 
@@ -2382,6 +2413,5 @@ async function bootstrap() {
 }
 
 bootstrap().catch((error) => {
-  console.error("Falha ao iniciar a LIOCONNECTA.", error);
-  renderBootstrapError();
+  renderBootstrapError(error);
 });

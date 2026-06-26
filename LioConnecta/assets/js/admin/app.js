@@ -12,8 +12,13 @@ function renderVersionBadge() {
   badge.textContent = `${config.version} • ADMIN`;
 }
 
+function normalizeHashRoute(rawHash = "") {
+  return String(rawHash).replace(/^#/, "").replace(/^\/+/, "").trim();
+}
+
 function redirectToTarget(hash = "#comunicacao/restrita") {
-  window.location.href = `../${hash}`;
+  const normalized = normalizeHashRoute(hash) || "comunicacao/restrita";
+  window.location.href = `../#${normalized}`;
 }
 
 function bindAdminLoginForm() {
