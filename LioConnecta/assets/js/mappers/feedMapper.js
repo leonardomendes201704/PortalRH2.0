@@ -39,6 +39,7 @@ function mapPost(post) {
     communicationId: asString(post?.communicationId, ""),
     slug: asString(post?.slug, ""),
     author: asString(post?.author, "Autor não informado"),
+    authorUserId: asString(post?.authorUserId ?? post?.AuthorUserId ?? post?.author_user_id, ""),
     area: asString(post?.area, "Área não informada"),
     timeAgo: asString(post?.timeAgo, "agora"),
     text: asString(post?.text, ""),

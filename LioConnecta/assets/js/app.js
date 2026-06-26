@@ -58,11 +58,11 @@ import {
   votePoll
 } from "./polls/index.js?v=0.15.0";
 import { renderFeed } from "./feed/index.js?v=0.21.4";
-import { updateFeedLikeUi, createFeedPost, toggleFeedLike, uploadFeedAsset } from "./services/feedService.js?v=0.21.4";
+import { updateFeedLikeUi, createFeedPost, toggleFeedLike, uploadFeedAsset, deleteFeedPost } from "./services/feedService.js?v=0.21.8";
 import { bindFeedPhotoComposerActions, clearPendingFeedPhotos, getPendingFeedPhotos } from "./components/feedPhotoModal.js?v=0.21.4";
 import { bindFeedPhotoViewerActions } from "./components/feedPhotoViewerModal.js?v=0.21.4";
 import { bindFeedPostCommentActions } from "./components/feedPostCommentComposer.js?v=0.21.4";
-import { bindMentionField } from "./components/feedMentions.js?v=0.21.4";
+import { bindMentionField } from "./components/feedMentions.js?v=0.21.7";
 import { bindInteractionFeedback, showToast } from "./core/feedback.js?v=0.16.0";
 import { DATA_MODES, getRuntimeConfig } from "./core/runtimeConfig.js?v=0.21.4";
 import { getPanelData } from "./services/panelService.js?v=0.12.8";
@@ -401,19 +401,21 @@ function renderHomePage(data, route) {
     enabled: data.composer?.enabled !== false && canInteractWithFeed(),
     photoEnabled: canInteractWithFeed() && getRuntimeConfig().dataMode === DATA_MODES.API
   };
+  const currentUserId = String(getStoredPortalSession()?.user?.id || "");
 
   centerContent.innerHTML = [
     renderHero(data.hero),
     renderMoodCard(data.mood),
     renderHomePollCarousel(data.pollHomeCarousel),
     renderCarouselSection(data.carousel),
-    renderFeed(data.feed, composer)
+    renderFeed(data.feed, composer, { currentUserId })
   ].join("");
 
   initCarousel();
   initPollHomeCarousel();
   bindPublicPollActions(route);
   bindFeedLikeActions();
+  bindFeedPostMenuActions();
   bindFeedPostCommentActions();
   if (composer.enabled) {
     bindFeedComposerActions();
@@ -926,6 +928,109 @@ function bindFeedLikeActions() {
           }, 700);
         }
       } finally {
+        button.disabled = false;
+      }
+    });
+  });
+}
+
+function closeOpenPostMenus(exceptMenu = null) {
+  document.querySelectorAll(".post-more-menu").forEach((menu) => {
+    if (exceptMenu && menu === exceptMenu) {
+      return;
+    }
+
+    const dropdown = menu.querySelector(".post-more-dropdown");
+    const trigger = menu.querySelector(".post-more-trigger");
+    if (dropdown) {
+      dropdown.hidden = true;
+    }
+    if (trigger) {
+      trigger.setAttribute("aria-expanded", "false");
+    }
+  });
+}
+
+function bindFeedPostMenuActions(root = document) {
+  if (getRuntimeConfig().dataMode !== DATA_MODES.API || !canInteractWithFeed()) {
+    return;
+  }
+
+  if (!root.dataset.postMenuOutsideBound) {
+    root.dataset.postMenuOutsideBound = "true";
+    document.addEventListener("click", (event) => {
+      if (event.target.closest(".post-more-menu")) {
+        return;
+      }
+      closeOpenPostMenus();
+    });
+  }
+
+  const menus = Array.from(root.querySelectorAll(".post-more-menu"));
+  menus.forEach((menu) => {
+    const trigger = menu.querySelector("[data-action='toggle-post-menu']");
+    const dropdown = menu.querySelector(".post-more-dropdown");
+    if (!trigger || !dropdown || trigger.dataset.bound === "true") {
+      return;
+    }
+
+    trigger.dataset.bound = "true";
+    trigger.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const willOpen = dropdown.hidden;
+      closeOpenPostMenus(menu);
+      dropdown.hidden = !willOpen;
+      trigger.setAttribute("aria-expanded", willOpen ? "true" : "false");
+    });
+  });
+
+  const deleteButtons = Array.from(root.querySelectorAll("[data-action='delete-feed-post']"));
+  deleteButtons.forEach((button) => {
+    if (button.dataset.bound === "true") {
+      return;
+    }
+
+    button.dataset.bound = "true";
+    button.addEventListener("click", async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const postId = button.getAttribute("data-post-id") || "";
+      const postEl = button.closest(".post");
+      if (!postId || !postEl) {
+        return;
+      }
+
+      const confirmed = window.confirm("Deseja excluir esta publicacao? Ela deixara de aparecer no feed.");
+      if (!confirmed) {
+        return;
+      }
+
+      closeOpenPostMenus();
+      button.disabled = true;
+
+      try {
+        await deleteFeedPost(postId, { headers: getPortalAuthHeaders() });
+        postEl.remove();
+
+        const feedList = document.querySelector(".feed-list");
+        if (feedList && !feedList.querySelector(".post")) {
+          feedList.innerHTML = renderEmptyState(
+            "Ainda não há posts publicados.",
+            "Assim que a comunicação interna ou os times compartilharem novidades, o mural aparecerá aqui."
+          );
+        }
+
+        showToast("Publicacao removida do feed.", "success");
+      } catch (error) {
+        console.error("Falha ao excluir publicacao do feed.", error);
+        const message = error instanceof Error && error.message.includes("HTTP 403")
+          ? "Voce so pode excluir suas proprias publicacoes."
+          : error instanceof Error && error.message.includes("HTTP 401")
+            ? "Sua sessao expirou. Faca login novamente para excluir a publicacao."
+            : "Nao foi possivel excluir a publicacao agora.";
+        showToast(message, "error");
         button.disabled = false;
       }
     });

@@ -429,6 +429,57 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
     }
 
     [Fact]
+    public async Task FeedEndpoint_SoftDeletesOwnPostAndHidesItFromFeed()
+    {
+        await EnsureLdapEnabledAsync();
+        var portalSession = await LoginPortalUserAsync();
+
+        _client.DefaultRequestHeaders.Authorization = null;
+        _client.DefaultRequestHeaders.Remove("X-Portal-Token");
+        _client.DefaultRequestHeaders.Add("X-Portal-Token", portalSession.Token);
+
+        var createResponse = await _client.PostAsJsonAsync("/api/feed", new CreateFeedPostRequest
+        {
+            Text = "Post para validar exclusao logica."
+        });
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+
+        var created = await createResponse.Content.ReadFromJsonAsync<CreateFeedPostResponse>();
+        Assert.NotNull(created);
+        Assert.Equal(portalSession.User.Id, created.Item.AuthorUserId);
+
+        var commentResponse = await _client.PostAsJsonAsync($"/api/feed/{created.Item.Id}/comments", new CreateFeedPostCommentRequest
+        {
+            Text = "Comentario que deve sumir junto com o post."
+        });
+        Assert.Equal(HttpStatusCode.Created, commentResponse.StatusCode);
+
+        var deleteResponse = await _client.DeleteAsync($"/api/feed/{created.Item.Id}");
+        Assert.Equal(HttpStatusCode.OK, deleteResponse.StatusCode);
+
+        var deleted = await deleteResponse.Content.ReadFromJsonAsync<DeleteFeedPostResponse>();
+        Assert.NotNull(deleted);
+        Assert.True(deleted.Deleted);
+
+        var feed = await _client.GetFromJsonAsync<FeedResponse>("/api/feed");
+        Assert.NotNull(feed);
+        Assert.DoesNotContain(feed.Items, item => item.Id == created.Item.Id);
+
+        var commentsResponse = await _client.GetAsync($"/api/feed/{created.Item.Id}/comments");
+        Assert.Equal(HttpStatusCode.NotFound, commentsResponse.StatusCode);
+
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<PortalRhDbContext>();
+        var persistedPost = await dbContext.FeedPosts.FirstAsync(item => item.Id == created.Item.Id);
+        Assert.NotNull(persistedPost.DeletedAtUtc);
+
+        var auditEntries = await dbContext.FeedPostAuditLogs
+            .Where(item => item.FeedPostId == created.Item.Id && item.ActionType == "PublicacaoRemovida")
+            .ToListAsync();
+        Assert.Single(auditEntries);
+    }
+
+    [Fact]
     public async Task MeUiEndpoint_ReturnsPersonalizedShellForPortalSession()
     {
         await EnsureLdapEnabledAsync();

@@ -8,7 +8,7 @@ import {
   bindMentionField,
   renderMentionBody,
   renderMentionDropdownMarkup
-} from "./feedMentions.js?v=0.21.4";
+} from "./feedMentions.js?v=0.21.7";
 
 const mentionControls = new WeakMap();
 

@@ -164,6 +164,51 @@ public class FeedController : ControllerBase
         }
     }
 
+    [HttpDelete("{id:guid}")]
+    [RequirePortalSession]
+    [ProducesResponseType(typeof(DeleteFeedPostResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeletePost(Guid id, CancellationToken cancellationToken)
+    {
+        var session = PortalSessionHttpContext.Get(HttpContext);
+        if (session?.PortalUser is null)
+        {
+            return Unauthorized(new { message = "Sessao do portal nao encontrada." });
+        }
+
+        if (!PortalModuleAccess.HasModuleAccess(
+                session.PortalUser,
+                PortalModulePermissionCatalog.Feed,
+                PortalModulePermissionCatalog.Interact,
+                PortalModulePermissionCatalog.Manage))
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new
+            {
+                message = "Voce nao possui permissao para remover publicacoes no feed."
+            });
+        }
+
+        try
+        {
+            var deleted = await _feedService.DeletePostAsync(
+                id,
+                session.PortalUserId,
+                BuildAuditContext(session.PortalUser.Login, session.PortalUser.DisplayName),
+                cancellationToken);
+
+            return deleted
+                ? Ok(new DeleteFeedPostResponse(id, true))
+                : NotFound();
+        }
+        catch (InvalidOperationException exception)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = exception.Message });
+        }
+    }
+
     [HttpGet("media/{mediaId:guid}/comments")]
     [ProducesResponseType(typeof(FeedMediaCommentsResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

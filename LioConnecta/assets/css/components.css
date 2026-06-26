@@ -93,21 +93,28 @@
 }
 
 .mood-card--completed {
-  background: linear-gradient(180deg, #ffffff, #f4f9ff);
+  padding: 0;
+  gap: 0;
+  background: transparent;
+}
+
+.mood-card--completed h2 {
+  padding: 16px 18px 12px;
 }
 
 .mood-thankyou {
   display: grid;
   justify-items: center;
   gap: 10px;
-  padding: 18px 16px;
-  border-radius: 14px;
-  border: 1px solid #cfe0f2;
-  background-color: #f8fbff;
+  padding: 22px 18px 20px;
+  border: none;
+  border-radius: 0;
+  background-color: transparent;
   background-image: url("../img/bg_pesquisa_satisfacao.png");
   background-repeat: no-repeat;
   background-position: center;
-  background-size: cover;
+  background-size: 100% 100%;
+  overflow: hidden;
   text-align: center;
 }
 
@@ -836,6 +843,68 @@
   color: var(--color-text-muted);
 }
 
+.post-more-menu {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.post-more-trigger {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-weight: 700;
+  letter-spacing: 2px;
+  cursor: pointer;
+}
+
+.post-more-trigger:hover,
+.post-more-trigger[aria-expanded="true"] {
+  background: #f1f6fb;
+  color: #173154;
+}
+
+.post-more-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 20;
+  min-width: 148px;
+  padding: 6px;
+  border: 1px solid #d9e5f0;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+}
+
+.post-more-option {
+  display: block;
+  width: 100%;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  padding: 8px 10px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: #183153;
+  cursor: pointer;
+}
+
+.post-more-option:hover {
+  background: #f5faff;
+}
+
+.post-more-option--danger {
+  color: #dc2626;
+}
+
+.post-more-option--danger:hover {
+  background: #fef2f2;
+}
+
 .post-more {
   color: var(--color-text-muted);
   font-weight: 700;
@@ -1098,9 +1167,10 @@
 
 .post-comment-mention-dropdown {
   position: absolute;
+  top: 0;
   left: 0;
-  right: 0;
-  top: calc(100% + 6px);
+  width: 280px;
+  max-width: calc(100% - 8px);
   z-index: 30;
   display: grid;
   gap: 4px;

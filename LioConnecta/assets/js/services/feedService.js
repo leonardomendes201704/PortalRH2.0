@@ -1,4 +1,4 @@
-import { getJson, postFormData, postJson } from "./apiClient.js";
+import { getJson, postFormData, postJson, deleteJson } from "./apiClient.js";
 import { unwrapDataEnvelope } from "./apiClient.js";
 import { mapFeedViewModel } from "../mappers/feedMapper.js";
 import { validateFeedContract } from "../validators/feedValidator.js";
@@ -70,6 +70,7 @@ function mapFeedItemToPost(item = {}) {
     communicationId: isCommunication ? String(item.communicationId || item.id || "") : "",
     slug: "",
     author: String(item.author || "Colaborador"),
+    authorUserId: String(item.authorUserId || item.AuthorUserId || item.author_user_id || ""),
     area: String(item.area || "Companhia"),
     timeAgo: formatTimeAgo(item.publishedAtUtc),
     text: String(item.text || ""),
@@ -178,6 +179,10 @@ export async function createFeedPostComment(postId, payload, options = {}) {
 export async function suggestFeedMentions(query, options = {}) {
   const params = new URLSearchParams({ q: String(query || "") });
   return getJson(`${resolveApiEndpoint("feed")}/mentions/suggest?${params.toString()}`, options);
+}
+
+export async function deleteFeedPost(postId, options = {}) {
+  return deleteJson(`${resolveApiEndpoint("feed")}/${encodeURIComponent(postId)}`, options);
 }
 
 function mapMediaComment(item = {}) {

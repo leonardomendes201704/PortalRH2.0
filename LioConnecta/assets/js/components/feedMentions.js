@@ -8,6 +8,8 @@ const suggestControllers = new WeakMap();
 
 const DROPDOWN_SELECTOR = ".feed-mention-dropdown";
 const CHIP_SELECTOR = ".feed-mention-chip";
+const DROPDOWN_WIDTH = 280;
+const DROPDOWN_GAP = 6;
 
 export function renderMentionBody(content = {}) {
   const text = String(content.text ?? content ?? "");
@@ -81,6 +83,82 @@ function getState(fieldRoot) {
 
 function getDropdown(fieldRoot) {
   return fieldRoot.querySelector(DROPDOWN_SELECTOR);
+}
+
+function getCaretClientRect(editor) {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) {
+    return null;
+  }
+
+  const range = selection.getRangeAt(0).cloneRange();
+  if (!editor.contains(range.startContainer)) {
+    return null;
+  }
+
+  range.collapse(true);
+
+  const rects = range.getClientRects();
+  if (rects.length > 0) {
+    return rects[rects.length - 1];
+  }
+
+  const marker = document.createElement("span");
+  marker.textContent = "\u200b";
+  range.insertNode(marker);
+  const rect = marker.getBoundingClientRect();
+  marker.remove();
+
+  selection.removeAllRanges();
+  selection.addRange(range);
+
+  if (rect.width === 0 && rect.height === 0) {
+    return null;
+  }
+
+  return rect;
+}
+
+function resetMentionDropdownPosition(dropdown) {
+  if (!dropdown) {
+    return;
+  }
+
+  dropdown.style.top = "";
+  dropdown.style.left = "";
+  dropdown.style.width = "";
+  dropdown.style.right = "";
+}
+
+function positionMentionDropdown(fieldRoot, editor) {
+  const dropdown = getDropdown(fieldRoot);
+  if (!dropdown || dropdown.hidden) {
+    return;
+  }
+
+  const caretRect = getCaretClientRect(editor);
+  if (!caretRect) {
+    return;
+  }
+
+  const fieldRect = fieldRoot.getBoundingClientRect();
+  const dropdownWidth = Math.min(DROPDOWN_WIDTH, Math.max(0, fieldRect.width - 8));
+  const top = caretRect.bottom - fieldRect.top + DROPDOWN_GAP;
+  const left = Math.max(0, Math.min(
+    caretRect.left - fieldRect.left,
+    fieldRect.width - dropdownWidth
+  ));
+
+  dropdown.style.top = `${top}px`;
+  dropdown.style.left = `${left}px`;
+  dropdown.style.width = `${dropdownWidth}px`;
+  dropdown.style.right = "auto";
+}
+
+function scheduleMentionDropdownPosition(fieldRoot, editor) {
+  requestAnimationFrame(() => {
+    positionMentionDropdown(fieldRoot, editor);
+  });
 }
 
 function nodeToPlainText(node) {
@@ -316,7 +394,7 @@ function removeChipAdjacentToCaret(editor, direction) {
   return true;
 }
 
-function showMentionHint(fieldRoot) {
+function showMentionHint(fieldRoot, editor) {
   const dropdown = getDropdown(fieldRoot);
   if (!dropdown) {
     return;
@@ -324,6 +402,7 @@ function showMentionHint(fieldRoot) {
 
   dropdown.hidden = false;
   dropdown.innerHTML = `<p class="post-comment-mention-hint">Digite o nome do colaborador para buscar</p>`;
+  scheduleMentionDropdownPosition(fieldRoot, editor);
 }
 
 function hideMentionDropdown(fieldRoot) {
@@ -331,6 +410,7 @@ function hideMentionDropdown(fieldRoot) {
   if (dropdown) {
     dropdown.hidden = true;
     dropdown.innerHTML = "";
+    resetMentionDropdownPosition(dropdown);
   }
 
   const state = getState(fieldRoot);
@@ -338,7 +418,7 @@ function hideMentionDropdown(fieldRoot) {
   state.suggestions = [];
 }
 
-function renderMentionDropdown(fieldRoot, suggestions, activeIndex, { message = "" } = {}) {
+function renderMentionDropdown(fieldRoot, editor, suggestions, activeIndex, { message = "" } = {}) {
   const dropdown = getDropdown(fieldRoot);
   if (!dropdown) {
     return;
@@ -347,12 +427,14 @@ function renderMentionDropdown(fieldRoot, suggestions, activeIndex, { message = 
   if (message) {
     dropdown.hidden = false;
     dropdown.innerHTML = `<p class="post-comment-mention-hint">${escapeHtml(message)}</p>`;
+    scheduleMentionDropdownPosition(fieldRoot, editor);
     return;
   }
 
   if (!suggestions.length) {
     dropdown.hidden = true;
     dropdown.innerHTML = "";
+    resetMentionDropdownPosition(dropdown);
     return;
   }
 
@@ -371,12 +453,13 @@ function renderMentionDropdown(fieldRoot, suggestions, activeIndex, { message = 
       <span class="post-comment-mention-option__meta">${escapeHtml(item.department || "Companhia")}</span>
     </button>
   `).join("");
+  scheduleMentionDropdownPosition(fieldRoot, editor);
 }
 
 async function loadMentionSuggestions(fieldRoot, editor, query) {
   const normalized = String(query || "").trim();
   if (!normalized) {
-    showMentionHint(fieldRoot);
+    showMentionHint(fieldRoot, editor);
     return;
   }
 
@@ -387,7 +470,7 @@ async function loadMentionSuggestions(fieldRoot, editor, query) {
 
   const controller = new AbortController();
   suggestControllers.set(fieldRoot, controller);
-  renderMentionDropdown(fieldRoot, [], -1, { message: "Buscando colaboradores..." });
+  renderMentionDropdown(fieldRoot, editor, [], -1, { message: "Buscando colaboradores..." });
 
   try {
     const payload = await suggestFeedMentions(normalized, {
@@ -409,18 +492,18 @@ async function loadMentionSuggestions(fieldRoot, editor, query) {
     state.activeIndex = state.suggestions.length ? 0 : -1;
 
     if (!state.suggestions.length) {
-      renderMentionDropdown(fieldRoot, [], -1, { message: "Nenhum colaborador encontrado." });
+      renderMentionDropdown(fieldRoot, editor, [], -1, { message: "Nenhum colaborador encontrado." });
       return;
     }
 
-    renderMentionDropdown(fieldRoot, state.suggestions, state.activeIndex);
+    renderMentionDropdown(fieldRoot, editor, state.suggestions, state.activeIndex);
   } catch (error) {
     if (controller.signal.aborted || error?.name === "AbortError") {
       return;
     }
 
     console.error("Falha ao sugerir mencoes.", error);
-    renderMentionDropdown(fieldRoot, [], -1, { message: "Nao foi possivel buscar colaboradores agora." });
+    renderMentionDropdown(fieldRoot, editor, [], -1, { message: "Nao foi possivel buscar colaboradores agora." });
   } finally {
     if (suggestControllers.get(fieldRoot) === controller) {
       suggestControllers.delete(fieldRoot);
@@ -447,7 +530,7 @@ function syncMentionState(fieldRoot, editor) {
   }
 
   if (!active.query) {
-    showMentionHint(fieldRoot);
+    showMentionHint(fieldRoot, editor);
     return;
   }
 
@@ -489,7 +572,7 @@ function pickActiveSuggestion(fieldRoot, editor) {
   return true;
 }
 
-function moveMentionSelection(fieldRoot, delta) {
+function moveMentionSelection(fieldRoot, editor, delta) {
   const state = getState(fieldRoot);
   if (!state.suggestions.length) {
     return;
@@ -497,7 +580,7 @@ function moveMentionSelection(fieldRoot, delta) {
 
   const total = state.suggestions.length;
   state.activeIndex = (state.activeIndex + delta + total) % total;
-  renderMentionDropdown(fieldRoot, state.suggestions, state.activeIndex);
+  renderMentionDropdown(fieldRoot, editor, state.suggestions, state.activeIndex);
 }
 
 export function bindMentionField({ fieldRoot, editor, onSync, maxLength = 2000 }) {
@@ -510,6 +593,13 @@ export function bindMentionField({ fieldRoot, editor, onSync, maxLength = 2000 }
   }
 
   fieldRoot.dataset.mentionBound = "true";
+
+  const repositionDropdown = () => {
+    const dropdown = getDropdown(fieldRoot);
+    if (dropdown && !dropdown.hidden) {
+      scheduleMentionDropdownPosition(fieldRoot, editor);
+    }
+  };
 
   const runSync = () => {
     requestAnimationFrame(() => {
@@ -534,6 +624,8 @@ export function bindMentionField({ fieldRoot, editor, onSync, maxLength = 2000 }
 
   editor.addEventListener("keyup", runSync);
   editor.addEventListener("click", runSync);
+  editor.addEventListener("scroll", repositionDropdown, { passive: true });
+  window.addEventListener("resize", repositionDropdown, { passive: true });
 
   editor.addEventListener("paste", (event) => {
     event.preventDefault();
@@ -558,13 +650,13 @@ export function bindMentionField({ fieldRoot, editor, onSync, maxLength = 2000 }
 
     if (dropdownOpen && event.key === "ArrowDown") {
       event.preventDefault();
-      moveMentionSelection(fieldRoot, 1);
+      moveMentionSelection(fieldRoot, editor, 1);
       return;
     }
 
     if (dropdownOpen && event.key === "ArrowUp") {
       event.preventDefault();
-      moveMentionSelection(fieldRoot, -1);
+      moveMentionSelection(fieldRoot, editor, -1);
       return;
     }
 
