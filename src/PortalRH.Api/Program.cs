@@ -89,6 +89,20 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("LioConnectaLocal");
+
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        context.Response.ContentType = "application/json";
+        await context.Response.WriteAsJsonAsync(new
+        {
+            message = "Erro interno ao processar a requisicao."
+        });
+    });
+});
+
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(webRootPath),
