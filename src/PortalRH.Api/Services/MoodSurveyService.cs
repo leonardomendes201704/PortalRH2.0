@@ -261,23 +261,6 @@ public class MoodSurveyService : IMoodSurveyService
 
     private async Task<string?> ResolveThankYouMessageAsync(MoodSurveyVote? vote, CancellationToken cancellationToken)
     {
-        if (vote?.FeedbackMessage is not null)
-        {
-            return vote.FeedbackMessage.Message;
-        }
-
-        if (vote?.FeedbackMessageId is Guid messageId)
-        {
-            var message = await _dbContext.MoodSurveyFeedbackMessages
-                .AsNoTracking()
-                .FirstOrDefaultAsync(item => item.Id == messageId, cancellationToken);
-
-            if (message is not null)
-            {
-                return message.Message;
-            }
-        }
-
         if (string.IsNullOrWhiteSpace(vote?.OptionKey))
         {
             return null;

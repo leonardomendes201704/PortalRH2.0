@@ -1116,6 +1116,12 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
         Assert.False(string.IsNullOrWhiteSpace(voted.ThankYouMessage));
         Assert.Equal(1, voted.Items.First(item => item.Key == "motivated").VoteCount);
 
+        var refreshed = await _client.GetFromJsonAsync<MoodSurveyTodayResponse>("/api/mood-survey/today");
+        Assert.NotNull(refreshed);
+        Assert.True(refreshed.HasVoted);
+        Assert.Equal("motivated", refreshed.SelectedOptionKey);
+        Assert.False(string.IsNullOrWhiteSpace(refreshed.ThankYouMessage));
+
         var secondVoteResponse = await _client.PostAsJsonAsync("/api/mood-survey/vote", new SubmitMoodSurveyVoteRequest
         {
             OptionKey = "good"

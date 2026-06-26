@@ -805,17 +805,17 @@ function bindFeedComposerActions() {
 
     form.dataset.bound = "true";
 
-    const textarea = form.querySelector("textarea[name='text']");
+    const editor = form.querySelector(".feed-mention-editor");
     const fieldRoot = form.querySelector(".feed-composer-mention-field");
-    if (textarea && fieldRoot) {
-      feedComposerMentions.set(form, bindMentionField({ fieldRoot, textarea }));
+    if (editor && fieldRoot) {
+      feedComposerMentions.set(form, bindMentionField({ fieldRoot, editor }));
     }
 
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
 
-      const textarea = form.querySelector("textarea[name='text']");
-      const text = String(textarea?.value || "").trim();
+      const mentionControl = feedComposerMentions.get(form);
+      const text = String(mentionControl?.getText() || "").trim();
       const pendingPhotos = getPendingFeedPhotos();
       const submitButton = form.querySelector(".feed-composer-submit");
 

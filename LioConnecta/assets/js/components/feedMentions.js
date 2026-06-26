@@ -7,6 +7,7 @@ const suggestTimers = new WeakMap();
 const suggestControllers = new WeakMap();
 
 const DROPDOWN_SELECTOR = ".feed-mention-dropdown";
+const CHIP_SELECTOR = ".feed-mention-chip";
 
 export function renderMentionBody(content = {}) {
   const text = String(content.text ?? content ?? "");
@@ -71,7 +72,6 @@ function parseMentionSuggestions(payload = {}) {
 function getState(fieldRoot) {
   if (!mentionState.has(fieldRoot)) {
     mentionState.set(fieldRoot, {
-      mentionedUserIds: new Set(),
       activeIndex: -1,
       suggestions: []
     });
@@ -83,10 +83,54 @@ function getDropdown(fieldRoot) {
   return fieldRoot.querySelector(DROPDOWN_SELECTOR);
 }
 
-function getActiveMentionQuery(textarea) {
-  const value = textarea.value;
-  const cursor = textarea.selectionStart ?? value.length;
-  const before = value.slice(0, cursor);
+function nodeToPlainText(node) {
+  if (!node) {
+    return "";
+  }
+
+  if (node.nodeType === Node.TEXT_NODE) {
+    return node.textContent || "";
+  }
+
+  if (node.nodeType === Node.ELEMENT_NODE) {
+    if (node.matches?.(CHIP_SELECTOR)) {
+      return `@${node.getAttribute("data-display-name") || ""}`;
+    }
+
+    return Array.from(node.childNodes).map(nodeToPlainText).join("");
+  }
+
+  if (node instanceof DocumentFragment) {
+    return Array.from(node.childNodes).map(nodeToPlainText).join("");
+  }
+
+  return "";
+}
+
+export function serializeEditorContent(editor) {
+  const text = nodeToPlainText(editor).replace(/\u00a0/g, " ");
+  const mentionedUserIds = Array.from(editor.querySelectorAll(CHIP_SELECTOR))
+    .map((chip) => chip.getAttribute("data-user-id") || "")
+    .filter(Boolean);
+
+  return { text, mentionedUserIds };
+}
+
+function getTextBeforeCursor(editor) {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0 || !editor.contains(selection.anchorNode)) {
+    return nodeToPlainText(editor);
+  }
+
+  const range = selection.getRangeAt(0);
+  const preRange = range.cloneRange();
+  preRange.selectNodeContents(editor);
+  preRange.setEnd(range.endContainer, range.endOffset);
+  return nodeToPlainText(preRange.cloneContents()).replace(/\u00a0/g, " ");
+}
+
+function getActiveMentionQuery(editor) {
+  const before = getTextBeforeCursor(editor);
   const atIndex = before.lastIndexOf("@");
 
   if (atIndex === -1) {
@@ -109,7 +153,167 @@ function getActiveMentionQuery(textarea) {
     return null;
   }
 
-  return { query: fragment, start: atIndex, end: cursor };
+  return { query: fragment, start: atIndex, end: before.length };
+}
+
+function visitPlainTextOffsets(editor, callback) {
+  let offset = 0;
+
+  const visit = (node) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const length = (node.textContent || "").length;
+      callback(node, offset, offset + length, "text");
+      offset += length;
+      return;
+    }
+
+    if (node.nodeType === Node.ELEMENT_NODE && node.matches(CHIP_SELECTOR)) {
+      const token = `@${node.getAttribute("data-display-name") || ""}`;
+      callback(node, offset, offset + token.length, "chip");
+      offset += token.length;
+      return;
+    }
+
+    Array.from(node.childNodes).forEach(visit);
+  };
+
+  visit(editor);
+  return offset;
+}
+
+function plainTextOffsetsToRange(editor, start, end) {
+  let startNode = null;
+  let startOffset = 0;
+  let endNode = null;
+  let endOffset = 0;
+
+  visitPlainTextOffsets(editor, (node, nodeStart, nodeEnd, type) => {
+    if (startNode === null && start >= nodeStart && start <= nodeEnd) {
+      if (type === "text") {
+        startNode = node;
+        startOffset = start - nodeStart;
+      } else {
+        startNode = node.parentNode;
+        startOffset = Array.from(node.parentNode.childNodes).indexOf(node);
+      }
+    }
+
+    if (endNode === null && end >= nodeStart && end <= nodeEnd) {
+      if (type === "text") {
+        endNode = node;
+        endOffset = end - nodeStart;
+      } else {
+        endNode = node.parentNode;
+        endOffset = Array.from(node.parentNode.childNodes).indexOf(node) + 1;
+      }
+    }
+  });
+
+  if (!startNode || !endNode) {
+    return null;
+  }
+
+  const range = document.createRange();
+  range.setStart(startNode, startOffset);
+  range.setEnd(endNode, endOffset);
+  return range;
+}
+
+function createMentionChip(userId, displayName) {
+  const chip = document.createElement("span");
+  chip.className = "feed-mention-chip";
+  chip.contentEditable = "false";
+  chip.setAttribute("data-user-id", userId);
+  chip.setAttribute("data-display-name", displayName);
+  chip.innerHTML = `
+    <span class="feed-mention-chip__label">@${escapeHtml(displayName)}</span>
+    <button
+      type="button"
+      class="feed-mention-chip__remove"
+      data-action="remove-feed-mention"
+      aria-label="Remover mencao de ${escapeHtml(displayName)}"
+    >&times;</button>
+  `;
+  return chip;
+}
+
+function placeCaretAfter(node) {
+  const selection = window.getSelection();
+  if (!selection) {
+    return;
+  }
+
+  const range = document.createRange();
+  range.setStartAfter(node);
+  range.collapse(true);
+  selection.removeAllRanges();
+  selection.addRange(range);
+}
+
+function removeMentionChip(chip) {
+  if (!chip) {
+    return;
+  }
+
+  const parent = chip.parentNode;
+  chip.remove();
+
+  if (parent && parent.childNodes.length === 0) {
+    parent.appendChild(document.createTextNode(""));
+  }
+}
+
+function getPreviousSignificantNode(node, offset) {
+  if (node.nodeType === Node.TEXT_NODE) {
+    if (offset > 0) {
+      return null;
+    }
+    return node.previousSibling;
+  }
+
+  if (node.nodeType === Node.ELEMENT_NODE && offset > 0) {
+    return node.childNodes[offset - 1] || null;
+  }
+
+  return null;
+}
+
+function getNextSignificantNode(node, offset) {
+  if (node.nodeType === Node.TEXT_NODE) {
+    if (offset < (node.textContent || "").length) {
+      return null;
+    }
+    return node.nextSibling;
+  }
+
+  if (node.nodeType === Node.ELEMENT_NODE) {
+    return node.childNodes[offset] || null;
+  }
+
+  return null;
+}
+
+function removeChipAdjacentToCaret(editor, direction) {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0 || !selection.isCollapsed) {
+    return false;
+  }
+
+  const range = selection.getRangeAt(0);
+  if (!editor.contains(range.startContainer)) {
+    return false;
+  }
+
+  const target = direction === "backspace"
+    ? getPreviousSignificantNode(range.startContainer, range.startOffset)
+    : getNextSignificantNode(range.startContainer, range.startOffset);
+
+  if (!target?.matches?.(CHIP_SELECTOR)) {
+    return false;
+  }
+
+  removeMentionChip(target);
+  return true;
 }
 
 function showMentionHint(fieldRoot) {
@@ -169,7 +373,7 @@ function renderMentionDropdown(fieldRoot, suggestions, activeIndex, { message = 
   `).join("");
 }
 
-async function loadMentionSuggestions(fieldRoot, textarea, query) {
+async function loadMentionSuggestions(fieldRoot, editor, query) {
   const normalized = String(query || "").trim();
   if (!normalized) {
     showMentionHint(fieldRoot);
@@ -195,7 +399,7 @@ async function loadMentionSuggestions(fieldRoot, textarea, query) {
       return;
     }
 
-    const active = getActiveMentionQuery(textarea);
+    const active = getActiveMentionQuery(editor);
     if (!active || active.query.trim().toLowerCase() !== normalized.toLowerCase()) {
       return;
     }
@@ -224,19 +428,19 @@ async function loadMentionSuggestions(fieldRoot, textarea, query) {
   }
 }
 
-function scheduleMentionSuggestions(fieldRoot, textarea, query) {
+function scheduleMentionSuggestions(fieldRoot, editor, query) {
   const existing = suggestTimers.get(fieldRoot);
   if (existing) {
     clearTimeout(existing);
   }
 
   suggestTimers.set(fieldRoot, setTimeout(() => {
-    loadMentionSuggestions(fieldRoot, textarea, query);
+    loadMentionSuggestions(fieldRoot, editor, query);
   }, 120));
 }
 
-function syncMentionState(fieldRoot, textarea) {
-  const active = getActiveMentionQuery(textarea);
+function syncMentionState(fieldRoot, editor) {
+  const active = getActiveMentionQuery(editor);
   if (!active) {
     hideMentionDropdown(fieldRoot);
     return;
@@ -247,35 +451,41 @@ function syncMentionState(fieldRoot, textarea) {
     return;
   }
 
-  scheduleMentionSuggestions(fieldRoot, textarea, active.query);
+  scheduleMentionSuggestions(fieldRoot, editor, active.query);
 }
 
-function applyMentionSelection(fieldRoot, textarea, suggestion) {
-  const active = getActiveMentionQuery(textarea);
-  if (!active || !suggestion?.displayName) {
+function applyMentionSelection(fieldRoot, editor, suggestion) {
+  const active = getActiveMentionQuery(editor);
+  if (!active || !suggestion?.displayName || !suggestion?.userId) {
     return;
   }
 
-  const mentionText = `@${suggestion.displayName} `;
-  textarea.value = `${textarea.value.slice(0, active.start)}${mentionText}${textarea.value.slice(active.end)}`;
+  const range = plainTextOffsetsToRange(editor, active.start, active.end);
+  if (!range) {
+    return;
+  }
 
-  const state = getState(fieldRoot);
-  state.mentionedUserIds.add(suggestion.userId);
+  range.deleteContents();
 
-  const nextCursor = active.start + mentionText.length;
-  textarea.setSelectionRange(nextCursor, nextCursor);
-  textarea.dispatchEvent(new Event("input", { bubbles: true }));
+  const chip = createMentionChip(suggestion.userId, suggestion.displayName);
+  const trailingSpace = document.createTextNode(" ");
+  const fragment = document.createDocumentFragment();
+  fragment.append(chip, trailingSpace);
+  range.insertNode(fragment);
+
+  placeCaretAfter(trailingSpace);
+  editor.dispatchEvent(new Event("input", { bubbles: true }));
   hideMentionDropdown(fieldRoot);
-  textarea.focus();
+  editor.focus();
 }
 
-function pickActiveSuggestion(fieldRoot, textarea) {
+function pickActiveSuggestion(fieldRoot, editor) {
   const state = getState(fieldRoot);
   if (!state.suggestions.length || state.activeIndex < 0) {
     return false;
   }
 
-  applyMentionSelection(fieldRoot, textarea, state.suggestions[state.activeIndex]);
+  applyMentionSelection(fieldRoot, editor, state.suggestions[state.activeIndex]);
   return true;
 }
 
@@ -290,9 +500,10 @@ function moveMentionSelection(fieldRoot, delta) {
   renderMentionDropdown(fieldRoot, state.suggestions, state.activeIndex);
 }
 
-export function bindMentionField({ fieldRoot, textarea, onSync }) {
-  if (!fieldRoot || !textarea || fieldRoot.dataset.mentionBound === "true") {
+export function bindMentionField({ fieldRoot, editor, onSync, maxLength = 2000 }) {
+  if (!fieldRoot || !editor || fieldRoot.dataset.mentionBound === "true") {
     return {
+      getText: () => "",
       getMentionedUserIds: () => [],
       resetMentions: () => {}
     };
@@ -303,15 +514,45 @@ export function bindMentionField({ fieldRoot, textarea, onSync }) {
   const runSync = () => {
     requestAnimationFrame(() => {
       onSync?.();
-      syncMentionState(fieldRoot, textarea);
+      syncMentionState(fieldRoot, editor);
     });
   };
 
-  textarea.addEventListener("input", runSync);
-  textarea.addEventListener("keyup", runSync);
-  textarea.addEventListener("click", runSync);
+  editor.addEventListener("beforeinput", (event) => {
+    if (!event.inputType?.startsWith("insert")) {
+      return;
+    }
 
-  textarea.addEventListener("keydown", (event) => {
+    const { text } = serializeEditorContent(editor);
+    const insertion = String(event.data || "");
+    if (text.length + insertion.length > maxLength) {
+      event.preventDefault();
+    }
+  });
+
+  editor.addEventListener("input", runSync);
+
+  editor.addEventListener("keyup", runSync);
+  editor.addEventListener("click", runSync);
+
+  editor.addEventListener("paste", (event) => {
+    event.preventDefault();
+    const pasted = event.clipboardData?.getData("text/plain") || "";
+    if (!pasted) {
+      return;
+    }
+
+    const { text } = serializeEditorContent(editor);
+    const allowed = Math.max(0, maxLength - text.length);
+    if (!allowed) {
+      return;
+    }
+
+    document.execCommand("insertText", false, pasted.slice(0, allowed));
+    runSync();
+  });
+
+  editor.addEventListener("keydown", (event) => {
     const state = getState(fieldRoot);
     const dropdownOpen = Boolean(getDropdown(fieldRoot) && !getDropdown(fieldRoot).hidden);
 
@@ -329,7 +570,7 @@ export function bindMentionField({ fieldRoot, textarea, onSync }) {
 
     if (dropdownOpen && (event.key === "Enter" || event.key === "Tab") && state.suggestions.length) {
       event.preventDefault();
-      pickActiveSuggestion(fieldRoot, textarea);
+      pickActiveSuggestion(fieldRoot, editor);
       return;
     }
 
@@ -338,28 +579,54 @@ export function bindMentionField({ fieldRoot, textarea, onSync }) {
       return;
     }
 
+    if (event.key === "Backspace") {
+      if (removeChipAdjacentToCaret(editor, "backspace")) {
+        event.preventDefault();
+        runSync();
+      }
+      return;
+    }
+
+    if (event.key === "Delete") {
+      if (removeChipAdjacentToCaret(editor, "delete")) {
+        event.preventDefault();
+        runSync();
+      }
+      return;
+    }
+
     if (event.key === "@" || event.key.length === 1) {
-      queueMicrotask(() => syncMentionState(fieldRoot, textarea));
+      queueMicrotask(() => syncMentionState(fieldRoot, editor));
     }
   });
 
   fieldRoot.addEventListener("click", (event) => {
+    const removeButton = event.target.closest("[data-action='remove-feed-mention']");
+    if (removeButton) {
+      event.preventDefault();
+      removeMentionChip(removeButton.closest(CHIP_SELECTOR));
+      editor.focus();
+      runSync();
+      return;
+    }
+
     const target = event.target.closest("[data-action='pick-feed-mention']");
     if (!target) {
       return;
     }
 
     event.preventDefault();
-    applyMentionSelection(fieldRoot, textarea, {
+    applyMentionSelection(fieldRoot, editor, {
       userId: target.getAttribute("data-user-id") || "",
       displayName: target.getAttribute("data-display-name") || ""
     });
   });
 
   return {
-    getMentionedUserIds: () => Array.from(getState(fieldRoot).mentionedUserIds),
+    getText: () => serializeEditorContent(editor).text,
+    getMentionedUserIds: () => serializeEditorContent(editor).mentionedUserIds,
     resetMentions: () => {
-      getState(fieldRoot).mentionedUserIds.clear();
+      editor.innerHTML = "";
       hideMentionDropdown(fieldRoot);
     }
   };
