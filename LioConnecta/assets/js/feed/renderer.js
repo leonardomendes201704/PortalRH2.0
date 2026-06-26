@@ -1,1 +1,1 @@
-export { renderFeed, renderSavedFeed } from "../components/feed.js?v=0.22.0";
+export { renderFeed, renderSavedFeed } from "../components/feed.js?v=0.22.2";
