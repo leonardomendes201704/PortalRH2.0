@@ -780,6 +780,7 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
         Assert.NotNull(journey);
         Assert.True(journey.IsSimulated);
         Assert.NotEmpty(journey.Items);
+        Assert.Contains(journey.Items, item => item.Url.Contains("minha-jornada/tarefas", StringComparison.OrdinalIgnoreCase));
         Assert.NotNull(kpis);
         Assert.True(kpis.IsSimulated);
         Assert.NotNull(hrProfile);
@@ -820,6 +821,32 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
         Assert.NotNull(ponto);
         Assert.True(ponto.IsSimulated);
         Assert.NotEmpty(ponto.Entries);
+    }
+
+    [Fact]
+    public async Task JourneyWorkspaceEndpoints_ReturnSimulatedDataForPortalSession()
+    {
+        await EnsureLdapEnabledAsync();
+        var portalSession = await LoginPortalUserAsync();
+        UsePortalAuth(portalSession);
+
+        var tarefas = await _client.GetFromJsonAsync<JourneyTasksResponse>("/api/journey/tarefas");
+        var solicitacoes = await _client.GetFromJsonAsync<JourneyRequestsResponse>("/api/journey/solicitacoes");
+        var trilhas = await _client.GetFromJsonAsync<JourneyLearningPathsResponse>("/api/journey/trilhas");
+        var documentos = await _client.GetFromJsonAsync<JourneyDocumentsResponse>("/api/journey/documentos");
+
+        Assert.NotNull(tarefas);
+        Assert.True(tarefas.IsSimulated);
+        Assert.NotEmpty(tarefas.Items);
+        Assert.NotNull(solicitacoes);
+        Assert.True(solicitacoes.IsSimulated);
+        Assert.NotEmpty(solicitacoes.Items);
+        Assert.NotNull(trilhas);
+        Assert.True(trilhas.IsSimulated);
+        Assert.NotEmpty(trilhas.Items);
+        Assert.NotNull(documentos);
+        Assert.True(documentos.IsSimulated);
+        Assert.NotEmpty(documentos.Items);
     }
 
     [Fact]
