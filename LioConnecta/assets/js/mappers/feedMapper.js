@@ -2,9 +2,19 @@ import { DEFAULT_FEED_TITLE, DEFAULT_POSTS } from "../view-models/defaults.js";
 import { asArray, asNumber, asString } from "./shared.js";
 
 function mapComment(comment) {
+  const mentions = asArray(comment?.mentions)
+    .map((mention) => ({
+      userId: asString(mention?.userId ?? mention?.user_id, ""),
+      displayName: asString(mention?.displayName ?? mention?.display_name, "")
+    }))
+    .filter((mention) => mention.userId && mention.displayName);
+
   return {
+    id: asString(comment?.id, ""),
     author: asString(comment?.author, "Colaborador"),
-    text: asString(comment?.text, "")
+    text: asString(comment?.text, ""),
+    createdAtUtc: comment?.createdAtUtc || comment?.created_at_utc || null,
+    mentions
   };
 }
 

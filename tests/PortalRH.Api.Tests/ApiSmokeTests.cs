@@ -310,6 +310,55 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
     }
 
     [Fact]
+    public async Task FeedEndpoint_CreatesAndListsPostCommentsWithMentions()
+    {
+        await EnsureLdapEnabledAsync();
+        var portalSession = await LoginPortalUserAsync();
+
+        _client.DefaultRequestHeaders.Authorization = null;
+        _client.DefaultRequestHeaders.Remove("X-Portal-Token");
+        _client.DefaultRequestHeaders.Add("X-Portal-Token", portalSession.Token);
+
+        var createResponse = await _client.PostAsJsonAsync("/api/feed", new CreateFeedPostRequest
+        {
+            Text = "Post com comentario e mencao."
+        });
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+
+        var created = await createResponse.Content.ReadFromJsonAsync<CreateFeedPostResponse>();
+        Assert.NotNull(created);
+
+        var suggestionsResponse = await _client.GetAsync("/api/feed/mentions/suggest?q=por");
+        Assert.Equal(HttpStatusCode.OK, suggestionsResponse.StatusCode);
+        var suggestions = await suggestionsResponse.Content.ReadFromJsonAsync<FeedMentionSuggestionsResponse>();
+        Assert.NotNull(suggestions);
+
+        var commentResponse = await _client.PostAsJsonAsync($"/api/feed/{created.Item.Id}/comments", new CreateFeedPostCommentRequest
+        {
+            Text = "Comentario no post com @Portal User",
+            MentionedUserIds = [portalSession.User.Id]
+        });
+        Assert.Equal(HttpStatusCode.Created, commentResponse.StatusCode);
+
+        var commentPayload = await commentResponse.Content.ReadFromJsonAsync<CreateFeedPostCommentResponse>();
+        Assert.NotNull(commentPayload);
+        Assert.Equal("Comentario no post com @Portal User", commentPayload.Item.Text);
+        Assert.Single(commentPayload.Item.Mentions);
+
+        var listResponse = await _client.GetAsync($"/api/feed/{created.Item.Id}/comments");
+        Assert.Equal(HttpStatusCode.OK, listResponse.StatusCode);
+
+        var comments = await listResponse.Content.ReadFromJsonAsync<FeedPostCommentsResponse>();
+        Assert.NotNull(comments);
+        Assert.Single(comments.Items);
+        Assert.Equal("Comentario no post com @Portal User", comments.Items[0].Text);
+
+        var feed = await _client.GetFromJsonAsync<FeedResponse>("/api/feed");
+        Assert.NotNull(feed);
+        Assert.Contains(feed.Items, item => item.Id == created.Item.Id && item.CommentCount == 1 && item.Comments.Count == 1);
+    }
+
+    [Fact]
     public async Task FeedEndpoint_TogglesLikeOnUserPostWithAuditTrail()
     {
         await EnsureLdapEnabledAsync();

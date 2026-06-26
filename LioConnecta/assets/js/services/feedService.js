@@ -34,6 +34,23 @@ function formatTimeAgo(value) {
   return `há ${days} dia${days > 1 ? "s" : ""}`;
 }
 
+function mapPostComment(item = {}) {
+  const mentions = Array.isArray(item.mentions)
+    ? item.mentions.map((mention) => ({
+      userId: String(mention.userId || mention.user_id || ""),
+      displayName: String(mention.displayName || mention.display_name || "")
+    })).filter((mention) => mention.userId && mention.displayName)
+    : [];
+
+  return {
+    id: String(item.id || ""),
+    author: String(item.author || "Colaborador"),
+    text: String(item.text || ""),
+    createdAtUtc: item.createdAtUtc || item.created_at_utc || null,
+    mentions
+  };
+}
+
 function mapFeedItemToPost(item = {}) {
   const source = String(item.source || "");
   const isCommunication = source === "Communication";
@@ -62,9 +79,11 @@ function mapFeedItemToPost(item = {}) {
     images,
     reactions: Number(item.likeCount ?? 0),
     hasLiked: Boolean(item.hasLiked),
-    commentsCount: 0,
+    commentsCount: Number(item.commentCount ?? item.commentsCount ?? 0),
     sharesCount: 0,
-    comments: []
+    comments: Array.isArray(item.comments)
+      ? item.comments.map(mapPostComment).filter((comment) => comment.text)
+      : []
   };
 }
 
@@ -131,6 +150,31 @@ export async function createFeedMediaComment(mediaId, text, options = {}) {
     options
   );
   return mapMediaComment(payload?.item || payload);
+}
+
+export async function getFeedPostComments(postId, options = {}) {
+  return getJson(`${resolveApiEndpoint("feed")}/${encodeURIComponent(postId)}/comments`, options);
+}
+
+export async function createFeedPostComment(postId, payload, options = {}) {
+  const body = typeof payload === "string"
+    ? { text: payload, mentionedUserIds: [] }
+    : {
+      text: String(payload?.text || ""),
+      mentionedUserIds: Array.isArray(payload?.mentionedUserIds) ? payload.mentionedUserIds : []
+    };
+
+  const response = await postJson(
+    `${resolveApiEndpoint("feed")}/${encodeURIComponent(postId)}/comments`,
+    body,
+    options
+  );
+  return mapPostComment(response?.item || response);
+}
+
+export async function suggestFeedMentions(query, options = {}) {
+  const params = new URLSearchParams({ q: String(query || "") });
+  return getJson(`${resolveApiEndpoint("feed")}/mentions/suggest?${params.toString()}`, options);
 }
 
 function mapMediaComment(item = {}) {

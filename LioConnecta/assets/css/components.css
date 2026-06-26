@@ -1008,6 +1008,132 @@
   background: #fbfdff;
 }
 
+.post-comment--readonly .post-comment-box {
+  flex: 1;
+}
+
+.post-comment-composer__main {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  min-width: 0;
+}
+
+.post-comment-composer__field {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.post-comment-input {
+  width: 100%;
+  min-height: 42px;
+  max-height: 160px;
+  resize: none;
+  overflow-y: auto;
+  border-radius: 12px;
+  border: 1px solid #d9e5f0;
+  background: #fff;
+  padding: 10px 12px;
+  font-size: 12px;
+  color: #334155;
+  line-height: 1.45;
+  font-family: inherit;
+}
+
+.post-comment-input::placeholder {
+  color: #7a8a9c;
+}
+
+.post-comment-input:focus {
+  outline: none;
+  border-color: #9ec5ef;
+  box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.12);
+}
+
+.post-comment-submit {
+  flex-shrink: 0;
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 12px;
+  border: 1px solid #1677ff;
+  background: #1677ff;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.post-comment-submit:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.post-comment-submit:not(:disabled):hover {
+  background: #0f67e6;
+  border-color: #0f67e6;
+}
+
+.post-comment-mention-dropdown {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 20;
+  display: grid;
+  gap: 4px;
+  padding: 6px;
+  border: 1px solid #d9e5f0;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.post-comment-mention-option {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.post-comment-mention-option.is-active,
+.post-comment-mention-option:hover {
+  background: #f5faff;
+}
+
+.post-comment-mention-option__name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #183153;
+}
+
+.post-comment-mention-option__meta {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.post-comment-text {
+  display: block;
+  font-size: 12px;
+  color: #334155;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.post-comment-mention {
+  color: #1677ff;
+  font-weight: 600;
+}
+
 .post-comment-box {
   flex: 1;
   min-height: 42px;
