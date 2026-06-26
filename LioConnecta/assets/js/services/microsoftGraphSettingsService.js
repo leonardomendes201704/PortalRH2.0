@@ -1,4 +1,4 @@
-import { getJson, putJson } from "./apiClient.js";
+import { getJson, postJson, putJson } from "./apiClient.js";
 import { resolveApiEndpoint } from "../core/runtimeConfig.js";
 
 const DEFAULT_MICROSOFT_GRAPH_SETTINGS = Object.freeze({
@@ -51,4 +51,18 @@ export async function getMicrosoftGraphSettingsData(options = {}) {
 export async function saveMicrosoftGraphSettings(payload = {}, options = {}) {
   const response = await putJson(resolveApiEndpoint("adminMicrosoftGraph"), mapSavePayload(payload), options);
   return normalizeSettings(response);
+}
+
+export async function testMicrosoftGraphSettings(payload = {}, options = {}) {
+  const response = await postJson(
+    `${resolveApiEndpoint("adminMicrosoftGraph")}/test`,
+    mapSavePayload(payload),
+    options
+  );
+
+  return {
+    success: Boolean(response?.success),
+    message: normalizeText(response?.message, "Teste concluido."),
+    detail: normalizeText(response?.detail)
+  };
 }
