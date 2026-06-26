@@ -82,6 +82,12 @@ import {
   resolveMoodDashboardPeriod
 } from "./services/moodSurveyDashboardService.js?v=0.14.1";
 import {
+  HR_PROFILE_ROUTE,
+  isHrProfileModuleSlug,
+  getHrProfileModuleData,
+  renderHrProfileModulePage
+} from "./hrProfile/index.js?v=0.23.0";
+import {
   canManageMoodSurveyFeedback,
   listMoodFeedbackMessages,
   createMoodFeedbackMessage,
@@ -102,6 +108,7 @@ const ROUTES = Object.freeze({
   ADMIN_USERS: "admin/usuarios",
   ADMIN_POLLS: "admin/enquetes",
   PEOPLE: "pessoas-rh",
+  HR_PROFILE: HR_PROFILE_ROUTE,
   SYSTEMS: "sistemas",
   PROJECTS: "projetos",
   RESOURCES: "recursos"
@@ -351,6 +358,13 @@ function parseRoute() {
     return { route: ROUTES.SAVED, slug: "" };
   }
 
+  if (hash.startsWith(`${ROUTES.HR_PROFILE}/`)) {
+    const moduleSlug = hash.slice(`${ROUTES.HR_PROFILE}/`.length);
+    if (isHrProfileModuleSlug(moduleSlug)) {
+      return { route: ROUTES.HR_PROFILE, slug: moduleSlug };
+    }
+  }
+
   if (getNavRoutes().some((item) => item.route === hash)) {
     return { route: hash, slug: "" };
   }
@@ -363,7 +377,7 @@ function buildNavItems(navItems = [], route = ROUTES.HOME) {
     ? ROUTES.COMMUNICATIONS
     : route === ROUTES.POLL_READ
       ? ROUTES.POLLS
-      : route === ROUTES.SAVED
+      : route === ROUTES.SAVED || route === ROUTES.HR_PROFILE
         ? ROUTES.HOME
         : route === ROUTES.ADMIN_POLLS || route === ROUTES.COMMUNICATION_ADMIN
         ? ROUTES.PEOPLE
@@ -445,6 +459,12 @@ function renderSavedFeedPage(data, route) {
   bindFeedShareActions();
   bindFeedSaveActions();
   bindFeedPostMenuActions(document, { savedList: true });
+}
+
+function renderHrProfilePage(data, route, slug) {
+  const centerContent = document.getElementById("center-content");
+  renderShell(data, route);
+  centerContent.innerHTML = renderHrProfileModulePage(slug, data.hrModule);
 }
 
 function renderCommunicationsPage(data, route) {
@@ -2085,6 +2105,18 @@ async function loadPageData(route, slug = "") {
     };
   }
 
+  if (route === ROUTES.HR_PROFILE) {
+    const hrModule = await getHrProfileModuleData(slug, {
+      headers: getPortalAuthHeaders()
+    });
+
+    return {
+      ...shellData,
+      hrModule,
+      hrModuleSlug: slug
+    };
+  }
+
   if (route === ROUTES.COMMUNICATION_ADMIN) {
     const communications = await getCommunicationCenterData();
 
@@ -2233,7 +2265,10 @@ async function renderCurrentRoute() {
       return;
     }
 
-    const hasRoutePermission = await ensureRoutePermission(route);
+    const permissionRoute = route === ROUTES.HR_PROFILE
+      ? `${ROUTES.HR_PROFILE}/${slug}`
+      : route;
+    const hasRoutePermission = await ensureRoutePermission(permissionRoute);
     if (!hasRoutePermission) {
       return;
     }
@@ -2269,6 +2304,8 @@ async function renderCurrentRoute() {
     renderAdminPollsRoute(data, route);
   } else if (route === ROUTES.PEOPLE) {
     renderPeopleRhPage(data, route);
+  } else if (route === ROUTES.HR_PROFILE) {
+    renderHrProfilePage(data, route, slug);
   } else {
     renderPlaceholderPage(data, route);
   }
