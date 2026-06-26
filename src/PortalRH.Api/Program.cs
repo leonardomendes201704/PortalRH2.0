@@ -22,6 +22,8 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IFeedService, FeedService>();
 builder.Services.AddScoped<ICommunicationService, CommunicationService>();
 builder.Services.AddScoped<IAdminAuthService, AdminAuthService>();
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<MicrosoftGraphConnectionTester>();
 builder.Services.AddScoped<ILdapConfigurationService, LdapConfigurationService>();
 builder.Services.AddScoped<IMicrosoftGraphConfigurationService, MicrosoftGraphConfigurationService>();
 builder.Services.AddScoped<IPortalAuthService, PortalAuthService>();

@@ -1042,6 +1042,27 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
     }
 
     [Fact]
+    public async Task AdminMicrosoftGraphTest_ReturnsValidationErrorWhenTenantMissing()
+    {
+        var loginResponse = await _client.PostAsJsonAsync("/api/admin/auth/login", new AdminLoginRequest("super-admin", "Liotec@2026"));
+        Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
+
+        var adminSession = await loginResponse.Content.ReadFromJsonAsync<AdminLoginResponse>();
+        Assert.NotNull(adminSession);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminSession.Token);
+
+        var response = await _client.PostAsJsonAsync("/api/admin/microsoft-graph/test", new UpsertMicrosoftGraphConfigurationRequest
+        {
+            TenantId = string.Empty,
+            ClientId = "3e73d586-06c1-455c-86a7-07c2a89c383d",
+            ClientSecret = "secret",
+            UserIdentifier = "userPrincipalName"
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
     public async Task AuthEndpoint_AuthenticatesViaLdap_WhenConfigurationIsEnabled()
     {
         var adminLoginResponse = await _client.PostAsJsonAsync("/api/admin/auth/login", new AdminLoginRequest("super-admin", "Liotec@2026"));

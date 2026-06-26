@@ -2,7 +2,7 @@ import { createCommunication, canManageCommunications } from "../services/commun
 import { getAdminAuthHeaders, logoutAdmin, redirectToAdminLogin } from "../services/adminAuthService.js";
 import { getPortalAuthHeaders } from "../services/portalAuthService.js";
 import { saveLdapSettings } from "../services/ldapSettingsService.js";
-import { saveMicrosoftGraphSettings } from "../services/microsoftGraphSettingsService.js";
+import { saveMicrosoftGraphSettings, testMicrosoftGraphSettings } from "../services/microsoftGraphSettingsService.js";
 import { collectLdapWizardPayload } from "../settings/ldapWizard.js";
 import { collectMicrosoftGraphSettingsPayload } from "../settings/microsoftGraphSettings.js";
 import { updatePortalUserPermission, updatePortalUserRole, updatePortalUserStatus } from "../services/portalUsersAdminService.js";
@@ -393,31 +393,49 @@ export function bindInteractionFeedback(root = document) {
       event.preventDefault();
 
       const submitter = event.submitter;
+      const submitMode = submitter?.value || "save";
       const originalLabel = submitter?.textContent;
+      const isTest = submitMode === "test";
 
       if (submitter) {
         submitter.disabled = true;
-        submitter.textContent = "Salvando...";
+        submitter.textContent = isTest ? "Testando..." : "Salvando...";
       }
 
       try {
-        await saveMicrosoftGraphSettings(collectMicrosoftGraphSettingsPayload(microsoftGraphForm), {
-          headers: getAdminAuthHeaders()
-        });
+        const payload = collectMicrosoftGraphSettingsPayload(microsoftGraphForm);
 
-        showToast("Configuracao Microsoft Graph salva com sucesso no banco.", "success");
+        if (isTest) {
+          const result = await testMicrosoftGraphSettings(payload, {
+            headers: getAdminAuthHeaders()
+          });
 
-        const secretInput = microsoftGraphForm.querySelector("[name='clientSecret']");
-        if (secretInput) {
-          secretInput.value = "";
-          secretInput.placeholder = "Segredo ja cadastrado";
+          const toastMessage = result.detail
+            ? `${result.message} ${result.detail}`
+            : result.message;
+
+          showToast(toastMessage, result.success ? "success" : "danger");
+        } else {
+          await saveMicrosoftGraphSettings(payload, {
+            headers: getAdminAuthHeaders()
+          });
+
+          showToast("Configuracao Microsoft Graph salva com sucesso no banco.", "success");
+
+          const secretInput = microsoftGraphForm.querySelector("[name='clientSecret']");
+          if (secretInput) {
+            secretInput.value = "";
+            secretInput.placeholder = "Segredo ja cadastrado";
+          }
         }
       } catch (error) {
-        console.error("Falha ao salvar configuracao Microsoft Graph.", error);
+        console.error(`Falha ao ${isTest ? "testar" : "salvar"} configuracao Microsoft Graph.`, error);
 
         const message = error instanceof Error && error.message.includes("HTTP 401")
           ? "Sua sessao administrativa expirou. Faca login novamente para continuar."
-          : "Nao foi possivel salvar a configuracao Microsoft Graph agora.";
+          : isTest
+            ? "Nao foi possivel testar a conexao Microsoft Graph agora."
+            : "Nao foi possivel salvar a configuracao Microsoft Graph agora.";
 
         showToast(message, "danger");
 
@@ -429,9 +447,10 @@ export function bindInteractionFeedback(root = document) {
       } finally {
         if (submitter) {
           submitter.disabled = false;
-          submitter.textContent = originalLabel || "Salvar configuracao";
+          submitter.textContent = originalLabel || (isTest ? "Testar conexao" : "Salvar configuracao");
         }
       }
+      return;
     }
   });
 

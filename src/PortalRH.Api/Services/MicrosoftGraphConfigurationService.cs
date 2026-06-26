@@ -19,10 +19,14 @@ public class MicrosoftGraphConfigurationService : IMicrosoftGraphConfigurationSe
         };
 
     private readonly PortalRhDbContext _dbContext;
+    private readonly MicrosoftGraphConnectionTester _connectionTester;
 
-    public MicrosoftGraphConfigurationService(PortalRhDbContext dbContext)
+    public MicrosoftGraphConfigurationService(
+        PortalRhDbContext dbContext,
+        MicrosoftGraphConnectionTester connectionTester)
     {
         _dbContext = dbContext;
+        _connectionTester = connectionTester;
     }
 
     public async Task<MicrosoftGraphConfigurationDto> GetAsync(CancellationToken cancellationToken)
@@ -59,6 +63,24 @@ public class MicrosoftGraphConfigurationService : IMicrosoftGraphConfigurationSe
             entity.ClientId,
             string.IsNullOrWhiteSpace(entity.ClientSecretProtected) ? null : UnprotectSecret(entity.ClientSecretProtected),
             entity.UserIdentifier);
+    }
+
+    public async Task<MicrosoftGraphConnectionTestResponse> TestConnectionAsync(
+        UpsertMicrosoftGraphConfigurationRequest request,
+        CancellationToken cancellationToken)
+    {
+        var entity = await EnsureAndGetEntityAsync(cancellationToken);
+        var clientSecret = !string.IsNullOrWhiteSpace(request.ClientSecret)
+            ? request.ClientSecret.Trim()
+            : string.IsNullOrWhiteSpace(entity.ClientSecretProtected)
+                ? null
+                : UnprotectSecret(entity.ClientSecretProtected);
+
+        return await _connectionTester.TestAsync(
+            Normalize(request.TenantId),
+            Normalize(request.ClientId),
+            clientSecret ?? string.Empty,
+            cancellationToken);
     }
 
     public async Task EnsureDefaultConfigurationAsync(CancellationToken cancellationToken)

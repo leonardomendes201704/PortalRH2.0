@@ -156,7 +156,10 @@ export function renderMicrosoftGraphSettingsPage(settings = {}) {
             Cancelar
           </a>
           <div class="ldap-wizard__footer-actions">
-            <button type="submit" class="ldap-wizard__button ldap-wizard__button--primary">
+            <button type="submit" name="submitMode" value="test" class="ldap-wizard__button ldap-wizard__button--secondary">
+              Testar conexao
+            </button>
+            <button type="submit" name="submitMode" value="save" class="ldap-wizard__button ldap-wizard__button--primary">
               Salvar configuracao
             </button>
           </div>

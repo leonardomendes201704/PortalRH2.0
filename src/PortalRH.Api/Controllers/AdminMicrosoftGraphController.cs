@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using PortalRH.Api.Contracts.Admin.MicrosoftGraph;
 using PortalRH.Api.Features.Admin.MicrosoftGraph.GetConfiguration;
 using PortalRH.Api.Features.Admin.MicrosoftGraph.SaveConfiguration;
+using PortalRH.Api.Features.Admin.MicrosoftGraph.TestConnection;
 using PortalRH.Api.Security;
 
 namespace PortalRH.Api.Controllers;
@@ -35,6 +36,15 @@ public class AdminMicrosoftGraphController : ControllerBase
     public async Task<IActionResult> Save([FromBody] UpsertMicrosoftGraphConfigurationRequest request, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new SaveAdminMicrosoftGraphConfigurationCommand(request), cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpPost("test")]
+    [ProducesResponseType(typeof(MicrosoftGraphConnectionTestResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Test([FromBody] UpsertMicrosoftGraphConfigurationRequest request, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new TestAdminMicrosoftGraphConnectionCommand(request), cancellationToken);
         return Ok(result);
     }
 }
