@@ -429,6 +429,129 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
     }
 
     [Fact]
+    public async Task FeedEndpoint_TogglesSaveOnUserPostAndCommunication_AndListsSavedFeed()
+    {
+        await EnsureLdapEnabledAsync();
+        var portalSession = await LoginPortalUserAsync();
+
+        _client.DefaultRequestHeaders.Authorization = null;
+        _client.DefaultRequestHeaders.Remove("X-Portal-Token");
+        _client.DefaultRequestHeaders.Add("X-Portal-Token", portalSession.Token);
+
+        var createResponse = await _client.PostAsJsonAsync("/api/feed", new CreateFeedPostRequest
+        {
+            Text = "Post proprio para validar salvamento."
+        });
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+
+        var created = await createResponse.Content.ReadFromJsonAsync<CreateFeedPostResponse>();
+        Assert.NotNull(created);
+
+        var saveResponse = await _client.PostAsJsonAsync($"/api/feed/{created.Item.Id}/save", new ToggleFeedSaveRequest
+        {
+            Source = "UserPost"
+        });
+        Assert.Equal(HttpStatusCode.OK, saveResponse.StatusCode);
+
+        var saved = await saveResponse.Content.ReadFromJsonAsync<FeedSaveResponse>();
+        Assert.NotNull(saved);
+        Assert.True(saved.HasSaved);
+
+        var feed = await _client.GetFromJsonAsync<FeedResponse>("/api/feed");
+        Assert.NotNull(feed);
+        Assert.Contains(feed.Items, item => item.Id == created.Item.Id && item.HasSaved);
+
+        var savedFeed = await _client.GetFromJsonAsync<FeedResponse>("/api/feed/saved");
+        Assert.NotNull(savedFeed);
+        Assert.Contains(savedFeed.Items, item => item.Id == created.Item.Id && item.HasSaved);
+
+        var adminSession = await LoginAdminAsync();
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminSession.Token);
+
+        var communicationResponse = await _client.PostAsJsonAsync("/api/communications", new UpsertCommunicationRequest
+        {
+            Category = "RH",
+            Priority = "Comunicado",
+            Title = "Comunicado para salvar",
+            Summary = "Resumo do comunicado para salvar.",
+            Body = "Corpo do comunicado para salvar.",
+            Audience = "Toda a companhia",
+            Channel = "Portal",
+            Status = "Publicado",
+            AttachmentLabel = "Abrir anexo",
+            Owner = "Recursos Humanos",
+            PublishedAt = DateTime.UtcNow
+        });
+        Assert.Equal(HttpStatusCode.Created, communicationResponse.StatusCode);
+
+        var communication = await communicationResponse.Content.ReadFromJsonAsync<CommunicationDto>();
+        Assert.NotNull(communication);
+
+        _client.DefaultRequestHeaders.Authorization = null;
+        _client.DefaultRequestHeaders.Remove("X-Portal-Token");
+        _client.DefaultRequestHeaders.Add("X-Portal-Token", portalSession.Token);
+
+        var communicationSaveResponse = await _client.PostAsJsonAsync($"/api/feed/{communication.Id}/save", new ToggleFeedSaveRequest
+        {
+            Source = "Communication"
+        });
+        Assert.Equal(HttpStatusCode.OK, communicationSaveResponse.StatusCode);
+
+        var savedCommunication = await communicationSaveResponse.Content.ReadFromJsonAsync<FeedSaveResponse>();
+        Assert.NotNull(savedCommunication);
+        Assert.True(savedCommunication.HasSaved);
+
+        savedFeed = await _client.GetFromJsonAsync<FeedResponse>("/api/feed/saved");
+        Assert.NotNull(savedFeed);
+        Assert.Contains(savedFeed.Items, item => item.Id == communication.Id && item.Source == "Communication" && item.HasSaved);
+
+        var unsaveResponse = await _client.PostAsJsonAsync($"/api/feed/{created.Item.Id}/save", new ToggleFeedSaveRequest
+        {
+            Source = "UserPost"
+        });
+        Assert.Equal(HttpStatusCode.OK, unsaveResponse.StatusCode);
+
+        var unsaved = await unsaveResponse.Content.ReadFromJsonAsync<FeedSaveResponse>();
+        Assert.NotNull(unsaved);
+        Assert.False(unsaved.HasSaved);
+
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<PortalRhDbContext>();
+        var auditEntries = await dbContext.FeedPostAuditLogs
+            .Where(item => item.FeedPostId == created.Item.Id && item.ActionType == "SalvamentoRegistrado")
+            .ToListAsync();
+
+        Assert.Single(auditEntries);
+    }
+
+    [Fact]
+    public async Task PortalLogin_AllowsSeededCollaboratorWithoutLdap()
+    {
+        await EnsureLdapEnabledAsync();
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var portalUserSeedService = scope.ServiceProvider.GetRequiredService<IPortalUserSeedService>();
+            await portalUserSeedService.EnsureSeedAsync(CancellationToken.None);
+        }
+
+        _client.DefaultRequestHeaders.Authorization = null;
+        _client.DefaultRequestHeaders.Remove("X-Portal-Token");
+
+        var loginResponse = await _client.PostAsJsonAsync("/api/auth/ldap/login", new LdapLoginRequest
+        {
+            Login = "colaborador1@liotecnica.com.br",
+            Password = PortalCollaboratorSeedData.DefaultPassword
+        });
+
+        Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
+
+        var payload = await loginResponse.Content.ReadFromJsonAsync<PortalLoginResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal("Colaborador Um", payload.User.DisplayName);
+    }
+
+    [Fact]
     public async Task FeedEndpoint_TogglesShareOnOtherUserPost_AndBlocksOwnPostAndCommunication()
     {
         await EnsureLdapEnabledAsync();
@@ -1663,5 +1786,8 @@ public class ApiSmokeTests : IClassFixture<CustomWebApplicationFactory>
 
         var quickLinkService = scope.ServiceProvider.GetRequiredService<IQuickLinkService>();
         await quickLinkService.EnsureSeedAsync(CancellationToken.None);
+
+        var portalUserSeedService = scope.ServiceProvider.GetRequiredService<IPortalUserSeedService>();
+        await portalUserSeedService.EnsureSeedAsync(CancellationToken.None);
     }
 }

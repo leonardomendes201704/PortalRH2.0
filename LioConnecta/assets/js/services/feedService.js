@@ -85,6 +85,7 @@ function mapFeedItemToPost(item = {}) {
     commentsCount: Number(item.commentCount ?? item.commentsCount ?? 0),
     sharesCount: Number(item.shareCount ?? item.sharesCount ?? 0),
     hasShared: Boolean(item.hasShared),
+    hasSaved: Boolean(item.hasSaved),
     comments: Array.isArray(item.comments)
       ? item.comments.map(mapPostComment).filter((comment) => comment.text)
       : []
@@ -146,6 +147,28 @@ export async function toggleFeedLike(itemId, source, options = {}) {
 
 export async function toggleFeedShare(itemId, source, options = {}) {
   return postJson(`${resolveApiEndpoint("feed")}/${encodeURIComponent(itemId)}/share`, { source }, options);
+}
+
+export async function toggleFeedSave(itemId, source, options = {}) {
+  return postJson(`${resolveApiEndpoint("feed")}/${encodeURIComponent(itemId)}/save`, { source }, options);
+}
+
+export async function getSavedFeedData() {
+  const config = getRuntimeConfig();
+
+  if (config.dataMode !== DATA_MODES.API) {
+    return mapFeedViewModel({ title: "ITENS SALVOS", posts: [] }, { allowDefaults: false });
+  }
+
+  try {
+    const payload = await getJson(`${resolveApiEndpoint("feed")}/saved`, {
+      headers: getPortalAuthHeaders()
+    });
+    return mapFeedViewModel(mapApiFeedPayload(payload), { allowDefaults: false });
+  } catch (error) {
+    console.error("Falha ao carregar itens salvos.", error);
+    return mapFeedViewModel({ title: "ITENS SALVOS", posts: [] }, { allowDefaults: false });
+  }
 }
 
 export async function getFeedMediaComments(mediaId, options = {}) {
@@ -231,6 +254,18 @@ export function updateFeedShareUi(scope, result) {
     const commentsLabel = commentsCount === 1 ? "1 comentário" : `${commentsCount} comentários`;
     statsRow.setAttribute("data-shares-count", String(shareCount));
     statsRow.textContent = `${commentsLabel} • ${formatSharesLabel(shareCount)}`;
+  }
+}
+
+export function updateFeedSaveUi(scope, result) {
+  if (!scope || !result) {
+    return;
+  }
+
+  const saveButton = scope.querySelector("[data-action='toggle-feed-save']");
+  if (saveButton) {
+    saveButton.classList.toggle("is-active", Boolean(result.hasSaved));
+    saveButton.setAttribute("aria-pressed", result.hasSaved ? "true" : "false");
   }
 }
 

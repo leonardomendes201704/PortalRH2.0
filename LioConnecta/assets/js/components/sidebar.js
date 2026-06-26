@@ -64,7 +64,9 @@ export function renderMenuCard(panel) {
 
 export function renderNotificationsCard(panel) {
   const panelItems = Array.isArray(panel.items) ? panel.items : [];
-  const [totalItem, ...items] = panelItems;
+  const linkItems = panelItems.filter((item) => typeof item === "object" && item.url);
+  const notificationItems = panelItems.filter((item) => !(typeof item === "object" && item.url));
+  const [totalItem, ...items] = notificationItems;
   const total = totalItem?.badge || totalItem?.value || "0";
 
   return `
@@ -93,6 +95,16 @@ export function renderNotificationsCard(panel) {
           </div>
         `).join("") : renderEmptyState("Nenhuma notificação", "Quando houver alertas do dia, eles aparecerão aqui.")}
       </div>
+      ${linkItems.length ? `
+        <div class="menu-list notifications-links">
+          ${linkItems.map((item) => `
+            <a class="menu-item menu-item--link" href="${escapeHtml(item.url)}">
+              <span>${escapeHtml(item.label)}</span>
+              ${item.badge ? `<span class="menu-badge">${escapeHtml(item.badge)}</span>` : ""}
+            </a>
+          `).join("")}
+        </div>
+      ` : ""}
     </section>
   `;
 }

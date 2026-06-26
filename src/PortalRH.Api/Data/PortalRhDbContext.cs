@@ -34,6 +34,8 @@ public class PortalRhDbContext : DbContext
     public DbSet<FeedPostAuditLog> FeedPostAuditLogs => Set<FeedPostAuditLog>();
     public DbSet<FeedPostLike> FeedPostLikes => Set<FeedPostLike>();
     public DbSet<FeedPostShare> FeedPostShares => Set<FeedPostShare>();
+    public DbSet<FeedPostSave> FeedPostSaves => Set<FeedPostSave>();
+    public DbSet<CommunicationSave> CommunicationSaves => Set<CommunicationSave>();
     public DbSet<FeedPostMedia> FeedPostMedia => Set<FeedPostMedia>();
     public DbSet<FeedPostMediaComment> FeedPostMediaComments => Set<FeedPostMediaComment>();
     public DbSet<FeedPostComment> FeedPostComments => Set<FeedPostComment>();

@@ -57,13 +57,13 @@ import {
   uploadPollAsset,
   votePoll
 } from "./polls/index.js?v=0.15.0";
-import { renderFeed } from "./feed/index.js?v=0.21.4";
-import { updateFeedLikeUi, createFeedPost, toggleFeedLike, toggleFeedShare, uploadFeedAsset, deleteFeedPost, updateFeedShareUi } from "./services/feedService.js?v=0.21.10";
+import { renderFeed, renderSavedFeed } from "./feed/index.js?v=0.22.0";
+import { updateFeedLikeUi, createFeedPost, toggleFeedLike, toggleFeedShare, toggleFeedSave, getSavedFeedData, uploadFeedAsset, deleteFeedPost, updateFeedShareUi, updateFeedSaveUi } from "./services/feedService.js?v=0.22.0";
 import { bindFeedPhotoComposerActions, clearPendingFeedPhotos, getPendingFeedPhotos } from "./components/feedPhotoModal.js?v=0.21.4";
 import { bindFeedPhotoViewerActions } from "./components/feedPhotoViewerModal.js?v=0.21.4";
 import { bindFeedPostCommentActions } from "./components/feedPostCommentComposer.js?v=0.21.4";
 import { bindMentionField } from "./components/feedMentions.js?v=0.21.7";
-import { bindInteractionFeedback, showToast } from "./core/feedback.js?v=0.16.0";
+import { bindInteractionFeedback, showToast, confirmAction } from "./core/feedback.js?v=0.22.1";
 import { DATA_MODES, getRuntimeConfig } from "./core/runtimeConfig.js?v=0.21.4";
 import { getPanelData } from "./services/panelService.js?v=0.12.8";
 import { getUserHomeContext } from "./services/userService.js?v=0.12.8";
@@ -91,6 +91,7 @@ import {
 
 const ROUTES = Object.freeze({
   HOME: "inicio",
+  SAVED: "inicio/salvos",
   COMMUNICATIONS: "comunicacao",
   COMMUNICATION_READ: "comunicacao/leitura",
   POLLS: "enquetes",
@@ -346,6 +347,10 @@ function parseRoute() {
     return { route: ROUTES.SETTINGS_LDAP, slug: "" };
   }
 
+  if (hash === ROUTES.SAVED) {
+    return { route: ROUTES.SAVED, slug: "" };
+  }
+
   if (getNavRoutes().some((item) => item.route === hash)) {
     return { route: hash, slug: "" };
   }
@@ -358,7 +363,9 @@ function buildNavItems(navItems = [], route = ROUTES.HOME) {
     ? ROUTES.COMMUNICATIONS
     : route === ROUTES.POLL_READ
       ? ROUTES.POLLS
-      : route === ROUTES.ADMIN_POLLS || route === ROUTES.COMMUNICATION_ADMIN
+      : route === ROUTES.SAVED
+        ? ROUTES.HOME
+        : route === ROUTES.ADMIN_POLLS || route === ROUTES.COMMUNICATION_ADMIN
         ? ROUTES.PEOPLE
         : route === ROUTES.SETTINGS_LDAP
           ? ROUTES.SETTINGS
@@ -416,6 +423,7 @@ function renderHomePage(data, route) {
   bindPublicPollActions(route);
   bindFeedLikeActions();
   bindFeedShareActions();
+  bindFeedSaveActions();
   bindFeedPostMenuActions();
   bindFeedPostCommentActions();
   if (composer.enabled) {
@@ -424,6 +432,19 @@ function renderHomePage(data, route) {
       bindFeedPhotoComposerActions();
     }
   }
+}
+
+function renderSavedFeedPage(data, route) {
+  const centerContent = document.getElementById("center-content");
+  renderShell(data, route);
+  const currentUserId = String(getStoredPortalSession()?.user?.id || "");
+
+  centerContent.innerHTML = renderSavedFeed(data.feed, { currentUserId });
+
+  bindFeedLikeActions();
+  bindFeedShareActions();
+  bindFeedSaveActions();
+  bindFeedPostMenuActions(document, { savedList: true });
 }
 
 function renderCommunicationsPage(data, route) {
@@ -450,6 +471,7 @@ function renderCommunicationReadPage(data, route, slug) {
 
   centerContent.innerHTML = renderCommunicationDetailPage(currentCommunication);
   bindFeedLikeActions();
+  bindFeedSaveActions();
 }
 
 function renderPollReadPage(data, route) {
@@ -988,6 +1010,56 @@ function bindFeedShareActions() {
   });
 }
 
+function bindFeedSaveActions() {
+  const buttons = Array.from(document.querySelectorAll("[data-action='toggle-feed-save']"));
+
+  buttons.forEach((button) => {
+    if (button.dataset.bound === "true") {
+      return;
+    }
+
+    button.dataset.bound = "true";
+    button.addEventListener("click", async () => {
+      const itemId = button.getAttribute("data-feed-item-id") || "";
+      const source = button.getAttribute("data-feed-source") || "";
+      const scope = button.closest(".post, .communication-detail-card");
+
+      if (!itemId || !source) {
+        showToast("Esta publicacao ainda nao esta disponivel para salvamento.", "info");
+        return;
+      }
+
+      if (button.disabled) {
+        return;
+      }
+
+      button.disabled = true;
+
+      try {
+        const result = await toggleFeedSave(itemId, source, {
+          headers: getPortalAuthHeaders()
+        });
+        updateFeedSaveUi(scope, result);
+        showToast(result.hasSaved ? "Item salvo com sucesso." : "Item removido dos salvos.", "success");
+      } catch (error) {
+        console.error("Falha ao salvar publicacao.", error);
+        const message = error instanceof Error && error.message.includes("HTTP 401")
+          ? "Sua sessao expirou. Faca login novamente para salvar publicacoes."
+          : "Nao foi possivel atualizar os itens salvos agora.";
+        showToast(message, "danger");
+
+        if (error instanceof Error && error.message.includes("HTTP 401")) {
+          window.setTimeout(() => {
+            redirectToPortalLogin(window.location.hash || "#inicio");
+          }, 700);
+        }
+      } finally {
+        button.disabled = false;
+      }
+    });
+  });
+}
+
 let feedPostMenuOutsideClickBound = false;
 
 function closeOpenPostMenus(exceptMenu = null) {
@@ -1007,8 +1079,16 @@ function closeOpenPostMenus(exceptMenu = null) {
   });
 }
 
-function bindFeedPostMenuActions(root = document) {
-  if (getRuntimeConfig().dataMode !== DATA_MODES.API || !canInteractWithFeed()) {
+function bindFeedPostMenuActions(root = document, { savedList = false } = {}) {
+  if (getRuntimeConfig().dataMode !== DATA_MODES.API) {
+    return;
+  }
+
+  if (savedList) {
+    if (!getStoredPortalSession()?.token) {
+      return;
+    }
+  } else if (!canInteractWithFeed()) {
     return;
   }
 
@@ -1041,56 +1121,116 @@ function bindFeedPostMenuActions(root = document) {
     });
   });
 
-  const deleteButtons = Array.from(root.querySelectorAll("[data-action='delete-feed-post']"));
-  deleteButtons.forEach((button) => {
-    if (button.dataset.bound === "true") {
-      return;
-    }
-
-    button.dataset.bound = "true";
-    button.addEventListener("click", async (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-
-      const postId = button.getAttribute("data-post-id") || "";
-      const postEl = button.closest(".post");
-      if (!postId || !postEl) {
+  if (!savedList) {
+    const deleteButtons = Array.from(root.querySelectorAll("[data-action='delete-feed-post']"));
+    deleteButtons.forEach((button) => {
+      if (button.dataset.bound === "true") {
         return;
       }
 
-      const confirmed = window.confirm("Deseja excluir esta publicacao? Ela deixara de aparecer no feed.");
-      if (!confirmed) {
-        return;
-      }
+      button.dataset.bound = "true";
+      button.addEventListener("click", async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
 
-      closeOpenPostMenus();
-      button.disabled = true;
-
-      try {
-        await deleteFeedPost(postId, { headers: getPortalAuthHeaders() });
-        postEl.remove();
-
-        const feedList = document.querySelector(".feed-list");
-        if (feedList && !feedList.querySelector(".post")) {
-          feedList.innerHTML = renderEmptyState(
-            "Ainda não há posts publicados.",
-            "Assim que a comunicação interna ou os times compartilharem novidades, o mural aparecerá aqui."
-          );
+        const postId = button.getAttribute("data-post-id") || "";
+        const postEl = button.closest(".post");
+        if (!postId || !postEl) {
+          return;
         }
 
-        showToast("Publicacao removida do feed.", "success");
-      } catch (error) {
-        console.error("Falha ao excluir publicacao do feed.", error);
-        const message = error instanceof Error && error.message.includes("HTTP 403")
-          ? "Voce so pode excluir suas proprias publicacoes."
-          : error instanceof Error && error.message.includes("HTTP 401")
-            ? "Sua sessao expirou. Faca login novamente para excluir a publicacao."
-            : "Nao foi possivel excluir a publicacao agora.";
-        showToast(message, "error");
-        button.disabled = false;
-      }
+        const confirmed = await confirmAction({
+          title: "Excluir publicacao?",
+          text: "Ela deixara de aparecer no feed.",
+          confirmButtonText: "Excluir",
+          cancelButtonText: "Cancelar",
+          icon: "warning",
+          tone: "danger"
+        });
+        if (!confirmed) {
+          return;
+        }
+
+        closeOpenPostMenus();
+        button.disabled = true;
+
+        try {
+          await deleteFeedPost(postId, { headers: getPortalAuthHeaders() });
+          postEl.remove();
+
+          const feedList = document.querySelector(".feed-list");
+          if (feedList && !feedList.querySelector(".post")) {
+            feedList.innerHTML = renderEmptyState(
+              "Ainda não há posts publicados.",
+              "Assim que a comunicação interna ou os times compartilharem novidades, o mural aparecerá aqui."
+            );
+          }
+
+          showToast("Publicacao removida do feed.", "success");
+        } catch (error) {
+          console.error("Falha ao excluir publicacao do feed.", error);
+          const message = error instanceof Error && error.message.includes("HTTP 403")
+            ? "Voce so pode excluir suas proprias publicacoes."
+            : error instanceof Error && error.message.includes("HTTP 401")
+              ? "Sua sessao expirou. Faca login novamente para excluir a publicacao."
+              : "Nao foi possivel excluir a publicacao agora.";
+          showToast(message, "error");
+          button.disabled = false;
+        }
+      });
     });
-  });
+  }
+
+  if (savedList) {
+    const removeButtons = Array.from(root.querySelectorAll("[data-action='remove-saved-feed-item']"));
+    removeButtons.forEach((button) => {
+      if (button.dataset.bound === "true") {
+        return;
+      }
+
+      button.dataset.bound = "true";
+      button.addEventListener("click", async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const itemId = button.getAttribute("data-feed-item-id") || "";
+        const source = button.getAttribute("data-feed-source") || "";
+        const postEl = button.closest(".post");
+        if (!itemId || !source || !postEl) {
+          return;
+        }
+
+        closeOpenPostMenus();
+        button.disabled = true;
+
+        try {
+          const result = await toggleFeedSave(itemId, source, {
+            headers: getPortalAuthHeaders()
+          });
+
+          if (!result.hasSaved) {
+            postEl.remove();
+            const feedList = document.querySelector(".feed-list");
+            if (feedList && !feedList.querySelector(".post")) {
+              feedList.innerHTML = renderEmptyState(
+                "Nenhum item salvo ainda.",
+                "Use o botao Salvar em posts e comunicados para acompanhar o que importa para voce."
+              );
+            }
+          }
+
+          showToast("Item removido dos salvos.", "success");
+        } catch (error) {
+          console.error("Falha ao remover item dos salvos.", error);
+          const message = error instanceof Error && error.message.includes("HTTP 401")
+            ? "Sua sessao expirou. Faca login novamente."
+            : "Nao foi possivel remover o item dos salvos agora.";
+          showToast(message, "danger");
+          button.disabled = false;
+        }
+      });
+    });
+  }
 }
 
 function bindPublicPollActions(route) {
@@ -1877,6 +2017,20 @@ async function loadPageData(route, slug = "") {
     return getHomePageData();
   }
 
+  if (route === ROUTES.SAVED) {
+    const [userContext, panels, feed] = await Promise.all([
+      getUserHomeContext(),
+      getPanelData(),
+      getSavedFeedData()
+    ]);
+
+    return {
+      ...userContext,
+      ...panels,
+      feed
+    };
+  }
+
   const [userContext, panels] = await Promise.all([
     getUserHomeContext(),
     getPanelData()
@@ -2093,6 +2247,8 @@ async function renderCurrentRoute() {
 
   if (route === ROUTES.HOME) {
     renderHomePage(data, route);
+  } else if (route === ROUTES.SAVED) {
+    renderSavedFeedPage(data, route);
   } else if (route === ROUTES.COMMUNICATIONS) {
     renderCommunicationsPage(data, route);
   } else if (route === ROUTES.COMMUNICATION_READ) {

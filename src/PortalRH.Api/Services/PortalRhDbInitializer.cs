@@ -31,5 +31,8 @@ public static class PortalRhDbInitializer
 
         var quickLinkService = scope.ServiceProvider.GetRequiredService<IQuickLinkService>();
         await quickLinkService.EnsureSeedAsync(cancellationToken);
+
+        var portalUserSeedService = scope.ServiceProvider.GetRequiredService<IPortalUserSeedService>();
+        await portalUserSeedService.EnsureSeedAsync(cancellationToken);
     }
 }

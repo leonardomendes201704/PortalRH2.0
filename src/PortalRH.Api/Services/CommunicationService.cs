@@ -221,6 +221,75 @@ public class CommunicationService : ICommunicationService
         return new CommunicationLikeResponse(communicationId, likeCount, hasLiked);
     }
 
+    public async Task<CommunicationSaveResponse?> ToggleSaveAsync(
+        Guid communicationId,
+        Guid portalUserId,
+        CommunicationAuditContext auditContext,
+        CancellationToken cancellationToken)
+    {
+        var communication = await _dbContext.Communications
+            .AsNoTracking()
+            .FirstOrDefaultAsync(item => item.Id == communicationId, cancellationToken);
+
+        if (communication is null)
+        {
+            return null;
+        }
+
+        if (!IsLikeableStatus(communication.Status))
+        {
+            throw new InvalidOperationException("Somente comunicados publicados podem ser salvos.");
+        }
+
+        var existingSave = await _dbContext.CommunicationSaves
+            .FirstOrDefaultAsync(
+                item => item.CommunicationId == communicationId && item.PortalUserId == portalUserId,
+                cancellationToken);
+
+        var now = DateTime.UtcNow;
+        string actionType;
+        bool hasSaved;
+
+        if (existingSave is not null)
+        {
+            _dbContext.CommunicationSaves.Remove(existingSave);
+            actionType = CommunicationInteractionAuditActionTypes.SaveRemoved;
+            hasSaved = false;
+        }
+        else
+        {
+            _dbContext.CommunicationSaves.Add(new CommunicationSave
+            {
+                Id = Guid.NewGuid(),
+                CommunicationId = communicationId,
+                PortalUserId = portalUserId,
+                CreatedAtUtc = now,
+                IpAddress = auditContext.IpAddress,
+                Origin = auditContext.Origin
+            });
+            actionType = CommunicationInteractionAuditActionTypes.SaveRegistered;
+            hasSaved = true;
+        }
+
+        _dbContext.CommunicationInteractionAuditLogs.Add(new CommunicationInteractionAuditLog
+        {
+            Id = Guid.NewGuid(),
+            CommunicationId = communicationId,
+            PortalUserId = portalUserId,
+            ActionType = actionType,
+            ActorLogin = auditContext.ActorLogin,
+            ActorDisplayName = auditContext.ActorDisplayName,
+            IpAddress = auditContext.IpAddress,
+            Origin = auditContext.Origin,
+            UserAgent = auditContext.UserAgent,
+            CreatedAtUtc = now
+        });
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return new CommunicationSaveResponse(communicationId, hasSaved);
+    }
+
     public async Task<CommunicationShareResponse?> ToggleShareAsync(
         Guid communicationId,
         Guid portalUserId,
@@ -312,6 +381,7 @@ public class CommunicationService : ICommunicationService
             .ToDictionaryAsync(item => item.CommunicationId, item => item.Count, cancellationToken);
 
         HashSet<Guid> likedIds = [];
+        HashSet<Guid> savedIds = [];
         if (portalUserId.HasValue)
         {
             var userLikes = await _dbContext.CommunicationLikes
@@ -321,15 +391,24 @@ public class CommunicationService : ICommunicationService
                 .ToListAsync(cancellationToken);
 
             likedIds = userLikes.ToHashSet();
+
+            var userSaves = await _dbContext.CommunicationSaves
+                .AsNoTracking()
+                .Where(item => item.PortalUserId == portalUserId.Value && communicationIds.Contains(item.CommunicationId))
+                .Select(item => item.CommunicationId)
+                .ToListAsync(cancellationToken);
+
+            savedIds = userSaves.ToHashSet();
         }
 
-        return new EngagementSnapshot(likeCounts, likedIds);
+        return new EngagementSnapshot(likeCounts, likedIds, savedIds);
     }
 
     private static CommunicationDto MapToDto(Communication item, EngagementSnapshot engagement)
     {
         engagement.LikeCounts.TryGetValue(item.Id, out var likeCount);
         var hasLiked = engagement.LikedCommunicationIds.Contains(item.Id);
+        var hasSaved = engagement.SavedCommunicationIds.Contains(item.Id);
 
         return new CommunicationDto(
             item.Id,
@@ -350,7 +429,8 @@ public class CommunicationService : ICommunicationService
             item.CreatedAtUtc,
             item.UpdatedAtUtc,
             likeCount,
-            hasLiked);
+            hasLiked,
+            hasSaved);
     }
 
     private static bool IsLikeableStatus(string status)
@@ -400,8 +480,9 @@ public class CommunicationService : ICommunicationService
 
     private sealed record EngagementSnapshot(
         IReadOnlyDictionary<Guid, int> LikeCounts,
-        HashSet<Guid> LikedCommunicationIds)
+        HashSet<Guid> LikedCommunicationIds,
+        HashSet<Guid> SavedCommunicationIds)
     {
-        public static EngagementSnapshot Empty { get; } = new(new Dictionary<Guid, int>(), []);
+        public static EngagementSnapshot Empty { get; } = new(new Dictionary<Guid, int>(), [], []);
     }
 }

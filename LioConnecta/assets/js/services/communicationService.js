@@ -102,6 +102,7 @@ function mapCommunicationItem(item = {}) {
     isFeatured: Boolean(item.isFeatured),
     likeCount: Number(item.likeCount ?? 0),
     hasLiked: Boolean(item.hasLiked),
+    hasSaved: Boolean(item.hasSaved),
     updatedAtUtc: normalizeText(item.updatedAtUtc),
     publishedAtRaw,
     publishedAtEditorValue: publishedAtRaw ? String(publishedAtRaw).slice(0, 10) : ""

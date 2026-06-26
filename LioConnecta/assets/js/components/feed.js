@@ -5,6 +5,7 @@ import { renderPostCommentComposer } from "./feedPostCommentComposer.js?v=0.21.4
 import { renderMentionBody, renderMentionDropdownMarkup } from "./feedMentions.js?v=0.21.7";
 import { DATA_MODES, getRuntimeConfig } from "../core/runtimeConfig.js?v=0.21.4";
 import { canInteractWithFeed } from "../services/portalPermissionService.js?v=0.17.0";
+import { getStoredPortalSession } from "../services/portalAuthService.js?v=0.13.0";
 
 const PHOTO_ACTION_LABEL = "Adicionar fotos";
 
@@ -175,13 +176,49 @@ function canSharePost(post, currentUserId) {
     && post.authorUserId !== currentUserId;
 }
 
-function renderPost(post, { currentUserId = "" } = {}) {
+function canSavePost(post) {
+  return getRuntimeConfig().dataMode === DATA_MODES.API
+    && Boolean(getStoredPortalSession()?.token)
+    && Boolean(post.postId && post.source);
+}
+
+function renderSavedPostMenu(post) {
+  if (!canSavePost(post)) {
+    return "";
+  }
+
+  return `
+    <div class="post-more-menu">
+      <button
+        type="button"
+        class="post-more-trigger"
+        data-action="toggle-post-menu"
+        aria-label="Mais opcoes da publicacao"
+        aria-haspopup="menu"
+        aria-expanded="false"
+      >•••</button>
+      <div class="post-more-dropdown" hidden role="menu" aria-label="Acoes da publicacao salva">
+        <button
+          type="button"
+          class="post-more-option"
+          role="menuitem"
+          data-action="remove-saved-feed-item"
+          data-feed-item-id="${escapeHtml(post.postId)}"
+          data-feed-source="${escapeHtml(post.source)}"
+        >Remover dos salvos</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderPost(post, { currentUserId = "", savedList = false } = {}) {
   const canLike = Boolean(post.postId && post.source);
   const canShare = canSharePost(post, currentUserId);
+  const canSave = canSavePost(post);
   const postActions = [
     { label: "Curtir", action: canLike ? "toggle-feed-like" : "", active: post.hasLiked },
     { label: "Compartilhar", action: canShare ? "toggle-feed-share" : "", active: post.hasShared },
-    { label: "Salvar", action: "" }
+    { label: "Salvar", action: canSave ? "toggle-feed-save" : "", active: post.hasSaved }
   ];
 
   const commentsCount = Number(post.commentsCount ?? 0);
@@ -197,7 +234,7 @@ function renderPost(post, { currentUserId = "" } = {}) {
             <span>${escapeHtml(post.area)} • ${escapeHtml(post.timeAgo)}</span>
           </div>
         </div>
-        ${renderPostMoreMenu(post, currentUserId)}
+        ${savedList ? renderSavedPostMenu(post) : renderPostMoreMenu(post, currentUserId)}
       </div>
 
       <div class="post-body">
@@ -225,7 +262,8 @@ function renderPost(post, { currentUserId = "" } = {}) {
             ${item.action ? `data-action="${escapeHtml(item.action)}"` : ""}
             ${canLike && item.label === "Curtir" ? `data-feed-item-id="${escapeHtml(post.postId)}" data-feed-source="${escapeHtml(post.source)}"` : ""}
             ${canShare && item.label === "Compartilhar" ? `data-feed-item-id="${escapeHtml(post.postId)}" data-feed-source="${escapeHtml(post.source)}"` : ""}
-            ${item.label === "Curtir" || item.label === "Compartilhar" ? `aria-pressed="${item.active ? "true" : "false"}"` : ""}
+            ${canSave && item.label === "Salvar" ? `data-feed-item-id="${escapeHtml(post.postId)}" data-feed-source="${escapeHtml(post.source)}"` : ""}
+            ${item.label === "Curtir" || item.label === "Compartilhar" || item.label === "Salvar" ? `aria-pressed="${item.active ? "true" : "false"}"` : ""}
             data-analytics="post.action"
             data-analytics-label="${escapeHtml(post.author)}:${escapeHtml(item.label)}"
           >${escapeHtml(item.label)}</button>
@@ -248,6 +286,24 @@ function renderPost(post, { currentUserId = "" } = {}) {
 
       ${renderPostCommentComposer(post)}
     </article>
+  `;
+}
+
+export function renderSavedFeed(feed, { currentUserId = "" } = {}) {
+  const posts = Array.isArray(feed.posts) ? feed.posts : [];
+
+  return `
+    <section class="card feed-card feed-card--saved">
+      <div class="card-header">${escapeHtml(feed.title || "ITENS SALVOS")}</div>
+      <div class="feed-list">
+        ${posts.length
+          ? posts.map((post) => renderPost(post, { currentUserId, savedList: true })).join("")
+          : renderEmptyState(
+            "Nenhum item salvo ainda.",
+            "Use o botao Salvar em posts e comunicados para acompanhar o que importa para voce."
+          )}
+      </div>
+    </section>
   `;
 }
 

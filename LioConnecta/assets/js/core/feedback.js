@@ -74,6 +74,44 @@ export function showToast(message, tone = "info") {
   }, 2600);
 }
 
+export async function confirmAction({
+  title = "Confirmar acao",
+  text = "",
+  confirmButtonText = "Confirmar",
+  cancelButtonText = "Cancelar",
+  icon = "warning",
+  tone = "danger"
+} = {}) {
+  if (!window.Swal) {
+    return window.confirm(text ? `${title}\n\n${text}` : title);
+  }
+
+  const result = await window.Swal.fire({
+    title,
+    text,
+    icon,
+    showCancelButton: true,
+    confirmButtonText,
+    cancelButtonText,
+    reverseButtons: true,
+    focusCancel: true,
+    buttonsStyling: false,
+    customClass: {
+      popup: "lio-swal-popup",
+      title: "lio-swal-title",
+      htmlContainer: "lio-swal-text",
+      actions: "lio-swal-actions",
+      confirmButton: tone === "danger"
+        ? "lio-swal-button lio-swal-button--danger"
+        : "lio-swal-button lio-swal-button--primary",
+      cancelButton: "lio-swal-button lio-swal-button--secondary",
+      icon: "lio-swal-icon"
+    }
+  });
+
+  return result.isConfirmed;
+}
+
 export function bindInteractionFeedback(root = document) {
   if (feedbackBound) {
     return;

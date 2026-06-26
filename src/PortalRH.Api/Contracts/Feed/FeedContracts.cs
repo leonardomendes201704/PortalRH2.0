@@ -73,6 +73,7 @@ public record FeedItemDto(
     bool HasLiked,
     int ShareCount,
     bool HasShared,
+    bool HasSaved,
     IReadOnlyList<FeedMediaItemDto> Media,
     int CommentCount,
     IReadOnlyList<FeedPostCommentDto> Comments);
@@ -128,3 +129,13 @@ public record FeedShareResponse(
     string Source,
     int ShareCount,
     bool HasShared);
+
+public record ToggleFeedSaveRequest
+{
+    public string Source { get; set; } = string.Empty;
+}
+
+public record FeedSaveResponse(
+    Guid ItemId,
+    string Source,
+    bool HasSaved);

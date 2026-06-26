@@ -19,4 +19,5 @@ public record CommunicationDto(
     DateTime CreatedAtUtc,
     DateTime UpdatedAtUtc,
     int LikeCount,
-    bool HasLiked);
+    bool HasLiked,
+    bool HasSaved);

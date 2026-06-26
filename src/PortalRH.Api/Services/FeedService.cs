@@ -10,6 +10,7 @@ namespace PortalRH.Api.Services;
 public class FeedService : IFeedService
 {
     private const string FeedTitle = "FEED LIOCONNECTA";
+    private const string SavedFeedTitle = "ITENS SALVOS";
     private const int MaxPostLength = 2000;
     private const int MaxMediaPerPost = 10;
     private const int MaxMediaDescriptionLength = 500;
@@ -69,6 +70,12 @@ public class FeedService : IFeedService
         var sharedCommunicationIds = portalUserId.HasValue
             ? await LoadSharedCommunicationIdsAsync(communicationIds, portalUserId.Value, cancellationToken)
             : [];
+        var savedUserPostIds = portalUserId.HasValue
+            ? await LoadSavedFeedPostIdsAsync(userPostIds, portalUserId.Value, cancellationToken)
+            : [];
+        var savedCommunicationIds = portalUserId.HasValue
+            ? await LoadSavedCommunicationIdsAsync(communicationIds, portalUserId.Value, cancellationToken)
+            : [];
 
         var mediaIds = userPosts.SelectMany(item => item.Media).Select(item => item.Id).ToList();
         var mediaCommentCounts = await LoadMediaCommentCountsAsync(mediaIds, cancellationToken);
@@ -99,6 +106,7 @@ public class FeedService : IFeedService
                 likedUserPostIds.Contains(item.Id),
                 userPostShareCounts.GetValueOrDefault(item.Id),
                 sharedUserPostIds.Contains(item.Id),
+                savedUserPostIds.Contains(item.Id),
                 media,
                 comments.Count,
                 comments);
@@ -121,6 +129,7 @@ public class FeedService : IFeedService
             likedCommunicationIds.Contains(item.Id),
             communicationShareCounts.GetValueOrDefault(item.Id),
             sharedCommunicationIds.Contains(item.Id),
+            savedCommunicationIds.Contains(item.Id),
             [],
             0,
             [])));
@@ -254,6 +263,7 @@ public class FeedService : IFeedService
             false,
             0,
             false,
+            false,
             mappedMedia,
             0,
             []);
@@ -309,6 +319,172 @@ public class FeedService : IFeedService
         }
 
         throw new InvalidOperationException("Origem da publicacao invalida para compartilhamento.");
+    }
+
+    public async Task<FeedSaveResponse?> ToggleSaveAsync(
+        Guid itemId,
+        string source,
+        Guid portalUserId,
+        FeedAuditContext auditContext,
+        CancellationToken cancellationToken)
+    {
+        var normalizedSource = source?.Trim() ?? string.Empty;
+
+        if (string.Equals(normalizedSource, FeedItemSources.Communication, StringComparison.OrdinalIgnoreCase))
+        {
+            var communicationResult = await _communicationService.ToggleSaveAsync(
+                itemId,
+                portalUserId,
+                MapAuditContext(auditContext),
+                cancellationToken);
+
+            return communicationResult is null
+                ? null
+                : new FeedSaveResponse(itemId, FeedItemSources.Communication, communicationResult.HasSaved);
+        }
+
+        if (string.Equals(normalizedSource, FeedItemSources.UserPost, StringComparison.OrdinalIgnoreCase))
+        {
+            return await ToggleUserPostSaveAsync(itemId, portalUserId, auditContext, cancellationToken);
+        }
+
+        throw new InvalidOperationException("Origem da publicacao invalida para salvamento.");
+    }
+
+    public async Task<FeedResponse> GetSavedFeedAsync(Guid portalUserId, CancellationToken cancellationToken)
+    {
+        var postSaves = await _dbContext.FeedPostSaves
+            .AsNoTracking()
+            .Where(item => item.PortalUserId == portalUserId)
+            .OrderByDescending(item => item.CreatedAtUtc)
+            .ToListAsync(cancellationToken);
+
+        var communicationSaves = await _dbContext.CommunicationSaves
+            .AsNoTracking()
+            .Where(item => item.PortalUserId == portalUserId)
+            .OrderByDescending(item => item.CreatedAtUtc)
+            .ToListAsync(cancellationToken);
+
+        var userPostIds = postSaves.Select(item => item.FeedPostId).Distinct().ToList();
+        var communicationIds = communicationSaves.Select(item => item.CommunicationId).Distinct().ToList();
+
+        var userPosts = userPostIds.Count == 0
+            ? []
+            : await _dbContext.FeedPosts
+                .AsNoTracking()
+                .Include(item => item.PortalUser)
+                .Include(item => item.Media)
+                .Where(item => userPostIds.Contains(item.Id) && item.DeletedAtUtc == null)
+                .ToListAsync(cancellationToken);
+
+        var communications = communicationIds.Count == 0
+            ? []
+            : await _dbContext.Communications
+                .AsNoTracking()
+                .Where(item => communicationIds.Contains(item.Id))
+                .Where(item => item.Status.ToLower() == "publicado")
+                .ToListAsync(cancellationToken);
+
+        var userPostLikeCounts = await LoadFeedPostLikeCountsAsync(userPosts.Select(item => item.Id).ToList(), cancellationToken);
+        var userPostShareCounts = await LoadFeedPostShareCountsAsync(userPosts.Select(item => item.Id).ToList(), cancellationToken);
+        var communicationLikeCounts = await LoadCommunicationLikeCountsAsync(communications.Select(item => item.Id).ToList(), cancellationToken);
+        var communicationShareCounts = await LoadCommunicationShareCountsAsync(communications.Select(item => item.Id).ToList(), cancellationToken);
+        var likedUserPostIds = await LoadLikedFeedPostIdsAsync(userPosts.Select(item => item.Id).ToList(), portalUserId, cancellationToken);
+        var sharedUserPostIds = await LoadSharedFeedPostIdsAsync(userPosts.Select(item => item.Id).ToList(), portalUserId, cancellationToken);
+        var likedCommunicationIds = await LoadLikedCommunicationIdsAsync(communications.Select(item => item.Id).ToList(), portalUserId, cancellationToken);
+        var sharedCommunicationIds = await LoadSharedCommunicationIdsAsync(communications.Select(item => item.Id).ToList(), portalUserId, cancellationToken);
+
+        var mediaIds = userPosts.SelectMany(item => item.Media).Select(item => item.Id).ToList();
+        var mediaCommentCounts = await LoadMediaCommentCountsAsync(mediaIds, cancellationToken);
+        var postComments = await LoadFeedPostCommentsAsync(userPosts.Select(item => item.Id).ToList(), cancellationToken);
+        var postMentions = await LoadFeedPostMentionsAsync(userPosts.Select(item => item.Id).ToList(), cancellationToken);
+
+        var userPostsById = userPosts.ToDictionary(item => item.Id);
+        var communicationsById = communications.ToDictionary(item => item.Id);
+        var items = new List<(DateTime SavedAtUtc, FeedItemDto Item)>();
+
+        foreach (var save in postSaves)
+        {
+            if (!userPostsById.TryGetValue(save.FeedPostId, out var item))
+            {
+                continue;
+            }
+
+            var media = MapMediaItems(item.Media, mediaCommentCounts);
+            var comments = postComments.GetValueOrDefault(item.Id) ?? [];
+            var mentions = postMentions.GetValueOrDefault(item.Id) ?? [];
+            items.Add((save.CreatedAtUtc, new FeedItemDto(
+                item.Id,
+                FeedItemSources.UserPost,
+                null,
+                item.PortalUser?.DisplayName ?? "Colaborador",
+                item.PortalUserId,
+                item.PortalUser?.Department ?? "Companhia",
+                item.CreatedAtUtc,
+                item.Text,
+                mentions,
+                null,
+                null,
+                media.FirstOrDefault()?.Url,
+                userPostLikeCounts.GetValueOrDefault(item.Id),
+                likedUserPostIds.Contains(item.Id),
+                userPostShareCounts.GetValueOrDefault(item.Id),
+                sharedUserPostIds.Contains(item.Id),
+                true,
+                media,
+                comments.Count,
+                comments)));
+        }
+
+        foreach (var save in communicationSaves)
+        {
+            if (!communicationsById.TryGetValue(save.CommunicationId, out var item))
+            {
+                continue;
+            }
+
+            items.Add((save.CreatedAtUtc, new FeedItemDto(
+                item.Id,
+                FeedItemSources.Communication,
+                item.Id,
+                item.Owner,
+                null,
+                item.Category,
+                item.PublishedAt,
+                item.Summary,
+                [],
+                item.Title,
+                item.Summary,
+                item.ImageUrl,
+                communicationLikeCounts.GetValueOrDefault(item.Id),
+                likedCommunicationIds.Contains(item.Id),
+                communicationShareCounts.GetValueOrDefault(item.Id),
+                sharedCommunicationIds.Contains(item.Id),
+                true,
+                [],
+                0,
+                [])));
+        }
+
+        return new FeedResponse(
+            SavedFeedTitle,
+            items
+                .OrderByDescending(item => item.SavedAtUtc)
+                .Select(item => item.Item)
+                .ToList());
+    }
+
+    public async Task<int> GetSavedItemCountAsync(Guid portalUserId, CancellationToken cancellationToken)
+    {
+        var postCount = await _dbContext.FeedPostSaves
+            .AsNoTracking()
+            .CountAsync(item => item.PortalUserId == portalUserId, cancellationToken);
+
+        var communicationCount = await _dbContext.CommunicationSaves
+            .AsNoTracking()
+            .CountAsync(item => item.PortalUserId == portalUserId, cancellationToken);
+
+        return postCount + communicationCount;
     }
 
     public async Task<FeedMediaCommentsResponse?> GetMediaCommentsAsync(Guid mediaId, CancellationToken cancellationToken)
@@ -905,6 +1081,68 @@ public class FeedService : IFeedService
         return new FeedShareResponse(feedPostId, FeedItemSources.UserPost, shareCount, hasShared);
     }
 
+    private async Task<FeedSaveResponse?> ToggleUserPostSaveAsync(
+        Guid feedPostId,
+        Guid portalUserId,
+        FeedAuditContext auditContext,
+        CancellationToken cancellationToken)
+    {
+        var feedPost = await FindActiveFeedPostAsync(feedPostId, cancellationToken);
+
+        if (feedPost is null)
+        {
+            return null;
+        }
+
+        var existingSave = await _dbContext.FeedPostSaves
+            .FirstOrDefaultAsync(
+                item => item.FeedPostId == feedPostId && item.PortalUserId == portalUserId,
+                cancellationToken);
+
+        var now = DateTime.UtcNow;
+        string actionType;
+        bool hasSaved;
+
+        if (existingSave is not null)
+        {
+            _dbContext.FeedPostSaves.Remove(existingSave);
+            actionType = FeedPostAuditActionTypes.SaveRemoved;
+            hasSaved = false;
+        }
+        else
+        {
+            _dbContext.FeedPostSaves.Add(new FeedPostSave
+            {
+                Id = Guid.NewGuid(),
+                FeedPostId = feedPostId,
+                PortalUserId = portalUserId,
+                CreatedAtUtc = now,
+                IpAddress = auditContext.IpAddress,
+                Origin = auditContext.Origin
+            });
+            actionType = FeedPostAuditActionTypes.SaveRegistered;
+            hasSaved = true;
+        }
+
+        _dbContext.FeedPostAuditLogs.Add(new FeedPostAuditLog
+        {
+            Id = Guid.NewGuid(),
+            FeedPostId = feedPostId,
+            PortalUserId = portalUserId,
+            ActionType = actionType,
+            ActorLogin = auditContext.ActorLogin,
+            ActorDisplayName = auditContext.ActorDisplayName,
+            IpAddress = auditContext.IpAddress,
+            Origin = auditContext.Origin,
+            UserAgent = auditContext.UserAgent,
+            CreatedAtUtc = now
+        });
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return new FeedSaveResponse(feedPostId, FeedItemSources.UserPost, hasSaved);
+    }
+
     private static CommunicationAuditContext MapAuditContext(FeedAuditContext auditContext)
     {
         return new CommunicationAuditContext(
@@ -1051,6 +1289,44 @@ public class FeedService : IFeedService
         }
 
         var ids = await _dbContext.CommunicationShares
+            .AsNoTracking()
+            .Where(item => item.PortalUserId == portalUserId && communicationIds.Contains(item.CommunicationId))
+            .Select(item => item.CommunicationId)
+            .ToListAsync(cancellationToken);
+
+        return ids.ToHashSet();
+    }
+
+    private async Task<HashSet<Guid>> LoadSavedFeedPostIdsAsync(
+        IReadOnlyCollection<Guid> feedPostIds,
+        Guid portalUserId,
+        CancellationToken cancellationToken)
+    {
+        if (feedPostIds.Count == 0)
+        {
+            return [];
+        }
+
+        var ids = await _dbContext.FeedPostSaves
+            .AsNoTracking()
+            .Where(item => item.PortalUserId == portalUserId && feedPostIds.Contains(item.FeedPostId))
+            .Select(item => item.FeedPostId)
+            .ToListAsync(cancellationToken);
+
+        return ids.ToHashSet();
+    }
+
+    private async Task<HashSet<Guid>> LoadSavedCommunicationIdsAsync(
+        IReadOnlyCollection<Guid> communicationIds,
+        Guid portalUserId,
+        CancellationToken cancellationToken)
+    {
+        if (communicationIds.Count == 0)
+        {
+            return [];
+        }
+
+        var ids = await _dbContext.CommunicationSaves
             .AsNoTracking()
             .Where(item => item.PortalUserId == portalUserId && communicationIds.Contains(item.CommunicationId))
             .Select(item => item.CommunicationId)
