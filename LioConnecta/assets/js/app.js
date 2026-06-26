@@ -58,7 +58,7 @@ import {
   votePoll
 } from "./polls/index.js?v=0.15.0";
 import { renderFeed } from "./feed/index.js?v=0.21.4";
-import { updateFeedLikeUi, createFeedPost, toggleFeedLike, toggleFeedShare, uploadFeedAsset, deleteFeedPost, updateFeedShareUi } from "./services/feedService.js?v=0.21.9";
+import { updateFeedLikeUi, createFeedPost, toggleFeedLike, toggleFeedShare, uploadFeedAsset, deleteFeedPost, updateFeedShareUi } from "./services/feedService.js?v=0.21.10";
 import { bindFeedPhotoComposerActions, clearPendingFeedPhotos, getPendingFeedPhotos } from "./components/feedPhotoModal.js?v=0.21.4";
 import { bindFeedPhotoViewerActions } from "./components/feedPhotoViewerModal.js?v=0.21.4";
 import { bindFeedPostCommentActions } from "./components/feedPostCommentComposer.js?v=0.21.4";
@@ -988,6 +988,8 @@ function bindFeedShareActions() {
   });
 }
 
+let feedPostMenuOutsideClickBound = false;
+
 function closeOpenPostMenus(exceptMenu = null) {
   document.querySelectorAll(".post-more-menu").forEach((menu) => {
     if (exceptMenu && menu === exceptMenu) {
@@ -1010,8 +1012,8 @@ function bindFeedPostMenuActions(root = document) {
     return;
   }
 
-  if (!root.dataset.postMenuOutsideBound) {
-    root.dataset.postMenuOutsideBound = "true";
+  if (!feedPostMenuOutsideClickBound) {
+    feedPostMenuOutsideClickBound = true;
     document.addEventListener("click", (event) => {
       if (event.target.closest(".post-more-menu")) {
         return;
