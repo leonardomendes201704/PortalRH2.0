@@ -129,34 +129,36 @@ function renderParticipantStatusPill(status = "") {
   return `<span class="panel-pill panel-pill--${tone}">${escapeHtml(status)}</span>`;
 }
 
-function renderParticipantsSection(participants = []) {
+function renderParticipantsPanel(participants = []) {
   const items = Array.isArray(participants)
     ? participants.filter((participant) => participant.name || participant.email)
     : [];
 
-  if (!items.length) {
-    return "";
-  }
-
   return `
-    <div class="agenda-event-modal__participants">
-      <span>Participantes</span>
-      <ul class="agenda-event-modal__participant-list">
-        ${items.map((participant) => `
-          <li class="agenda-event-modal__participant">
-            <span class="agenda-event-modal__participant-avatar" aria-hidden="true">
-              <i class="fa-solid fa-user"></i>
-            </span>
-            <div class="agenda-event-modal__participant-copy">
-              <strong>${escapeHtml(participant.name || participant.email)}</strong>
-              ${participant.email && participant.name ? `<span>${escapeHtml(participant.email)}</span>` : ""}
-              ${participant.role ? `<small>${escapeHtml(participant.role)}</small>` : ""}
-            </div>
-            ${participant.responseStatus ? renderParticipantStatusPill(participant.responseStatus) : ""}
-          </li>
-        `).join("")}
-      </ul>
-    </div>
+    <aside class="agenda-event-modal__participants-panel">
+      <div class="agenda-event-modal__participants">
+        <span>Participantes</span>
+        ${items.length ? `
+          <ul class="agenda-event-modal__participant-list">
+            ${items.map((participant) => `
+              <li class="agenda-event-modal__participant">
+                <span class="agenda-event-modal__participant-avatar" aria-hidden="true">
+                  <i class="fa-solid fa-user"></i>
+                </span>
+                <div class="agenda-event-modal__participant-copy">
+                  <strong>${escapeHtml(participant.name || participant.email)}</strong>
+                  ${participant.email && participant.name ? `<span>${escapeHtml(participant.email)}</span>` : ""}
+                  ${participant.role ? `<small>${escapeHtml(participant.role)}</small>` : ""}
+                </div>
+                ${participant.responseStatus ? renderParticipantStatusPill(participant.responseStatus) : ""}
+              </li>
+            `).join("")}
+          </ul>
+        ` : `
+          <p class="agenda-event-modal__participants-empty">Nenhum participante informado para este evento.</p>
+        `}
+      </div>
+    </aside>
   `;
 }
 
@@ -199,19 +201,21 @@ function renderModalContent(event) {
           <span>${escapeHtml(schedule)}</span>
         </div>
       </section>
-      <section class="agenda-event-modal__details">
-        ${renderDetailRow("fa-regular fa-clock", "Horario", schedule)}
-        ${renderDetailRow("fa-solid fa-location-dot", "Local", location)}
-        ${renderDetailRow("fa-solid fa-cloud", "Origem", source)}
-        ${description ? `
-          <div class="agenda-event-modal__description">
-            <span>Descricao</span>
-            <p>${escapeHtml(description)}</p>
-          </div>
-        ` : ""}
-        ${renderParticipantsSection(event.participants)}
-      </section>
-      ${renderJoinButton(joinUrl)}
+      <div class="agenda-event-modal__columns">
+        <section class="agenda-event-modal__details">
+          ${renderDetailRow("fa-regular fa-clock", "Horario", schedule)}
+          ${renderDetailRow("fa-solid fa-location-dot", "Local", location)}
+          ${renderDetailRow("fa-solid fa-cloud", "Origem", source)}
+          ${description ? `
+            <div class="agenda-event-modal__description">
+              <span>Descricao</span>
+              <p>${escapeHtml(description)}</p>
+            </div>
+          ` : ""}
+          ${renderJoinButton(joinUrl)}
+        </section>
+        ${renderParticipantsPanel(event.participants)}
+      </div>
     </div>
   `;
 }
