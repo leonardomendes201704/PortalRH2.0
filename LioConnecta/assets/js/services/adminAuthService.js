@@ -78,6 +78,11 @@ export function getAdminAuthHeaders() {
     : {};
 }
 
+export function isSuperAdminSession(session = getStoredAdminSession()) {
+  const role = String(session?.user?.role ?? "").trim().toLowerCase();
+  return role === "superadmin";
+}
+
 export async function loginAdmin(username, password) {
   const response = await postJson(resolveApiEndpoint("adminLogin"), {
     username,

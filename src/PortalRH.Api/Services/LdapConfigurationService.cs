@@ -10,7 +10,12 @@ namespace PortalRH.Api.Services;
 
 public class LdapConfigurationService : ILdapConfigurationService
 {
-    private const string DefaultLoginFormat = "email-or-upn-or-samaccountname";
+    private const string DefaultServer = "dc-virtual-02.liotecnica.com.br";
+    private const int DefaultPort = 389;
+    private const string DefaultBaseDn = "DC=liotecnica,DC=com,DC=br";
+    private const string DefaultUserSearchBase = "OU=Departamentos,DC=liotecnica,DC=com,DC=br";
+    private const string DefaultNetbiosDomain = "LIOTECNICA";
+    private const string DefaultLoginFormat = "domain-backslash-samaccountname";
     private const string DefaultSearchFilter = "(|(mail={0})(userPrincipalName={0})(sAMAccountName={0}))";
     private const string DefaultDisplayNameAttribute = "displayName";
 
@@ -90,15 +95,15 @@ public class LdapConfigurationService : ILdapConfigurationService
         entity = new LdapConfiguration
         {
             Id = Guid.NewGuid(),
-            IsEnabled = false,
-            Server = string.Empty,
-            Port = 389,
+            IsEnabled = true,
+            Server = DefaultServer,
+            Port = DefaultPort,
             UseLdaps = false,
             UseStartTls = false,
             IgnoreCertificateValidation = false,
-            BaseDn = string.Empty,
-            UserSearchBase = string.Empty,
-            NetbiosDomain = string.Empty,
+            BaseDn = DefaultBaseDn,
+            UserSearchBase = DefaultUserSearchBase,
+            NetbiosDomain = DefaultNetbiosDomain,
             LoginFormat = DefaultLoginFormat,
             BindDn = string.Empty,
             BindPasswordProtected = null,

@@ -1,0 +1,230 @@
+name: LIOCONNECTA CI/CD
+
+on:
+  push:
+    branches:
+      - Lioconnecta_DEV
+      - Lioconnecta_HML
+      - Lioconnecta_PRD
+  pull_request:
+    branches:
+      - Lioconnecta_DEV
+      - Lioconnecta_HML
+      - Lioconnecta_PRD
+  workflow_dispatch:
+
+concurrency:
+  group: lioconnecta-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  resolve-context:
+    runs-on: ubuntu-latest
+    outputs:
+      environment_name: ${{ steps.resolve.outputs.environment_name }}
+      artifact_name: ${{ steps.resolve.outputs.artifact_name }}
+      package_directory: ${{ steps.resolve.outputs.package_directory }}
+    steps:
+      - id: resolve
+        shell: bash
+        run: |
+          TARGET_BRANCH="${GITHUB_BASE_REF:-${GITHUB_REF_NAME}}"
+
+          case "$TARGET_BRANCH" in
+            Lioconnecta_DEV)
+              ENVIRONMENT_NAME="lioconnecta-dev"
+              ARTIFACT_NAME="lioconnecta-dev-package"
+              PACKAGE_DIRECTORY="artifacts/deploy/lioconnecta-dev"
+              ;;
+            Lioconnecta_HML)
+              ENVIRONMENT_NAME="lioconnecta-hml"
+              ARTIFACT_NAME="lioconnecta-hml-package"
+              PACKAGE_DIRECTORY="artifacts/deploy/lioconnecta-hml"
+              ;;
+            Lioconnecta_PRD)
+              ENVIRONMENT_NAME="lioconnecta-prd"
+              ARTIFACT_NAME="lioconnecta-prd-package"
+              PACKAGE_DIRECTORY="artifacts/deploy/lioconnecta-prd"
+              ;;
+            *)
+              echo "Branch fora do escopo de deploy automatizado: $TARGET_BRANCH" >&2
+              exit 1
+              ;;
+          esac
+
+          echo "environment_name=$ENVIRONMENT_NAME" >> "$GITHUB_OUTPUT"
+          echo "artifact_name=$ARTIFACT_NAME" >> "$GITHUB_OUTPUT"
+          echo "package_directory=$PACKAGE_DIRECTORY" >> "$GITHUB_OUTPUT"
+
+  build-test-package:
+    runs-on: ubuntu-latest
+    needs: resolve-context
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Restore API dependencies
+        run: dotnet restore ./src/PortalRH.Api/PortalRH.Api.csproj
+
+      - name: Build API
+        run: dotnet build ./src/PortalRH.Api/PortalRH.Api.csproj --configuration Release --no-restore
+
+      - name: Run API tests
+        run: dotnet test ./tests/PortalRH.Api.Tests/PortalRH.Api.Tests.csproj --configuration Release --no-restore --logger "trx;LogFileName=PortalRH.Api.Tests.trx"
+
+      - name: Run frontend unit tests
+        working-directory: ./LioConnecta
+        run: npm test
+
+      - name: Package LIOCONNECTA
+        shell: pwsh
+        run: |
+          ./scripts/package-lioconnecta.ps1 `
+            -Configuration Release `
+            -OutputRoot "${{ needs.resolve-context.outputs.package_directory }}"
+
+      - name: Upload deploy package
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ needs.resolve-context.outputs.artifact_name }}
+          path: ${{ needs.resolve-context.outputs.package_directory }}
+          if-no-files-found: error
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ needs.resolve-context.outputs.artifact_name }}-tests
+          path: "**/*.trx"
+          if-no-files-found: ignore
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    needs:
+      - resolve-context
+      - build-test-package
+    environment: ${{ needs.resolve-context.outputs.environment_name }}
+    steps:
+      - name: Download deploy package
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.resolve-context.outputs.artifact_name }}
+          path: ./deploy-package
+
+      - name: Validate deploy secrets
+        id: validate
+        shell: bash
+        env:
+          DEPLOY_HOST: ${{ secrets.LIOCONNECTA_DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.LIOCONNECTA_DEPLOY_PORT }}
+          DEPLOY_USER: ${{ secrets.LIOCONNECTA_DEPLOY_USER }}
+          DEPLOY_SSH_KEY: ${{ secrets.LIOCONNECTA_DEPLOY_SSH_KEY }}
+          DEPLOY_PATH: ${{ secrets.LIOCONNECTA_DEPLOY_PATH }}
+          API_SERVICE: ${{ secrets.LIOCONNECTA_API_SERVICE }}
+        run: |
+          missing=0
+
+          for variable in DEPLOY_HOST DEPLOY_USER DEPLOY_SSH_KEY DEPLOY_PATH API_SERVICE; do
+            if [ -z "${!variable}" ]; then
+              echo "::warning::Secret ausente no environment '${{ needs.resolve-context.outputs.environment_name }}': $variable"
+              missing=1
+            fi
+          done
+
+          if [ -z "$DEPLOY_PORT" ]; then
+            DEPLOY_PORT=22
+          fi
+
+          echo "deploy_port=$DEPLOY_PORT" >> "$GITHUB_OUTPUT"
+
+          if [ "$missing" -eq 1 ]; then
+            echo "can_deploy=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "can_deploy=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Skip deploy when infrastructure is not configured
+        if: steps.validate.outputs.can_deploy != 'true'
+        run: echo "Deploy ignorado porque os secrets do ambiente ainda não foram configurados."
+
+      - name: Prepare SSH
+        if: steps.validate.outputs.can_deploy == 'true'
+        shell: bash
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.LIOCONNECTA_DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.LIOCONNECTA_DEPLOY_KNOWN_HOSTS }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+          if [ -n "$DEPLOY_KNOWN_HOSTS" ]; then
+            printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+            chmod 600 ~/.ssh/known_hosts
+          fi
+
+      - name: Create release archive
+        if: steps.validate.outputs.can_deploy == 'true'
+        shell: bash
+        run: |
+          tar -czf "${{ needs.resolve-context.outputs.artifact_name }}.tar.gz" -C ./deploy-package .
+
+      - name: Upload archive to server
+        if: steps.validate.outputs.can_deploy == 'true'
+        shell: bash
+        env:
+          DEPLOY_HOST: ${{ secrets.LIOCONNECTA_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.LIOCONNECTA_DEPLOY_USER }}
+        run: |
+          scp -P "${{ steps.validate.outputs.deploy_port }}" -o StrictHostKeyChecking=no \
+            "${{ needs.resolve-context.outputs.artifact_name }}.tar.gz" \
+            "${DEPLOY_USER}@${DEPLOY_HOST}:/tmp/${{ needs.resolve-context.outputs.artifact_name }}.tar.gz"
+
+      - name: Deploy release on server
+        if: steps.validate.outputs.can_deploy == 'true'
+        shell: bash
+        env:
+          DEPLOY_HOST: ${{ secrets.LIOCONNECTA_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.LIOCONNECTA_DEPLOY_USER }}
+          DEPLOY_PATH: ${{ secrets.LIOCONNECTA_DEPLOY_PATH }}
+          API_SERVICE: ${{ secrets.LIOCONNECTA_API_SERVICE }}
+          DEPLOY_POST_COMMAND: ${{ secrets.LIOCONNECTA_DEPLOY_POST_COMMAND }}
+        run: |
+          RELEASE_DIR="${DEPLOY_PATH}/releases/${GITHUB_SHA}"
+          CURRENT_DIR="${DEPLOY_PATH}/current"
+          ARCHIVE_NAME="/tmp/${{ needs.resolve-context.outputs.artifact_name }}.tar.gz"
+
+          ssh -p "${{ steps.validate.outputs.deploy_port }}" -o StrictHostKeyChecking=no \
+            "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "set -e; \
+             mkdir -p '${DEPLOY_PATH}/releases'; \
+             mkdir -p '${DEPLOY_PATH}/shared/uploads/feed'; \
+             rm -rf '${RELEASE_DIR}'; \
+             mkdir -p '${RELEASE_DIR}'; \
+             tar -xzf '${ARCHIVE_NAME}' -C '${RELEASE_DIR}'; \
+             ln -sfn '${RELEASE_DIR}' '${CURRENT_DIR}'; \
+             if [ -e /lib/x86_64-linux-gnu/libldap.so.2 ]; then \
+               sudo ln -sfn /lib/x86_64-linux-gnu/libldap.so.2 /usr/lib/x86_64-linux-gnu/libldap-2.5.so.0; \
+             fi; \
+             if [ -e /lib/x86_64-linux-gnu/liblber.so.2 ]; then \
+               sudo ln -sfn /lib/x86_64-linux-gnu/liblber.so.2 /usr/lib/x86_64-linux-gnu/liblber-2.5.so.0; \
+             fi; \
+             sudo ldconfig; \
+             sudo systemctl restart '${API_SERVICE}'; \
+             if [ -n \"${DEPLOY_POST_COMMAND}\" ]; then eval \"${DEPLOY_POST_COMMAND}\"; fi; \
+             rm -f '${ARCHIVE_NAME}'"

@@ -6,7 +6,7 @@ import { getCommunicationCenterData } from "../../../assets/js/services/communic
 test("communicationService retorna central de comunicados normalizada", async () => {
   const originalFetch = global.fetch;
   const payloads = new Map([
-    ["http://localhost:5001/api/communications", [
+    ["http://localhost:3030/api/communications", [
       {
         slug: "destaque-da-semana",
         category: "RH",

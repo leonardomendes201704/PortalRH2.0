@@ -34,6 +34,29 @@ export async function postJson(url, payload, options = {}) {
   return response.json();
 }
 
+export async function postFormData(url, formData, options = {}) {
+  const headers = {
+    ...(options.headers ?? {})
+  };
+
+  const response = await fetch(url, {
+    method: "POST",
+    ...options,
+    headers,
+    body: formData
+  });
+
+  if (!response.ok) {
+    throw new Error(`Falha ao publicar em ${url}: HTTP ${response.status}`);
+  }
+
+  if (response.status === 204) {
+    return null;
+  }
+
+  return response.json();
+}
+
 export async function postWithoutBody(url, options = {}) {
   const response = await fetch(url, {
     method: "POST",
@@ -66,6 +89,47 @@ export async function putJson(url, payload, options = {}) {
 
   if (!response.ok) {
     throw new Error(`Falha ao atualizar em ${url}: HTTP ${response.status}`);
+  }
+
+  if (response.status === 204) {
+    return null;
+  }
+
+  return response.json();
+}
+
+export async function patchJson(url, payload, options = {}) {
+  const headers = {
+    "Content-Type": "application/json",
+    ...(options.headers ?? {})
+  };
+
+  const response = await fetch(url, {
+    method: "PATCH",
+    ...options,
+    headers,
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    throw new Error(`Falha ao atualizar em ${url}: HTTP ${response.status}`);
+  }
+
+  if (response.status === 204) {
+    return null;
+  }
+
+  return response.json();
+}
+
+export async function deleteJson(url, options = {}) {
+  const response = await fetch(url, {
+    method: "DELETE",
+    ...options
+  });
+
+  if (!response.ok) {
+    throw new Error(`Falha ao excluir em ${url}: HTTP ${response.status}`);
   }
 
   if (response.status === 204) {
