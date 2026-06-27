@@ -2,6 +2,21 @@ import { getJson } from "./apiClient.js";
 import { resolveApiEndpoint } from "../core/runtimeConfig.js";
 import { getPortalAuthHeaders } from "./portalAuthService.js";
 
+function normalizeParticipants(participants = []) {
+  if (!Array.isArray(participants)) {
+    return [];
+  }
+
+  return participants
+    .map((participant) => ({
+      name: String(participant?.name || "").trim(),
+      email: String(participant?.email || "").trim(),
+      role: String(participant?.role || "").trim(),
+      responseStatus: String(participant?.responseStatus || "").trim()
+    }))
+    .filter((participant) => participant.name || participant.email);
+}
+
 function normalizeAgendaPayload(payload = {}) {
   const items = Array.isArray(payload.items) ? payload.items : [];
 
@@ -14,6 +29,7 @@ function normalizeAgendaPayload(payload = {}) {
       description: String(item.description || ""),
       location: String(item.location || ""),
       joinUrl: String(item.joinUrl || ""),
+      participants: normalizeParticipants(item.participants),
       timeLabel: String(item.timeLabel || ""),
       source: String(item.source || ""),
       audience: String(item.audience || ""),
@@ -46,6 +62,7 @@ function mapAgendaPanelItem(item) {
     detailDescription: item.description || "",
     location: item.location || "",
     joinUrl: item.joinUrl || "",
+    participants: normalizeParticipants(item.participants),
     source: item.source || "",
     audience: item.audience || "",
     startAtUtc: item.startAtUtc,
@@ -65,6 +82,7 @@ export function normalizeAgendaPanelItem(item, fallbackId = "") {
       detailDescription: "",
       location: "",
       joinUrl: "",
+      participants: [],
       timeLabel: time.trim(),
       source: "",
       audience: "",
@@ -87,6 +105,7 @@ export function normalizeAgendaPanelItem(item, fallbackId = "") {
     detailDescription: String(item.detailDescription || item.description || ""),
     location: String(item.location || ""),
     joinUrl: String(item.joinUrl || ""),
+    participants: normalizeParticipants(item.participants),
     timeLabel,
     source: String(item.source || ""),
     audience: String(item.audience || ""),

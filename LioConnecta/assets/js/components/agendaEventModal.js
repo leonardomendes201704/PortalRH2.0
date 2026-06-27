@@ -116,6 +116,50 @@ function renderDetailRow(iconClass, label, value) {
   `;
 }
 
+function renderParticipantStatusPill(status = "") {
+  const normalized = String(status).toLowerCase();
+  const tone = normalized.includes("confirm") || normalized.includes("organiz")
+    ? "success"
+    : normalized.includes("recus")
+      ? "danger"
+      : normalized.includes("talvez")
+        ? "warning"
+        : "info";
+
+  return `<span class="panel-pill panel-pill--${tone}">${escapeHtml(status)}</span>`;
+}
+
+function renderParticipantsSection(participants = []) {
+  const items = Array.isArray(participants)
+    ? participants.filter((participant) => participant.name || participant.email)
+    : [];
+
+  if (!items.length) {
+    return "";
+  }
+
+  return `
+    <div class="agenda-event-modal__participants">
+      <span>Participantes</span>
+      <ul class="agenda-event-modal__participant-list">
+        ${items.map((participant) => `
+          <li class="agenda-event-modal__participant">
+            <span class="agenda-event-modal__participant-avatar" aria-hidden="true">
+              <i class="fa-solid fa-user"></i>
+            </span>
+            <div class="agenda-event-modal__participant-copy">
+              <strong>${escapeHtml(participant.name || participant.email)}</strong>
+              ${participant.email && participant.name ? `<span>${escapeHtml(participant.email)}</span>` : ""}
+              ${participant.role ? `<small>${escapeHtml(participant.role)}</small>` : ""}
+            </div>
+            ${participant.responseStatus ? renderParticipantStatusPill(participant.responseStatus) : ""}
+          </li>
+        `).join("")}
+      </ul>
+    </div>
+  `;
+}
+
 function renderJoinButton(joinUrl) {
   if (!joinUrl) {
     return "";
@@ -165,6 +209,7 @@ function renderModalContent(event) {
             <p>${escapeHtml(description)}</p>
           </div>
         ` : ""}
+        ${renderParticipantsSection(event.participants)}
       </section>
       ${renderJoinButton(joinUrl)}
     </div>

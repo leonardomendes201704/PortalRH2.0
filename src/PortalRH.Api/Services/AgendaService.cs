@@ -105,6 +105,7 @@ public class AgendaService : IAgendaService
             item.Source,
             item.Audience,
             null,
+            Array.Empty<AgendaParticipantDto>(),
             NormalizeUtc(item.StartAtUtc),
             NormalizeUtc(item.EndAtUtc));
     }
@@ -120,6 +121,7 @@ public class AgendaService : IAgendaService
             "microsoft-365",
             "Usuario autenticado",
             item.JoinUrl,
+            item.Participants,
             NormalizeUtc(item.StartAtUtc),
             NormalizeUtc(item.EndAtUtc));
     }

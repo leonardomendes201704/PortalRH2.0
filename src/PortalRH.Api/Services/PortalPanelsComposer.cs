@@ -181,7 +181,8 @@ public class PortalPanelsComposer : IPortalPanelsComposer
                 item.Source,
                 item.StartAtUtc,
                 item.EndAtUtc,
-                item.JoinUrl))
+                item.JoinUrl,
+                item.Participants))
             .Cast<JsonNode>()
             .ToList();
 

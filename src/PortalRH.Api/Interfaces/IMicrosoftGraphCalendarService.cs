@@ -1,3 +1,4 @@
+using PortalRH.Api.Contracts.Agenda;
 using PortalRH.Api.Models;
 
 namespace PortalRH.Api.Interfaces;
@@ -16,6 +17,7 @@ public sealed record MicrosoftGraphCalendarEvent(
     string? Description,
     string? Location,
     string? JoinUrl,
+    IReadOnlyList<AgendaParticipantDto> Participants,
     DateTime StartAtUtc,
     DateTime EndAtUtc,
     bool IsAllDay);
