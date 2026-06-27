@@ -26,6 +26,14 @@ function mapPanelItem(item) {
       detailDescription: asString(item?.detailDescription, ""),
       location: asString(item?.location, ""),
       joinUrl: asString(item?.joinUrl, ""),
+      participants: Array.isArray(item?.participants)
+        ? item.participants.map((participant) => ({
+          name: asString(participant?.name, ""),
+          email: asString(participant?.email, ""),
+          role: asString(participant?.role, ""),
+          responseStatus: asString(participant?.responseStatus, "")
+        })).filter((participant) => participant.name || participant.email)
+        : [],
       source: asString(item?.source, ""),
       audience: asString(item?.audience, ""),
       startAtUtc: asString(item?.startAtUtc, ""),

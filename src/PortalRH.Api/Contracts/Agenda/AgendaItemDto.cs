@@ -9,5 +9,6 @@ public record AgendaItemDto(
     string Source,
     string Audience,
     string? JoinUrl,
+    IReadOnlyList<AgendaParticipantDto> Participants,
     DateTime StartAtUtc,
     DateTime EndAtUtc);

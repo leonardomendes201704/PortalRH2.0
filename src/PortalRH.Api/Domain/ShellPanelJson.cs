@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using PortalRH.Api.Contracts.Agenda;
 
 namespace PortalRH.Api.Domain;
 
@@ -30,7 +31,8 @@ internal static class ShellPanelJson
         string source,
         DateTime startAtUtc,
         DateTime endAtUtc,
-        string? joinUrl = null) =>
+        string? joinUrl = null,
+        IReadOnlyList<AgendaParticipantDto>? participants = null) =>
         Serialize(new
         {
             type = "agenda-event",
@@ -43,6 +45,14 @@ internal static class ShellPanelJson
             location = location ?? string.Empty,
             source,
             joinUrl = joinUrl ?? string.Empty,
+            participants = (participants ?? Array.Empty<AgendaParticipantDto>())
+                .Select(participant => new
+                {
+                    name = participant.Name,
+                    email = participant.Email,
+                    role = participant.Role,
+                    responseStatus = participant.ResponseStatus
+                }),
             startAtUtc = startAtUtc.ToUniversalTime().ToString("O"),
             endAtUtc = endAtUtc.ToUniversalTime().ToString("O")
         });

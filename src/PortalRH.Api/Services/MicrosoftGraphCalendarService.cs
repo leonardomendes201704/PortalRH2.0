@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
+using PortalRH.Api.Contracts.Agenda;
 using PortalRH.Api.Interfaces;
 using PortalRH.Api.Models;
 
@@ -93,7 +94,7 @@ public class MicrosoftGraphCalendarService : IMicrosoftGraphCalendarService
             $"&endDateTime={Uri.EscapeDataString(endLocal.ToString("yyyy-MM-ddTHH:mm:ss"))}" +
             $"&$top={limit}" +
             "&$orderby=start/dateTime" +
-            "&$select=id,subject,bodyPreview,location,start,end,isAllDay";
+            "&$select=id,subject,bodyPreview,location,start,end,isAllDay,onlineMeeting,webLink,organizer,attendees";
 
         var client = _httpClientFactory.CreateClient(nameof(MicrosoftGraphCalendarService));
         using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
@@ -186,6 +187,7 @@ public class MicrosoftGraphCalendarService : IMicrosoftGraphCalendarService
             ? locationNameElement.GetString()
             : null;
         var joinUrl = ReadJoinUrl(item);
+        var participants = ReadParticipants(item);
         var isAllDay = item.TryGetProperty("isAllDay", out var allDayElement) && allDayElement.GetBoolean();
 
         return new MicrosoftGraphCalendarEvent(
@@ -194,9 +196,116 @@ public class MicrosoftGraphCalendarService : IMicrosoftGraphCalendarService
             string.IsNullOrWhiteSpace(description) ? null : description.Trim(),
             string.IsNullOrWhiteSpace(location) ? null : location.Trim(),
             joinUrl,
+            participants,
             startAtUtc,
             endAtUtc,
             isAllDay);
+    }
+
+    private static IReadOnlyList<AgendaParticipantDto> ReadParticipants(JsonElement item)
+    {
+        var participants = new List<AgendaParticipantDto>();
+        var seenEmails = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        if (item.TryGetProperty("organizer", out var organizerElement) &&
+            TryReadEmailAddress(organizerElement, out var organizerName, out var organizerEmail))
+        {
+            participants.Add(new AgendaParticipantDto(
+                organizerName,
+                organizerEmail,
+                "Organizador",
+                "Organizador"));
+
+            if (!string.IsNullOrWhiteSpace(organizerEmail))
+            {
+                seenEmails.Add(organizerEmail);
+            }
+        }
+
+        if (item.TryGetProperty("attendees", out var attendeesElement) &&
+            attendeesElement.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var attendee in attendeesElement.EnumerateArray())
+            {
+                if (!TryReadEmailAddress(attendee, out var name, out var email))
+                {
+                    continue;
+                }
+
+                if (!string.IsNullOrWhiteSpace(email) && !seenEmails.Add(email))
+                {
+                    continue;
+                }
+
+                var response = attendee.TryGetProperty("status", out var statusElement) &&
+                                 statusElement.TryGetProperty("response", out var responseElement)
+                    ? responseElement.GetString()
+                    : null;
+                var type = attendee.TryGetProperty("type", out var typeElement)
+                    ? typeElement.GetString()
+                    : null;
+
+                participants.Add(new AgendaParticipantDto(
+                    name,
+                    email,
+                    MapAttendeeType(type),
+                    MapResponseStatus(response)));
+            }
+        }
+
+        return participants;
+    }
+
+    private static bool TryReadEmailAddress(JsonElement element, out string name, out string email)
+    {
+        name = string.Empty;
+        email = string.Empty;
+
+        if (!element.TryGetProperty("emailAddress", out var emailAddressElement))
+        {
+            return false;
+        }
+
+        name = emailAddressElement.TryGetProperty("name", out var nameElement)
+            ? nameElement.GetString()?.Trim() ?? string.Empty
+            : string.Empty;
+        email = emailAddressElement.TryGetProperty("address", out var addressElement)
+            ? addressElement.GetString()?.Trim() ?? string.Empty
+            : string.Empty;
+
+        if (string.IsNullOrWhiteSpace(name) && string.IsNullOrWhiteSpace(email))
+        {
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            name = email;
+        }
+
+        return true;
+    }
+
+    private static string MapAttendeeType(string? type)
+    {
+        return type?.ToLowerInvariant() switch
+        {
+            "optional" => "Opcional",
+            "resource" => "Recurso",
+            _ => "Obrigatorio"
+        };
+    }
+
+    private static string MapResponseStatus(string? response)
+    {
+        return response?.ToLowerInvariant() switch
+        {
+            "accepted" => "Confirmado",
+            "declined" => "Recusado",
+            "tentativelyaccepted" => "Talvez",
+            "none" => "Pendente",
+            _ => "Pendente"
+        };
     }
 
     private static string? ReadJoinUrl(JsonElement item)
