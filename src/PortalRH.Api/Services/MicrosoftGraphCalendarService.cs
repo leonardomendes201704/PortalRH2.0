@@ -15,17 +15,20 @@ public class MicrosoftGraphCalendarService : IMicrosoftGraphCalendarService
 
     private readonly IMicrosoftGraphConfigurationService _configurationService;
     private readonly MicrosoftGraphAuthClient _authClient;
+    private readonly IMicrosoftGraphUserPhotoService _userPhotoService;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<MicrosoftGraphCalendarService> _logger;
 
     public MicrosoftGraphCalendarService(
         IMicrosoftGraphConfigurationService configurationService,
         MicrosoftGraphAuthClient authClient,
+        IMicrosoftGraphUserPhotoService userPhotoService,
         IHttpClientFactory httpClientFactory,
         ILogger<MicrosoftGraphCalendarService> logger)
     {
         _configurationService = configurationService;
         _authClient = authClient;
+        _userPhotoService = userPhotoService;
         _httpClientFactory = httpClientFactory;
         _logger = logger;
     }
@@ -70,10 +73,15 @@ public class MicrosoftGraphCalendarService : IMicrosoftGraphCalendarService
             return Array.Empty<MicrosoftGraphCalendarEvent>();
         }
 
-        return await FetchCalendarEventsAsync(
+        var events = await FetchCalendarEventsAsync(
             tokenResult.AccessToken,
             userIdentifier,
             limit,
+            cancellationToken);
+
+        return await _userPhotoService.EnrichEventsWithParticipantPhotosAsync(
+            tokenResult.AccessToken,
+            events,
             cancellationToken);
     }
 

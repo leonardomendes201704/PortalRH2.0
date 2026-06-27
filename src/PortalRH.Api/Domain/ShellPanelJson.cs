@@ -51,7 +51,8 @@ internal static class ShellPanelJson
                     name = participant.Name,
                     email = participant.Email,
                     role = participant.Role,
-                    responseStatus = participant.ResponseStatus
+                    responseStatus = participant.ResponseStatus,
+                    photoUrl = participant.PhotoUrl
                 }),
             startAtUtc = startAtUtc.ToUniversalTime().ToString("O"),
             endAtUtc = endAtUtc.ToUniversalTime().ToString("O")

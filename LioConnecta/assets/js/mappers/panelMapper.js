@@ -31,7 +31,8 @@ function mapPanelItem(item) {
           name: asString(participant?.name, ""),
           email: asString(participant?.email, ""),
           role: asString(participant?.role, ""),
-          responseStatus: asString(participant?.responseStatus, "")
+          responseStatus: asString(participant?.responseStatus, ""),
+          photoUrl: asString(participant?.photoUrl, "")
         })).filter((participant) => participant.name || participant.email)
         : [],
       source: asString(item?.source, ""),

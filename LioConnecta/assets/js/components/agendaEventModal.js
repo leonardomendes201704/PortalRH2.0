@@ -129,6 +129,31 @@ function renderParticipantStatusPill(status = "") {
   return `<span class="panel-pill panel-pill--${tone}">${escapeHtml(status)}</span>`;
 }
 
+function renderParticipantAvatar(participant) {
+  const photoUrl = String(participant.photoUrl || "").trim();
+
+  if (photoUrl) {
+    return `
+      <span class="agenda-event-modal__participant-avatar">
+        <img
+          class="agenda-event-modal__participant-photo"
+          src="${escapeHtml(photoUrl)}"
+          alt=""
+          loading="lazy"
+          decoding="async"
+        >
+        <i class="fa-solid fa-user agenda-event-modal__participant-fallback" aria-hidden="true"></i>
+      </span>
+    `;
+  }
+
+  return `
+    <span class="agenda-event-modal__participant-avatar" aria-hidden="true">
+      <i class="fa-solid fa-user"></i>
+    </span>
+  `;
+}
+
 function renderParticipantsPanel(participants = []) {
   const items = Array.isArray(participants)
     ? participants.filter((participant) => participant.name || participant.email)
@@ -142,9 +167,7 @@ function renderParticipantsPanel(participants = []) {
           <ul class="agenda-event-modal__participant-list">
             ${items.map((participant) => `
               <li class="agenda-event-modal__participant">
-                <span class="agenda-event-modal__participant-avatar" aria-hidden="true">
-                  <i class="fa-solid fa-user"></i>
-                </span>
+                ${renderParticipantAvatar(participant)}
                 <div class="agenda-event-modal__participant-copy">
                   <strong>${escapeHtml(participant.name || participant.email)}</strong>
                   ${participant.email && participant.name ? `<span>${escapeHtml(participant.email)}</span>` : ""}
@@ -260,6 +283,14 @@ export function setAgendaEvents(events = []) {
   agendaEvents = Array.isArray(events) ? events.map((item) => ({ ...item })) : [];
 }
 
+function bindParticipantPhotoFallbacks(root) {
+  root?.querySelectorAll(".agenda-event-modal__participant-photo").forEach((image) => {
+    image.addEventListener("error", () => {
+      image.classList.add("is-hidden");
+    }, { once: true });
+  });
+}
+
 export function openAgendaEventModal(eventId) {
   const event = findAgendaEvent(eventId);
   if (!event) {
@@ -269,6 +300,7 @@ export function openAgendaEventModal(eventId) {
   closeModal();
   document.body.insertAdjacentHTML("beforeend", renderModalShell(event));
   modalRoot = document.querySelector(".agenda-event-modal");
+  bindParticipantPhotoFallbacks(modalRoot);
   document.body.classList.add("agenda-event-modal-open");
   modalRoot?.querySelector("[data-action='close-agenda-event-modal']")?.focus();
 }
