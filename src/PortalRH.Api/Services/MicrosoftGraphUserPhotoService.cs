@@ -4,6 +4,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using PortalRH.Api.Contracts.Agenda;
 using PortalRH.Api.Interfaces;
+using PortalRH.Api.Models;
 
 namespace PortalRH.Api.Services;
 
@@ -12,18 +13,54 @@ public class MicrosoftGraphUserPhotoService : IMicrosoftGraphUserPhotoService
     private static readonly TimeSpan PhotoCacheDuration = TimeSpan.FromHours(6);
     private const int MaxConcurrentPhotoRequests = 6;
 
+    private readonly IMicrosoftGraphConfigurationService _configurationService;
+    private readonly MicrosoftGraphAuthClient _authClient;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IMemoryCache _memoryCache;
     private readonly ILogger<MicrosoftGraphUserPhotoService> _logger;
 
     public MicrosoftGraphUserPhotoService(
+        IMicrosoftGraphConfigurationService configurationService,
+        MicrosoftGraphAuthClient authClient,
         IHttpClientFactory httpClientFactory,
         IMemoryCache memoryCache,
         ILogger<MicrosoftGraphUserPhotoService> logger)
     {
+        _configurationService = configurationService;
+        _authClient = authClient;
         _httpClientFactory = httpClientFactory;
         _memoryCache = memoryCache;
         _logger = logger;
+    }
+
+    public async Task<string?> GetPhotoDataUrlForPortalUserAsync(
+        PortalUser user,
+        CancellationToken cancellationToken)
+    {
+        var configuration = await _configurationService.GetRuntimeConfigurationAsync(cancellationToken);
+        if (!configuration.IsEnabled)
+        {
+            return null;
+        }
+
+        var userIdentifier = ResolveUserIdentifier(user, configuration.UserIdentifier);
+        if (string.IsNullOrWhiteSpace(userIdentifier))
+        {
+            return null;
+        }
+
+        var tokenResult = await _authClient.RequestAccessTokenAsync(
+            configuration.TenantId,
+            configuration.ClientId,
+            configuration.ClientSecret ?? string.Empty,
+            cancellationToken);
+
+        if (!tokenResult.IsSuccess || string.IsNullOrWhiteSpace(tokenResult.AccessToken))
+        {
+            return null;
+        }
+
+        return await ResolvePhotoDataUrlAsync(tokenResult.AccessToken, userIdentifier, cancellationToken);
     }
 
     public async Task<IReadOnlyList<MicrosoftGraphCalendarEvent>> EnrichEventsWithParticipantPhotosAsync(
@@ -150,5 +187,28 @@ public class MicrosoftGraphUserPhotoService : IMicrosoftGraphUserPhotoService
         }
 
         return $"data:{contentType};base64,{Convert.ToBase64String(bytes)}";
+    }
+
+    private static string? ResolveUserIdentifier(PortalUser user, string configuredIdentifier)
+    {
+        if (string.Equals(configuredIdentifier, "mail", StringComparison.OrdinalIgnoreCase))
+        {
+            return FirstNonEmpty(user.Email, user.UserPrincipalName, user.Login);
+        }
+
+        return FirstNonEmpty(user.UserPrincipalName, user.Email, user.Login);
+    }
+
+    private static string? FirstNonEmpty(params string?[] values)
+    {
+        foreach (var value in values)
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                return value.Trim();
+            }
+        }
+
+        return null;
     }
 }

@@ -260,6 +260,17 @@ function buildAdminUsersQuery() {
 }
 
 function bindPortalTopbarActions() {
+  document.querySelectorAll(".avatar__photo").forEach((image) => {
+    if (image.dataset.bound === "true") {
+      return;
+    }
+
+    image.dataset.bound = "true";
+    image.addEventListener("error", () => {
+      image.classList.add("is-hidden");
+    }, { once: true });
+  });
+
   const logoutButton = document.querySelector("[data-action='portal-logout']");
   if (!logoutButton || logoutButton.dataset.bound === "true") {
     return;
