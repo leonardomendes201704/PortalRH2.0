@@ -2631,6 +2631,23 @@ body.agenda-event-modal-open {
   background: #eef4fb;
   color: #365677;
   font-size: 11px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.agenda-event-modal__participant-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.agenda-event-modal__participant-photo.is-hidden {
+  display: none;
+}
+
+.agenda-event-modal__participant-avatar:has(.agenda-event-modal__participant-photo:not(.is-hidden)) .agenda-event-modal__participant-fallback {
+  display: none;
 }
 
 .agenda-event-modal__participant-copy {

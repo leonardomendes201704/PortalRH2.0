@@ -12,7 +12,8 @@ function normalizeParticipants(participants = []) {
       name: String(participant?.name || "").trim(),
       email: String(participant?.email || "").trim(),
       role: String(participant?.role || "").trim(),
-      responseStatus: String(participant?.responseStatus || "").trim()
+      responseStatus: String(participant?.responseStatus || "").trim(),
+      photoUrl: String(participant?.photoUrl || "").trim()
     }))
     .filter((participant) => participant.name || participant.email);
 }
