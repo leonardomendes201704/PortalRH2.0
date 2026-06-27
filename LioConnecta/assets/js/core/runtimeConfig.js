@@ -1,4 +1,4 @@
-export const APP_VERSION = "v0.23.6";
+export const APP_VERSION = "v0.23.7";
 
 export const DATA_MODES = Object.freeze({
   MOCK: "mock",
@@ -70,6 +70,10 @@ const DEFAULT_RUNTIME_CONFIG = Object.freeze({
     polls: "/polls",
     quickLinks: "/quick-links",
     journey: "/journey/summary",
+    journeyTarefas: "/journey/tarefas",
+    journeySolicitacoes: "/journey/solicitacoes",
+    journeyTrilhas: "/journey/trilhas",
+    journeyDocumentos: "/journey/documentos",
     kpis: "/kpis/summary",
     hrProfile: "/hr/profile",
     hrFerias: "/hr/ferias",

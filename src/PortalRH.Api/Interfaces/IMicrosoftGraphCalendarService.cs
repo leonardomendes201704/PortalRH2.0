@@ -15,6 +15,7 @@ public sealed record MicrosoftGraphCalendarEvent(
     string Title,
     string? Description,
     string? Location,
+    string? JoinUrl,
     DateTime StartAtUtc,
     DateTime EndAtUtc,
     bool IsAllDay);

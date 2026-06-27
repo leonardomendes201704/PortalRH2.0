@@ -39,6 +39,7 @@ builder.Services.AddScoped<IPortalShellService, PortalShellService>();
 builder.Services.AddScoped<IPortalPanelsComposer, PortalPanelsComposer>();
 builder.Services.AddScoped<IQuickLinkService, QuickLinkService>();
 builder.Services.AddScoped<IJourneyService, JourneyService>();
+builder.Services.AddScoped<IJourneyWorkspaceService, JourneyWorkspaceService>();
 builder.Services.AddScoped<IKpiService, KpiService>();
 builder.Services.AddScoped<IHrProfileService, HrProfileService>();
 builder.Services.AddScoped<IHrWorkspaceService, HrWorkspaceService>();

@@ -18,6 +18,14 @@ public interface IJourneyService
     Task<JourneySummaryResponse> GetSummaryAsync(PortalUser user, CancellationToken cancellationToken);
 }
 
+public interface IJourneyWorkspaceService
+{
+    Task<JourneyTasksResponse> GetTasksAsync(PortalUser user, CancellationToken cancellationToken);
+    Task<JourneyRequestsResponse> GetRequestsAsync(PortalUser user, CancellationToken cancellationToken);
+    Task<JourneyLearningPathsResponse> GetLearningPathsAsync(PortalUser user, CancellationToken cancellationToken);
+    Task<JourneyDocumentsResponse> GetDocumentsAsync(PortalUser user, CancellationToken cancellationToken);
+}
+
 public interface IKpiService
 {
     Task<KpiSummaryResponse> GetSummaryAsync(PortalUser user, CancellationToken cancellationToken);

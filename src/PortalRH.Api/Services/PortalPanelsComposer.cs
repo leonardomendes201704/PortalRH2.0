@@ -88,7 +88,7 @@ public class PortalPanelsComposer : IPortalPanelsComposer
     private static PanelDto BuildJourneyPanel(Contracts.Journey.JourneySummaryResponse journey)
     {
         var items = journey.Items
-            .Select(item => ShellPanelJson.LabelBadge(item.Label, item.Badge))
+            .Select(item => ShellPanelJson.LabelLink(item.Label, item.Url, item.Badge))
             .Cast<JsonNode>()
             .ToList();
 
@@ -180,7 +180,8 @@ public class PortalPanelsComposer : IPortalPanelsComposer
                 item.Location,
                 item.Source,
                 item.StartAtUtc,
-                item.EndAtUtc))
+                item.EndAtUtc,
+                item.JoinUrl))
             .Cast<JsonNode>()
             .ToList();
 

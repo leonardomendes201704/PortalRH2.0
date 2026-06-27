@@ -64,6 +64,40 @@ function findAgendaEvent(eventId) {
   return agendaEvents.find((item) => String(item.id) === String(eventId)) || null;
 }
 
+function extractJoinUrl(event) {
+  const explicitJoinUrl = String(event.joinUrl || "").trim();
+  if (explicitJoinUrl) {
+    return explicitJoinUrl;
+  }
+
+  const haystack = `${event.detailDescription || ""}\n${event.description || ""}`;
+  const match = haystack.match(/https?:\/\/[^\s<>"']+/i);
+  return match?.[0]?.replace(/[),.]+$/, "") || "";
+}
+
+function sanitizeEventDescription(description, joinUrl) {
+  if (!description) {
+    return "";
+  }
+
+  let text = String(description);
+
+  if (joinUrl) {
+    text = text.split(joinUrl).join(" ");
+  }
+
+  text = text
+    .replace(/https?:\/\/[^\s<>"']+/gi, " ")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line && !/ingressar/i.test(line))
+    .join("\n")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+
+  return text;
+}
+
 function renderDetailRow(iconClass, label, value) {
   if (!value) {
     return "";
@@ -82,8 +116,30 @@ function renderDetailRow(iconClass, label, value) {
   `;
 }
 
+function renderJoinButton(joinUrl) {
+  if (!joinUrl) {
+    return "";
+  }
+
+  return `
+    <div class="agenda-event-modal__footer">
+      <a
+        class="feed-composer-submit agenda-event-modal__join"
+        href="${escapeHtml(joinUrl)}"
+        target="_blank"
+        rel="noopener noreferrer"
+        data-analytics="agenda-event.join"
+      >
+        <i class="fa-solid fa-video" aria-hidden="true"></i>
+        Ingressar
+      </a>
+    </div>
+  `;
+}
+
 function renderModalContent(event) {
-  const description = event.detailDescription || event.description || "";
+  const joinUrl = extractJoinUrl(event);
+  const description = sanitizeEventDescription(event.detailDescription || event.description || "", joinUrl);
   const location = event.location && event.location !== description ? event.location : "";
   const schedule = formatSchedule(event);
   const source = formatSourceLabel(event.source);
@@ -110,6 +166,7 @@ function renderModalContent(event) {
           </div>
         ` : ""}
       </section>
+      ${renderJoinButton(joinUrl)}
     </div>
   `;
 }

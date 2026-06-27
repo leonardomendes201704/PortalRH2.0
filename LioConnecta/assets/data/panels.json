@@ -3,10 +3,10 @@
     {
       "title": "MINHA JORNADA",
       "items": [
-        { "label": "Tarefas Pendentes", "badge": "5" },
-        { "label": "Solicitações em Andamento", "badge": "3" },
-        { "label": "Trilhas de Aprendizagem", "badge": "2" },
-        { "label": "Documentos Recentes", "badge": "4" }
+        { "label": "Tarefas Pendentes", "badge": "5", "url": "#minha-jornada/tarefas" },
+        { "label": "Solicitações em Andamento", "badge": "3", "url": "#minha-jornada/solicitacoes" },
+        { "label": "Trilhas de Aprendizagem", "badge": "2", "url": "#minha-jornada/trilhas" },
+        { "label": "Documentos Recentes", "badge": "4", "url": "#minha-jornada/documentos" }
       ]
     },
     {

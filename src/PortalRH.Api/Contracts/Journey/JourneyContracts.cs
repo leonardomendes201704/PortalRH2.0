@@ -3,7 +3,8 @@ namespace PortalRH.Api.Contracts.Journey;
 public sealed record JourneyItemDto(
     string Label,
     string Badge,
-    string Source);
+    string Source,
+    string Url);
 
 public sealed record JourneySummaryResponse(
     IReadOnlyList<JourneyItemDto> Items,

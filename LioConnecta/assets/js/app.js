@@ -67,8 +67,8 @@ import { bindInteractionFeedback, showToast, confirmAction } from "./core/feedba
 import { DATA_MODES, getRuntimeConfig } from "./core/runtimeConfig.js?v=0.21.4";
 import { getPanelData } from "./services/panelService.js?v=0.12.8";
 import { getUserHomeContext } from "./services/userService.js?v=0.12.8";
-import { applyAgendaToShellData, collectAgendaEventsFromPanels, getAgendaDayData } from "./services/agendaService.js?v=0.23.6";
-import { bindAgendaEventModalActions, setAgendaEvents } from "./components/agendaEventModal.js?v=0.23.6";
+import { applyAgendaToShellData, collectAgendaEventsFromPanels, getAgendaDayData } from "./services/agendaService.js?v=0.23.7";
+import { bindAgendaEventModalActions, setAgendaEvents } from "./components/agendaEventModal.js?v=0.23.7";
 import { applyNotificationsToShellData, getNotificationCenterData } from "./services/notificationService.js?v=0.13.0";
 import { fetchAdminSession, getAdminAuthHeaders, getStoredAdminSession, isSuperAdminSession, redirectToAdminLogin } from "./services/adminAuthService.js?v=0.12.8";
 import { ensureValidPortalSession, getPortalAuthHeaders, getStoredPortalSession, logoutPortal, redirectToPortalLogin } from "./services/portalAuthService.js?v=0.13.0";
@@ -89,6 +89,12 @@ import {
   getHrProfileModuleData,
   renderHrProfileModulePage
 } from "./hrProfile/index.js?v=0.23.3";
+import {
+  JOURNEY_ROUTE,
+  isJourneyModuleSlug,
+  getJourneyModuleData,
+  renderJourneyModulePage
+} from "./journey/index.js?v=0.23.7";
 import {
   canManageMoodSurveyFeedback,
   listMoodFeedbackMessages,
@@ -112,6 +118,7 @@ const ROUTES = Object.freeze({
   ADMIN_POLLS: "admin/enquetes",
   PEOPLE: "pessoas-rh",
   HR_PROFILE: HR_PROFILE_ROUTE,
+  JOURNEY: JOURNEY_ROUTE,
   SYSTEMS: "sistemas",
   PROJECTS: "projetos",
   RESOURCES: "recursos"
@@ -409,6 +416,13 @@ function parseRoute() {
     }
   }
 
+  if (hash.startsWith(`${ROUTES.JOURNEY}/`)) {
+    const moduleSlug = hash.slice(`${ROUTES.JOURNEY}/`.length);
+    if (isJourneyModuleSlug(moduleSlug)) {
+      return { route: ROUTES.JOURNEY, slug: moduleSlug };
+    }
+  }
+
   if (getNavRoutes().some((item) => item.route === hash)) {
     return { route: hash, slug: "" };
   }
@@ -421,7 +435,7 @@ function buildNavItems(navItems = [], route = ROUTES.HOME) {
     ? ROUTES.COMMUNICATIONS
     : route === ROUTES.POLL_READ
       ? ROUTES.POLLS
-      : route === ROUTES.SAVED || route === ROUTES.HR_PROFILE
+      : route === ROUTES.SAVED || route === ROUTES.HR_PROFILE || route === ROUTES.JOURNEY
         ? ROUTES.HOME
         : route === ROUTES.ADMIN_POLLS || route === ROUTES.COMMUNICATION_ADMIN
         ? ROUTES.PEOPLE
@@ -515,6 +529,12 @@ function renderHrProfilePage(data, route, slug) {
   const centerContent = document.getElementById("center-content");
   renderShell(data, route);
   centerContent.innerHTML = renderHrProfileModulePage(slug, data.hrModule);
+}
+
+function renderJourneyPage(data, route, slug) {
+  const centerContent = document.getElementById("center-content");
+  renderShell(data, route);
+  centerContent.innerHTML = renderJourneyModulePage(slug, data.journeyModule);
 }
 
 function renderCommunicationsPage(data, route) {
@@ -2180,6 +2200,18 @@ async function loadPageData(route, slug = "") {
     };
   }
 
+  if (route === ROUTES.JOURNEY) {
+    const journeyModule = await getJourneyModuleData(slug, {
+      headers: getPortalAuthHeaders()
+    });
+
+    return {
+      ...shellData,
+      journeyModule,
+      journeyModuleSlug: slug
+    };
+  }
+
   if (route === ROUTES.COMMUNICATION_ADMIN) {
     const communications = await getCommunicationCenterData();
 
@@ -2333,7 +2365,9 @@ async function renderCurrentRoute() {
 
     const permissionRoute = route === ROUTES.HR_PROFILE
       ? `${ROUTES.HR_PROFILE}/${slug}`
-      : route;
+      : route === ROUTES.JOURNEY
+        ? `${ROUTES.JOURNEY}/${slug}`
+        : route;
     const hasRoutePermission = await ensureRoutePermission(permissionRoute);
     if (!hasRoutePermission) {
       return;
@@ -2374,6 +2408,8 @@ async function renderCurrentRoute() {
     renderPeopleRhPage(data, route);
   } else if (route === ROUTES.HR_PROFILE) {
     renderHrProfilePage(data, route, slug);
+  } else if (route === ROUTES.JOURNEY) {
+    renderJourneyPage(data, route, slug);
   } else {
     renderPlaceholderPage(data, route);
   }
