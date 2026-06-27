@@ -1,5 +1,30 @@
 import { escapeHtml } from "./html.js";
 
+function renderUserAvatar(photoUrl = "") {
+  const normalizedPhotoUrl = String(photoUrl || "").trim();
+
+  if (normalizedPhotoUrl) {
+    return `
+      <div class="avatar avatar--photo" aria-hidden="true">
+        <img
+          class="avatar__photo"
+          src="${escapeHtml(normalizedPhotoUrl)}"
+          alt=""
+          loading="lazy"
+          decoding="async"
+        >
+        <i class="fa-solid fa-user avatar__fallback"></i>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="avatar" aria-hidden="true">
+      <i class="fa-solid fa-user"></i>
+    </div>
+  `;
+}
+
 export function renderHeaderShell(data) {
   return `
     <header class="topbar" aria-label="Barra superior">
@@ -13,7 +38,7 @@ export function renderHeaderShell(data) {
 
       <div class="topbar-actions">
         <div class="user-chip">
-          <div class="avatar" aria-hidden="true"><i class="fa-solid fa-user"></i></div>
+          ${renderUserAvatar(data.user.photoUrl)}
           <div class="user-info">
             <strong>${escapeHtml(data.user.name)}</strong>
             ${data.user.area ? `<span class="user-area">${escapeHtml(data.user.area)}</span>` : ""}

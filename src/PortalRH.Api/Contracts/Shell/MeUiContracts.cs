@@ -6,7 +6,8 @@ public sealed record UserSummaryDto(
     string Name,
     string Greeting,
     string Area,
-    int NotificationCount);
+    int NotificationCount,
+    string PhotoUrl = "");
 
 public sealed record NavItemDto(
     string Label,

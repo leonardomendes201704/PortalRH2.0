@@ -20,7 +20,7 @@ public class MeUiController : ControllerBase
     [HttpGet]
     [ProducesResponseType(typeof(MeUiResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public IActionResult Get()
+    public async Task<IActionResult> Get(CancellationToken cancellationToken)
     {
         var session = PortalSessionHttpContext.Get(HttpContext);
         if (session?.PortalUser is null)
@@ -28,6 +28,6 @@ public class MeUiController : ControllerBase
             return Unauthorized(new { message = "Sessao do portal nao encontrada." });
         }
 
-        return Ok(_portalShellService.BuildMeUi(session.PortalUser));
+        return Ok(await _portalShellService.BuildMeUiAsync(session.PortalUser, cancellationToken));
     }
 }

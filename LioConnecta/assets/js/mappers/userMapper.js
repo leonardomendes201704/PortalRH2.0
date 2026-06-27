@@ -40,7 +40,8 @@ export function mapUserHomeContextViewModel(raw = {}) {
       greeting: asString(raw.user?.greeting, DEFAULT_USER.greeting),
       name: asString(raw.user?.name, DEFAULT_USER.name),
       area: asString(raw.user?.area, ""),
-      notificationCount: Number(raw.user?.notificationCount ?? 0) || 0
+      notificationCount: Number(raw.user?.notificationCount ?? 0) || 0,
+      photoUrl: asString(raw.user?.photoUrl, "")
     },
     navItems: asArray(raw.navItems).length
       ? asArray(raw.navItems).map(mapNavItem)

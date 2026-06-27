@@ -8,15 +8,20 @@ namespace PortalRH.Api.Services;
 public class PortalShellService : IPortalShellService
 {
     private readonly IPortalPanelsComposer _portalPanelsComposer;
+    private readonly IMicrosoftGraphUserPhotoService _userPhotoService;
 
-    public PortalShellService(IPortalPanelsComposer portalPanelsComposer)
+    public PortalShellService(
+        IPortalPanelsComposer portalPanelsComposer,
+        IMicrosoftGraphUserPhotoService userPhotoService)
     {
         _portalPanelsComposer = portalPanelsComposer;
+        _userPhotoService = userPhotoService;
     }
 
-    public MeUiResponse BuildMeUi(PortalUser user)
+    public async Task<MeUiResponse> BuildMeUiAsync(PortalUser user, CancellationToken cancellationToken)
     {
         var template = PortalShellDefaults.CreateMeUiTemplate();
+        var photoUrl = await _userPhotoService.GetPhotoDataUrlForPortalUserAsync(user, cancellationToken) ?? string.Empty;
 
         return template with
         {
@@ -24,7 +29,8 @@ public class PortalShellService : IPortalShellService
             {
                 Name = user.DisplayName,
                 Area = user.Department ?? string.Empty,
-                NotificationCount = 0
+                NotificationCount = 0,
+                PhotoUrl = photoUrl
             },
             NavItems = BuildNavItems(user),
             Composer = template.Composer with
